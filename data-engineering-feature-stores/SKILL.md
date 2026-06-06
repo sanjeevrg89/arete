@@ -4,7 +4,13 @@ description: Expert data engineering for ML — the pipelines, feature stores, a
   that decide whether models work in production ("garbage in, garbage out"). Use when building or debugging
   ML data pipelines (ingestion, validation, transformation, batch vs streaming), orchestration (Airflow,
   Dagster, Flyte, Spark, Beam), the lakehouse (Delta Lake, Apache Iceberg, Hudi, Parquet), or data
-  versioning (DVC, LakeFS, lakeFS). Use for feature stores (Feast, Tecton, Vertex AI Feature Store,
+  versioning (DVC, LakeFS, lakeFS). Use for streaming & real-time features (Kafka/Pulsar, Flink, Spark
+  Structured Streaming, Beam, CDC/Debezium, windowed aggregations, watermarks, late/out-of-order data,
+  exactly-once, online/offline consistency) and real-time inference (fraud, recsys). Use for the analytics
+  /query side — data warehouses (BigQuery, Snowflake, Redshift) and OLAP/lakehouse query engines (Spark
+  SQL, Trino/Presto, DuckDB), columnar/partitioning/clustering and query cost, SQL for ML (window
+  functions, point-in-time/as-of joins, cohorting), and dbt-style transformation/label/feature derivation.
+  Use for feature stores (Feast, Tecton, Vertex AI Feature Store,
   Featureform) — offline vs online store, the registry, materialization, feature freshness,
   point-in-time-correct joins, and eliminating training-serving skew. Use for data quality & validation
   (Great Expectations, TFDV, schema/distribution/anomaly checks, data contracts), labeling & dataset
@@ -54,6 +60,16 @@ existed.
   silent failures. Great Expectations or TFDV; fail the pipeline, don't warn into a log nobody reads.
 - **Batch vs streaming is a freshness/cost tradeoff,** not a religion. Most features are batch; reach for
   streaming only when staleness actually moves the metric. Keep one transformation definition across both.
+- **Streaming features (Kafka/Pulsar log → Flink/Spark Structured Streaming/Beam → online store; CDC via
+  Debezium):** compute on **event time** with windows, watermarks, and an explicit late-data policy; aim for
+  exactly-once (or at-least-once + idempotent sink). The hard part is **online/offline consistency** — the
+  online value must equal the offline as-of value; use one definition for both and diff them. Streaming
+  features earn their cost only for fraud / session recsys / dynamic pricing. See `[[distributed-systems-fundamentals]]`.
+- **The analytics/query side is where most labels and batch features are derived:** warehouses
+  (BigQuery/Snowflake/Redshift) and OLAP query engines (Spark SQL, Trino, DuckDB) over columnar data.
+  Partition by event date and prune; avoid `SELECT *`/full scans (bytes scanned = cost). Master SQL window
+  functions and **point-in-time/as-of joins** (the #1 leakage bug), and use **dbt** for versioned,
+  tested transformation/label derivation. dbt/SQL *derives*; the feature store *serves* — keep the boundary.
 - **Lakehouse over raw files for ML data at scale:** Delta/Iceberg/Hudi give ACID, schema evolution, and
   time travel on Parquet — reproducible training snapshots without copying data.
 - **Version data and features, not just code.** DVC/LakeFS for datasets; a feature registry as the source
@@ -69,6 +85,8 @@ existed.
 
 - `[[mlops-lifecycle]]` — where feature/data pipelines sit in the end-to-end ML lifecycle and CI/CD/CT.
 - `[[ml-observability-monitoring]]` — detecting feature drift / skew in production; closing the loop.
+- `[[distributed-systems-fundamentals]]` — partitioning, ordering, delivery semantics, and exactly-once
+  underpinning streaming feature pipelines (Kafka/Flink) and online stores.
 - `[[rag-vector-databases]]` — embedding/ingestion pipelines for RAG share this data-engineering spine.
 - `[[recsys-ranking]]` — the canonical heavy consumer of feature stores and point-in-time joins.
 - `[[responsible-ai-governance]]` — lineage, PII, data contracts, and dataset documentation.

@@ -258,3 +258,81 @@ The agent service is a separate, stateless Deployment that dispatches code to sh
 (or a sandbox service), enforces a wall-clock timeout, and treats the returned output as untrusted.
 Full agent threat model, guardrails, and egress controls → [[ai-security-on-gke]]; K8s deployment/
 scaling → [[aiml-on-kubernetes]] / [[kubernetes-expert]].
+
+---
+
+## 6. Durable agent: workflow vs. activity split + idempotent tools
+
+A crash-proof agent loop. The **workflow** is deterministic orchestration only — it decides what runs
+next; it never calls the model/tools, reads the clock, or uses randomness directly. Every
+non-deterministic, side-effecting step is an **activity** whose result is checkpointed, so on
+replay/restart completed activities are *not* re-run. Shown in the shape of Temporal's Python SDK;
+Restate / DBOS / Inngest differ in API but enforce the same split — **verify the current SDK against
+the engine's docs.** See §7 of the guide; distributed-systems foundations → [[distributed-systems-fundamentals]].
+
+```python
+# Illustrative shape — verify the engine's current SDK/decorators against its docs.
+from datetime import timedelta
+from temporalio import workflow, activity
+from temporalio.common import RetryPolicy
+
+# --- ACTIVITIES: all non-determinism + side effects live here (checkpointed, skipped on replay). ---
+@activity.defn
+async def call_model(messages: list[dict]) -> dict:
+    # The LLM call is flaky + non-deterministic → must be an activity, never in workflow code.
+    return await llm_client.chat(messages)          # returns {"tool_calls": [...]} or {"final": "..."}
+
+@activity.defn
+async def issue_refund(order_id: str, idempotency_key: str) -> dict:
+    # SIDE EFFECT. Idempotency key derived from workflow+step id (passed in), NOT a fresh uuid here,
+    # so a retry/replay dedupes downstream instead of double-refunding → exactly-once in effect.
+    return await payments.refund(order_id, idempotency_key=idempotency_key)
+
+# --- WORKFLOW: deterministic orchestration ONLY. No I/O, no clock, no random, no direct LLM/tool calls. ---
+@workflow.defn
+class RefundAgent:
+    def __init__(self) -> None:
+        self._approved: bool | None = None
+
+    @workflow.signal
+    def approve(self, ok: bool) -> None:            # durable signal: human-in-the-loop input
+        self._approved = ok
+
+    @workflow.run
+    async def run(self, order_id: str) -> str:
+        messages = [{"role": "user", "content": f"Process refund for {order_id}"}]
+        retry = RetryPolicy(maximum_attempts=4, initial_interval=timedelta(seconds=1),
+                            backoff_coefficient=2.0)   # bounded retries+backoff ON THE ACTIVITY
+
+        for step in range(8):                        # hard loop bound (guide §10) — still required
+            resp = await workflow.execute_activity(
+                call_model, messages,
+                start_to_close_timeout=timedelta(seconds=60),   # hung LLM call can't wedge the run
+                retry_policy=retry,
+            )
+            if resp.get("final"):
+                return resp["final"]
+
+            # Gate the destructive action on a durable signal — parks for as long as needed, no compute.
+            await workflow.wait_condition(lambda: self._approved is not None)
+            if not self._approved:
+                return "refund rejected by human"
+
+            # Idempotency key from the deterministic workflow context — stable across retries/replay.
+            key = f"{workflow.info().workflow_id}:refund:{step}"
+            result = await workflow.execute_activity(
+                issue_refund, args=[order_id, key],
+                start_to_close_timeout=timedelta(seconds=30), retry_policy=retry,
+            )
+            messages.append({"role": "tool", "content": str(result)})
+        return "step budget exhausted"               # fail gracefully, don't spin
+```
+
+Why this is the GOOD shape: the workflow survives worker/pod crashes and resumes by replaying the
+event history (completed activities return their checkpointed results, not re-executed); the LLM and
+refund calls are **activities** with bounded retries/backoff and timeouts; the refund is **idempotent**
+via a key derived from the deterministic workflow context, so a retry or replay never double-refunds
+([[distributed-systems-fundamentals]]); the human approval is a **durable signal** that parks the run
+with zero compute; the loop is still **bounded** (§10). Workers are stateless and scale against the
+durable backend on K8s → [[kubernetes-expert]] / [[autoscaling-kubernetes]]; export the durable history
+alongside OTel GenAI spans → [[ml-observability-monitoring]].

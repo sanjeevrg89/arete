@@ -220,10 +220,10 @@ model choice is config, not code.
 - **Right-size the model per node.** Use a small/cheap model for routing, classification, extraction,
   and tool-arg formatting; reserve the frontier model for hard reasoning. This is the single biggest
   cost lever.
-- **Cache aggressively** (see §8 and §9): prompt/prefix caching on the provider side, plus your own
+- **Cache aggressively** (see §9 and §10): prompt/prefix caching on the provider side, plus your own
   response/embedding cache for deterministic sub-calls.
 - **Watch the token bill compounding:** every agent turn re-sends growing history × every tool result ×
-  every reflection round. Loops multiply tokens. Budget and cap (§7, §9).
+  every reflection round. Loops multiply tokens. Budget and cap (§8, §10).
 
 ---
 
@@ -259,7 +259,156 @@ Design for that shape. K8s fundamentals → [[kubernetes-expert]] / [[aiml-on-ku
 
 ---
 
-## 7. RAG integration (brief — depth in [[rag-vector-databases]])
+## 7. Agent reliability & durable / long-running orchestration
+
+A naive agent loop is an in-process `while` loop holding all of its state — the message history, the
+plan, which tools already ran, partial results — in local variables. If the pod is rescheduled, the
+process OOMs, an LLM call times out, or a tool 500s mid-run, **the entire run is lost** and there is no
+safe way to resume: re-running from the top re-executes side effects (re-charges the card, re-sends the
+email), re-running from a guessed point corrupts state. Agents make this worse than a normal service
+because a single run is *long* (seconds to days), *stateful*, and *fans out to flaky dependencies*
+(every LLM call and tool call can fail, time out, rate-limit, or return garbage). Reliability here is a
+**distributed-systems problem**, not a prompt problem → [[distributed-systems-fundamentals]] (failure
+models, idempotency, exactly-once, retries, timeouts). Bounding loops (§10) keeps a *single* run from
+running away; durable orchestration keeps a run *alive and correct across failures*.
+
+### 7.1 Durable execution — the answer to "what happens when it crashes"
+
+**Durable execution** engines persist the progress of a workflow so it survives process death and
+resumes exactly where it left off. The model: your orchestration code is a **workflow** whose every
+step's input and result is **checkpointed to durable storage**; on crash/restart the engine **replays**
+the workflow from its log, skipping already-completed steps (returning their persisted results) until it
+reaches the point of failure, then continues. The agent's control flow becomes crash-proof without you
+hand-rolling a state machine + database.
+
+Engines you'll encounter (shapes differ; **verify current APIs/SDKs against each project's docs** — this
+is fast-moving):
+
+| Engine | Shape | Notes |
+|---|---|---|
+| **Temporal** | Workflow/activity SDK (Go/Java/Python/TS) + a server cluster; deterministic replay from an event history | The reference model for durable workflows; mature human-in-the-loop signals, timers, retries |
+| **AWS Bedrock AgentCore** | Managed runtime for long-running/durable agents on AWS (sessions, memory, identity, tools) | Cloud-managed; verify the exact feature surface against current AWS docs |
+| **Restate** | Durable execution + durable promises/state; lightweight single binary | Strong for durable RPC/handlers and idempotent service calls |
+| **DBOS** | Durable workflows as decorated functions backed by Postgres | Library + Postgres, no separate cluster; "the database is the orchestrator" |
+| **Inngest** | Event-driven durable functions/steps (steps are memoized/retried) | Step functions over events; good for async/background agent work |
+
+Some agent frameworks add their own durability layer (e.g. LangGraph **checkpointers** persist graph
+state for resume/human-in-the-loop). That covers *graph state*; a durable-execution engine covers
+*arbitrary orchestration code + side effects*. They compose — run a LangGraph/ADK agent **inside** a
+durable workflow when you need both.
+
+### 7.2 The workflow vs. activity split (the core discipline)
+
+Durable replay only works if the workflow is **deterministic**: replaying the same event history must
+take the same path. Therefore:
+
+- **Workflow code = deterministic orchestration only.** Control flow, sequencing, deciding which step
+  runs next. **No I/O, no clocks, no randomness, no direct LLM/tool calls** in workflow code — those are
+  non-deterministic and would diverge on replay.
+- **Activities (a.k.a. steps) = all the non-deterministic, side-effecting work.** The LLM call, the
+  tool/API call, the DB write, the retrieval. Each activity's result is checkpointed, so on replay it is
+  *not re-executed* — the persisted result is returned.
+- Get the engine's facilities for the things you'd otherwise do non-deterministically: **durable timers/
+  sleeps** (not `time.sleep`), **engine-provided "now"/random**, **durable signals** for external input.
+
+> The mental rule: **anything that can fail, block, or vary goes in an activity; the workflow just
+> decides what to do with the results.** An agent loop maps cleanly: the loop/plan/edge-selection is
+> workflow code; "call the model", "run tool X", "retrieve" are activities.
+
+### 7.3 Idempotency, retries, and exactly-once side effects
+
+Replay and retries mean **an activity may execute more than once**. This is the classic distributed-
+systems trap (link [[distributed-systems-fundamentals]]): **at-least-once delivery + non-idempotent side
+effect = double charge / duplicate email / double-provision.** Defenses:
+
+- **Make every side-effecting tool idempotent.** Pass a stable **idempotency key** (derive it from the
+  workflow/run id + step id, *not* a fresh UUID each attempt) so the downstream system dedupes a retry.
+  Payment APIs, message sends, and provisioning calls almost all support idempotency keys — use them.
+- **Retries with backoff belong on the activity, configured declaratively** (max attempts, initial
+  interval, backoff coefficient, max interval, which errors are retryable vs. fatal). Don't hand-roll
+  `for attempt in range(...)` inside an activity that the engine is also retrying — you'll double-retry.
+- **Cap retries and total attempts** — unbounded retries against a persistently failing dependency burn
+  cost and never converge. Distinguish *retryable* (timeout, 503, rate-limit) from *non-retryable* (4xx
+  validation, auth) so you fail fast on the latter. This is the durable-orchestration analogue of the
+  loop bounds in §10; both must exist.
+- **Exactly-once is "effectively once":** the engine guarantees the *workflow* observes each activity's
+  result once; the *world* is made consistent by idempotency + dedupe, not by magic. Design for it.
+- **Timeouts and heartbeats:** set per-activity start-to-close and schedule-to-close timeouts so a hung
+  LLM/tool call doesn't wedge the run forever. For long activities, **heartbeat** so the engine can tell
+  "still working" from "dead" and retry only the dead ones.
+
+### 7.4 Long-running & async agents
+
+Durable execution is what makes genuinely long-lived agents safe:
+
+- **Human-in-the-loop pause/resume.** The workflow blocks on a **durable signal/wait** (approve this
+  refund, answer this question) — possibly for hours or days — consuming no compute while parked, and
+  resumes deterministically when the signal arrives. This is the correct way to gate destructive actions
+  (§6 / [[ai-security-on-gke]]) without holding a process open.
+- **Durable timers for multi-day flows.** "Wait 24h, then follow up", scheduled re-checks, SLA timers —
+  use the engine's durable sleep, not an in-process timer that dies with the pod.
+- **Checkpoint/resume of agent memory & context.** Persist the working state (message history, plan,
+  scratchpad, tool results, the context-engineering window from §9) at each step so a resumed run rebuilds
+  the *exact* context — not an approximation. Keep large blobs out-of-band (store a handle/id), as in §9.
+- **Recovery semantics, stated explicitly.** Decide and document: on resume do you *replay* (re-derive
+  state from the event log — requires determinism) or *restore* (load a saved snapshot)? What's the unit
+  of retry — a single tool call, or the whole step? What happens to in-flight side effects on crash
+  (idempotency answers this)? An agent without an explicit recovery story will lose or corrupt work.
+
+### 7.5 Running durable agents on Kubernetes → [[kubernetes-expert]]
+
+The durability lives in the **backend** (the engine's persistent store / managed service), which frees
+the compute tier to be ordinary, replaceable workers:
+
+- **Workers are stateless and horizontally scalable.** Temporal/Restate/Inngest/DBOS workers poll the
+  durable backend for work; any worker can pick up any task, and a killed worker's task is retried/
+  resumed elsewhere. Run them as a **Deployment**, scale on backlog/queue depth or in-flight task count
+  (KEDA), not CPU% → [[autoscaling-kubernetes]]. This is the same "externalize state" rule as §6 — the
+  durable backend *is* the externalized state.
+- **Prefer a durable backend over making the agent pod itself stateful.** A StatefulSet with local state
+  reintroduces exactly the crash-loses-everything problem. Use StatefulSets/PVCs for the *datastore*
+  (Postgres/etc.) or run the engine as a managed service; keep agent workers stateless.
+- **Operational concerns:** size worker concurrency to the durable backend's throughput; isolate
+  task queues per workload so a heavy agent doesn't starve others; pin SDK/server versions (replay
+  determinism can be sensitive to SDK upgrades — verify each engine's versioning/patching guidance).
+- Long autonomous runs still pair with the **async + queue + worker** shape from §6; the durable engine
+  is the queue + state + retry machinery done correctly.
+
+### 7.6 Observability & evaluating reliability
+
+You cannot fix failure modes you can't see (general tracing in §10):
+
+- **The durable history *is* a trace.** Each engine exposes the per-step event history (inputs, outputs,
+  attempts, retries, timers, signals). Export it alongside your OTel GenAI span tree (§10) so one view
+  shows both the agent trajectory and the durability events. Reliability signals → [[ml-observability-monitoring]].
+- **Track reliability as metrics:** per-activity retry counts and failure rates, time-parked-on-signal,
+  resume/replay counts, workflow completion vs. timeout vs. failure, cost per (possibly retried) run.
+  Alert on retry storms and stuck/parked workflows.
+- **Trajectory replay for eval.** Because the history is persisted, you can replay a failed run's
+  trajectory to reproduce a bug deterministically, and build an eval set of real failure trajectories
+  (bad tool selection, loops, recoveries) → [[ml-evaluation-evals]]. Evaluate *recovery* too: inject
+  activity failures and assert the agent resumes correctly and side effects don't double-fire.
+
+### 7.7 Anti-patterns (reliability)
+
+- **In-memory agent loop with no persistence.** State lives only in process; a restart loses the run and
+  there's no safe resume. The default failure of "we just ran the loop in our API handler."
+- **Non-idempotent tool calls behind retries → double side effects.** Retrying or replaying a charge/
+  send/provision with no idempotency key → duplicates. The single most damaging durable-agent bug
+  ([[distributed-systems-fundamentals]]).
+- **Unbounded retries / cost.** Retrying a permanently-failing dependency forever; not separating
+  retryable from fatal errors; no cap on attempts or total run cost.
+- **No resume / no recovery story.** Crash → re-run from scratch (re-doing side effects) or manual
+  surgery. Decide replay-vs-restore and unit-of-retry *before* shipping.
+- **Hidden non-determinism breaking replay.** Calling the LLM/tool, reading the clock, using `random`, or
+  iterating a hash-ordered map *in workflow code* → replay diverges and the engine errors or corrupts
+  state. Keep all of that in activities; use engine-provided time/random/signals.
+- **Stateful agent pods as the durability mechanism.** Pinning runs to a pod's local memory/disk instead
+  of a durable backend — you've just rebuilt the in-memory-loop problem with extra steps.
+
+---
+
+## 8. RAG integration (brief — depth in [[rag-vector-databases]])
 
 RAG = retrieve relevant context, inject it into the prompt, generate grounded in it. In agentic systems
 RAG usually shows up as a **retrieval tool** the agent calls (agentic RAG) rather than a fixed
@@ -276,7 +425,7 @@ pre-fetch. Essentials:
 
 ---
 
-## 8. Prompt & context engineering
+## 9. Prompt & context engineering
 
 Prompt and context engineering are the two highest-leverage disciplines in an LLM app — more so than
 framework choice. **Prompt engineering** is how you write the instructions; **context engineering** is
@@ -284,10 +433,10 @@ how you decide *what goes into the window at all*, and in what order, on every t
 ever sees the tokens you assemble. Treat that assembly as a first-class, versioned, evaluated system —
 not string concatenation buried in code.
 
-### 8.1 Prompt engineering
+### 9.1 Prompt engineering
 
 - **System vs. user prompt.** The **system** prompt carries durable role, policy, format rules, and
-  tool-use guidance — it's stable and should be the cacheable prefix (§9). The **user** turn carries the
+  tool-use guidance — it's stable and should be the cacheable prefix (§10). The **user** turn carries the
   variable task. Don't smuggle per-request data into the system prompt (it breaks prefix caching and
   blurs the trust boundary). Keep developer/system instructions and untrusted user/tool content clearly
   separated — never concatenate retrieved or tool-returned text into the instruction region.
@@ -314,9 +463,9 @@ not string concatenation buried in code.
   hope** — native JSON-schema / grammar / tool-as-schema, then validate (full treatment in §2 and
   `examples.md`). Describe each field in the schema; the schema *is* prompt.
 - **Prompt templating & versioning.** Prompts are code: parameterized templates, under source control,
-  reviewed, and tied to eval results (§9 evaluation, [[ml-evaluation-evals]]). Externalize them so you
+  reviewed, and tied to eval results (§10 evaluation, [[ml-evaluation-evals]]). Externalize them so you
   can iterate/roll back without redeploying, but pin which prompt version a deployment runs. Never
-  string-concatenate logic into prompts ("prompt spaghetti", §10).
+  string-concatenate logic into prompts ("prompt spaghetti", §11).
 - **Decoding params.** `temperature` and `top_p` (nucleus) control randomness — lower (≈0) for
   extraction/classification/tool-arg formatting and anything you'll parse; higher for creative
   generation. Tune *one* of temperature or top_p, not both. `max_tokens` bounds cost and runaway output;
@@ -325,7 +474,7 @@ not string concatenation buried in code.
 - **Determinism & caching.** Even at temperature 0, outputs are *not* bit-exact (batching/kernel
   effects) — never depend on exact-string reproducibility. For sub-tasks that should be stable, cache by
   a hash of the exact input. Order the prompt so the long *stable* prefix (system prompt, tool defs,
-  pinned context) comes first to maximize provider/engine **prefix caching** (§9). Make cache hit rate a
+  pinned context) comes first to maximize provider/engine **prefix caching** (§10). Make cache hit rate a
   tracked cost metric.
 - **Prompt injection is a security property, not a prompt trick.** Any instruction-looking text inside
   untrusted content (tool output, retrieved docs, MCP results, user-supplied files, web pages) can
@@ -334,7 +483,7 @@ not string concatenation buried in code.
   instruction region and clearly delimited as data; least-privilege tools; human-gate destructive
   actions; output/egress guardrails; sandbox tool execution. Full threat model → [[ai-security-on-gke]].
 
-### 8.2 Context engineering — the context window is a managed resource
+### 9.2 Context engineering — the context window is a managed resource
 
 The bigger modern idea: the context window is **finite, attention is non-uniform across it, and every
 token costs money and can dilute the rest.** Context engineering is the discipline of curating *exactly*
@@ -370,28 +519,28 @@ model providers and tooling before treating any specific tactic or limit as sett
   ([[ml-evaluation-evals]]) rather than assuming. RAG depth → [[rag-vector-databases]].
 - **Token / cost budgeting.** Set an explicit context budget per call and per run (system + tools +
   retrieved + history + headroom for the response). Every agent turn re-sends growing history × tool
-  results × reflection rounds — loops multiply tokens (§5, §9). Track tokens per node and per session as
+  results × reflection rounds — loops multiply tokens (§5, §10). Track tokens per node and per session as
   a first-class metric; right-size the model per node so cheap nodes don't pay frontier prices.
 - **Context rot.** Over a long session, context accumulates stale, contradictory, or low-value tokens
   that quietly degrade quality and inflate cost ("context rot"). Counter it: periodically compact/
   re-summarize, drop superseded content, re-anchor the task framing, or start a fresh window seeded with
   a clean summary + the live state. Don't let a session's window grow monotonically forever.
 
-### 8.3 How this couples to evals and RAG
+### 9.3 How this couples to evals and RAG
 
 - **Evals are how you know any of this works.** Prompt edits, few-shot sets, decoding params, context-
   selection strategy, compression thresholds, and long-context-vs-RAG choices are all changes you must
   measure, not guess. Hold a versioned offline set; A/B prompt and context strategies; track quality vs.
-  tokens/cost/latency. Every prompt or context change re-runs evals in CI (§9). Full eval discipline →
+  tokens/cost/latency. Every prompt or context change re-runs evals in CI (§10). Full eval discipline →
   [[ml-evaluation-evals]].
 - **RAG is context engineering applied to a corpus.** Chunking, embeddings, hybrid retrieval, and
   re-ranking are all in service of *putting the right tokens in the window* — the selection/ordering/
   compression principles above are exactly the RAG quality levers. Defer the retrieval mechanics to
-  [[rag-vector-databases]]; treat every retrieved span as untrusted input (§8.1, §7).
+  [[rag-vector-databases]]; treat every retrieved span as untrusted input (§9.1, §8).
 
 ---
 
-## 9. Production concerns
+## 10. Production concerns
 
 ### Evaluation (you cannot ship an agent you can't measure)
 - **Offline evals**: a versioned dataset of inputs + expected behavior. Evaluate at multiple levels —
@@ -443,7 +592,7 @@ defense-in-depth, not a substitute for least-privilege tools and sandboxing → 
 
 ---
 
-## 10. Anti-patterns (these cause the production incidents)
+## 11. Anti-patterns (these cause the production incidents)
 
 - **Unbounded agent loops → runaway cost / hangs.** No step cap, no token budget, no timeout, no
   loop-detection. A single stuck session can burn thousands of dollars. *Always* bound every loop.
@@ -464,10 +613,13 @@ defense-in-depth, not a substitute for least-privilege tools and sandboxing → 
 - **Leaking secrets into prompts/logs/traces.** Redact before logging; never put live credentials in
   context.
 - **No observability.** Debugging an agent without per-step traces is hopeless. Trace from day one.
+- **In-memory loop with no durability (for long/stateful agents).** State only in process → a crash
+  loses the run with no safe resume; non-idempotent tool calls + retries/replay → double side effects.
+  Use durable execution for long-running agents (§7) → [[distributed-systems-fundamentals]].
 
 ---
 
-## 11. Version awareness
+## 12. Version awareness
 
 This space changes monthly. Model names, context limits, pricing, structured-output support, MCP spec
 revisions and transport details, OpenTelemetry GenAI convention attribute names, and every framework's
@@ -477,7 +629,7 @@ current official docs.** The *patterns* here are durable; the *surfaces* are not
 
 ---
 
-## 12. Canonical references (verify currency)
+## 13. Canonical references (verify currency)
 
 - **Model Context Protocol** — spec & docs: https://modelcontextprotocol.io and
   https://spec.modelcontextprotocol.io
@@ -488,6 +640,10 @@ current official docs.** The *patterns* here are durable; the *surfaces* are not
   **Pydantic-AI** — https://ai.pydantic.dev/ · **Haystack** — https://docs.haystack.deepset.ai/
 - **OpenTelemetry GenAI semantic conventions** —
   https://opentelemetry.io/docs/specs/semconv/gen-ai/
+- **Durable execution engines** (verify current SDK/API): Temporal https://docs.temporal.io/ ·
+  AWS Bedrock AgentCore https://docs.aws.amazon.com/bedrock-agentcore/ · Restate https://docs.restate.dev/ ·
+  DBOS https://docs.dbos.dev/ · Inngest https://www.inngest.com/docs ·
+  LangGraph persistence/checkpointers https://langchain-ai.github.io/langgraph/concepts/persistence/
 - **gVisor (runsc sandbox)** — https://gvisor.dev/docs/
 - Anthropic, "Building effective agents" — https://www.anthropic.com/research/building-effective-agents
 - ReAct paper — https://arxiv.org/abs/2210.03629 · Reflexion — https://arxiv.org/abs/2303.11366

@@ -2,7 +2,9 @@
 
 Canonical, imitable artifacts for the highest-leverage patterns in
 `data-engineering-feature-stores-guide.md`: a feature definition, **point-in-time** training-set
-retrieval (Feast-style and equivalent SQL), and data validation (TFDV + Great Expectations).
+retrieval (Feast-style and equivalent SQL), data validation (TFDV + Great Expectations), a **streaming
+windowed feature with the online/offline-consistency contract**, and **point-in-time feature derivation in
+warehouse SQL** with window functions.
 
 These are runnable-in-spirit. Feature-store and validation APIs **move fast (2026) — verify field names
 and signatures against current docs** before depending on them. Imports trimmed for brevity.
@@ -231,3 +233,99 @@ def build_user_stats(run_date: str):           # e.g. "2026-05-20"; backfillable
 
 Pin the training run to a concrete data version (lakehouse snapshot id / DVC rev / LakeFS commit) and
 record it with the model so the dataset is exactly reproducible later.
+
+---
+
+## 6. Streaming windowed feature + the online/offline-consistency contract
+
+A real-time "transactions in the last 5 minutes per user" velocity feature for fraud. The point of this
+example is **the consistency contract**: the streaming job (online freshness) and the batch backfill
+(offline training history) must compute the *identical* value for the same entity and timestamp, or you
+have reintroduced training-serving skew with two codebases. Compute on **event time**, with a watermark and
+an explicit late-data policy — and make the batch side use the same window/late-data semantics.
+
+### Online: event-time sliding window in Flink SQL (writes to the online store)
+
+```sql
+-- Source: a Kafka topic of transactions; event_time is the EVENT timestamp (not arrival time),
+-- with a watermark allowing 2 minutes of out-of-order/late events before a window is finalized.
+CREATE TABLE txns (
+  user_id     BIGINT,
+  amount      DOUBLE,
+  event_time  TIMESTAMP(3),
+  WATERMARK FOR event_time AS event_time - INTERVAL '2' MINUTE   -- allowed lateness = freshness/correctness knob
+) WITH ('connector' = 'kafka', 'topic' = 'txns', /* ...format/bootstrap... */);
+
+-- 5-minute window, updated every 1 minute (sliding/hop) on EVENT time. The result is upserted into the
+-- online store keyed by user_id, so serving reads the freshest value by entity key.
+INSERT INTO online_user_txn_features              -- sink: Redis/Bigtable/DynamoDB via an upsert connector
+SELECT
+  user_id,
+  window_end                         AS event_timestamp,
+  COUNT(*)                           AS txn_count_5m,
+  COALESCE(SUM(amount), 0.0)         AS txn_amount_5m
+FROM TABLE(
+  HOP(TABLE txns, DESCRIPTOR(event_time), INTERVAL '1' MINUTE, INTERVAL '5' MINUTE)
+)
+GROUP BY user_id, window_start, window_end;
+```
+
+### Offline: the SAME window logic as a backfill over the event log (for training history)
+
+```sql
+-- Replay the historical event log (Kafka tier / lakehouse table) through the IDENTICAL window definition
+-- so the training value for (user, t) equals what the streaming job served online at t. Same 5-minute
+-- event-time window, same null/zero handling. This row is then point-in-time-joined to labels (Example 2).
+SELECT
+  user_id,
+  window_end                         AS event_timestamp,     -- the feature's valid-from time
+  COUNT(*)                           AS txn_count_5m,
+  COALESCE(SUM(amount), 0.0)         AS txn_amount_5m
+FROM TABLE(
+  HOP(TABLE txns_history, DESCRIPTOR(event_time), INTERVAL '1' MINUTE, INTERVAL '5' MINUTE)
+)
+GROUP BY user_id, window_start, window_end;
+-- Publish to the offline store; a FeatureView points here. get_historical_features then does the as-of join.
+```
+
+> **Consistency check (run it continuously):** for a sample of entities/timestamps, diff the value the
+> online store served against this offline recomputation. Any divergence = skew — usually a mismatch in
+> window size, watermark/late-data policy, or event-vs-processing time. This is a feature-level skew
+> monitor; wire it to `[[ml-observability-monitoring]]`. Flink SQL windowing/connector syntax moves fast —
+> **verify against the version you run.**
+
+---
+
+## 7. Point-in-time (as-of) feature derivation in warehouse SQL with window functions
+
+When you derive features and the as-of join in the warehouse (no feature store), window functions are the
+tool. Compute a per-event "value as of this event's time" without leaking the future, in one pass.
+
+```sql
+-- Goal: for each label event, attach the most-recent prior feature snapshot (as-of join), and also a
+-- running per-user aggregate computed only from PAST rows. Both must exclude the future.
+WITH events AS (
+  -- Union labels and feature snapshots on a common (user_id, ts) timeline; tag the source.
+  SELECT user_id, event_timestamp AS ts, 'label'   AS src, is_fraud, CAST(NULL AS BIGINT) AS purchases_7d FROM labels
+  UNION ALL
+  SELECT user_id, event_timestamp AS ts, 'feature' AS src, NULL,     purchases_7d                         FROM user_stats
+),
+carried AS (
+  SELECT
+    *,
+    -- as-of: the most recent feature value at-or-before this row's ts (NULL until the first feature row).
+    LAST_VALUE(purchases_7d IGNORE NULLS) OVER (
+      PARTITION BY user_id ORDER BY ts
+      ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ) AS purchases_7d_asof
+  FROM events
+)
+SELECT user_id, ts AS event_timestamp, is_fraud, purchases_7d_asof
+FROM carried
+WHERE src = 'label';            -- keep only label rows; each now carries its point-in-time feature value
+```
+
+> The `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW` frame is what guarantees no future leakage — only
+> rows at or before the current event contribute. Some engines (DuckDB, others) offer a native `ASOF JOIN`
+> that expresses this directly; **verify `ASOF JOIN`/`QUALIFY` support and window-frame semantics for your
+> warehouse.** A plain `JOIN ON user_id` to a current value is the leakage bug this pattern exists to avoid.

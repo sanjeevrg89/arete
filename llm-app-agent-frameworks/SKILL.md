@@ -10,9 +10,13 @@ description: Expert guidance for building and shipping production LLM applicatio
   LlamaIndex, CrewAI, AutoGen, Pydantic-AI, Haystack), MCP (Model Context Protocol) servers/clients/
   transports/tools, connecting to OpenAI-compatible and self-hosted models, deploying agents on
   Kubernetes/GKE (stateless vs session, queueing, scaling, sandboxed tool execution), RAG integration,
-  and production concerns: evals (LLM-as-judge), guardrails, OpenTelemetry GenAI tracing, prompt/version
-  management, cost & loop-bounding, caching. Triggers on agent loops, tool-calling code, langgraph/
-  langchain/adk/llama_index/crewai/autogen imports, mcp servers, and "build/ship an agent" tasks.
+  and agent reliability / durable execution for long-running agents (durable workflow engines — Temporal,
+  AWS Bedrock AgentCore, Restate, DBOS, Inngest — checkpoint/replay/resume, workflow-vs-activity split,
+  idempotency, retries/backoff, exactly-once side effects, timeouts/heartbeats, human-in-the-loop
+  pause/resume), plus production concerns: evals (LLM-as-judge), guardrails, OpenTelemetry GenAI tracing,
+  prompt/version management, cost & loop-bounding, caching. Triggers on agent loops, tool-calling code,
+  langgraph/langchain/adk/llama_index/crewai/autogen imports, mcp servers, durable execution, agent
+  reliability, long-running/async agents, and "build/ship an agent" tasks.
 ---
 
 # LLM Applications & Agent Frameworks
@@ -63,6 +67,15 @@ the problem, and put hard bounds back on everything the model gets to decide.**
 - **Deploy as a stateless service with externalized session/state** (checkpointer/session store) so any
   replica serves any turn. Long/autonomous runs → async + queue + worker; scale on in-flight runs /
   queue depth, not CPU. Secrets via a manager, never in images/prompts.
+- **Durable execution for long-running agents.** A naive in-process loop loses the whole run on crash and
+  can't safely resume — reliability is a distributed-systems problem → [[distributed-systems-fundamentals]].
+  Use a durable workflow engine (Temporal/AWS Bedrock AgentCore/Restate/DBOS/Inngest) or a framework
+  checkpointer: deterministic **workflow code** (orchestration only) vs. **activities** (all LLM/tool I/O,
+  checkpointed and not re-run on replay). Make tool calls **idempotent** (stable idempotency keys), put
+  bounded **retries/backoff** + timeouts/heartbeats on activities, get **exactly-once** side effects via
+  dedupe. Enables human-in-the-loop pause/resume, durable timers, multi-day flows, checkpoint/resume of
+  agent memory. Run stateless workers against a durable backend on K8s → [[kubernetes-expert]]; trace the
+  durable history + failure modes → [[ml-observability-monitoring]] / [[ml-evaluation-evals]].
 - **Sandbox untrusted tool/code execution** — gVisor (`runsc`)/microVM, no node creds, egress-restricted,
   ephemeral; human-gate destructive actions. Never run model-generated code in-process → [[ai-security-on-gke]].
 - **Bound every loop**: max steps, tool calls, tokens, wall-clock, and cost budget; detect degenerate
@@ -77,7 +90,11 @@ the problem, and put hard bounds back on everything the model gets to decide.**
 - `[[rag-vector-databases]]` — retrieval, chunking, embeddings, vector DBs, hybrid search, re-ranking
   (RAG depth; this skill only sketches integration). The core context-engineering lever.
 - `[[ml-evaluation-evals]]` — eval discipline (offline datasets, LLM-as-judge, CI gating) for measuring
-  prompt and context-engineering changes; pair with every prompt/context strategy change.
+  prompt and context-engineering changes and reliability/recovery; pair with every prompt/context change.
+- `[[distributed-systems-fundamentals]]` — failure models, idempotency, exactly-once, retries/backoff,
+  timeouts: the foundation under durable execution / agent reliability (§7).
+- `[[ml-observability-monitoring]]` — monitoring reliability signals (retry rates, parked/stuck workflows,
+  resume/replay counts) alongside agent traces.
 - `[[ai-security-on-gke]]` — guardrails, sandboxing untrusted tool/code execution, agent threat model.
 - `[[serving-frameworks]]` — self-hosting models (vLLM/SGLang/Triton/KServe) + constrained decoding.
 - `[[gke-inference-gateway]]` — model-aware routing/load-balancing/fallback in front of model replicas.

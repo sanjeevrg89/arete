@@ -50,6 +50,17 @@
   replica serves any turn, survives restarts, scales horizontally. Long/autonomous runs → async + queue
   + worker; return a job id, stream/poll. Scale on in-flight runs / queue depth (KEDA), not CPU%.
   Secrets via a manager, never in images/prompts/logs. K8s → [[aiml-on-kubernetes]] / [[kubernetes-expert]].
+- **Durable execution for long-running / stateful agents.** A naive in-process loop loses the whole run
+  on crash and can't safely resume — treat reliability as a distributed-systems problem →
+  [[distributed-systems-fundamentals]]. Use a durable workflow engine (Temporal / AWS Bedrock AgentCore /
+  Restate / DBOS / Inngest) or a framework checkpointer: deterministic **workflow** code (orchestration
+  only — no I/O, clocks, randomness, or direct LLM/tool calls) vs. **activities** (all LLM/tool/DB work,
+  checkpointed and skipped on replay). Make every side-effecting tool **idempotent** (stable idempotency
+  key from run+step id, not a fresh UUID); put bounded **retries/backoff**, timeouts, and heartbeats on
+  activities; rely on dedupe for **exactly-once** side effects. Use durable signals/timers for
+  human-in-the-loop pause/resume and multi-day flows; checkpoint/resume agent memory + context. Run
+  stateless workers against the durable backend (don't make the agent pod itself stateful), scale on
+  backlog → [[kubernetes-expert]]. Verify each engine's current SDK/API — fast-moving.
 - **Sandbox untrusted tool/code execution:** gVisor (`runsc`) / microVM, no node or cloud creds,
   egress-restricted, ephemeral; never run model-generated code in the agent process or with cluster
   permissions; require human approval for high-blast-radius actions → [[ai-security-on-gke]].
@@ -80,7 +91,9 @@
 Unbounded loops / runaway cost · no evals · unsandboxed tool/code exec · prompt spaghetti · hidden
 non-determinism (exact-string deps, unpinned models) · trusting tool/RAG/MCP output blindly ·
 over-agentifying a job a chain would do · giant/overlapping tool sets · secrets in context/logs · no
-tracing.
+tracing · in-memory agent loop with no durability (loses the run on crash) · non-idempotent tool calls
+behind retries/replay → double side effects · unbounded retries · no resume/recovery story · hidden
+non-determinism in durable workflow code breaking replay.
 
 Framework selection: choose for the control model + state model you need plus integrations you'd
 otherwise rebuild — keep domain logic in plain functions so you can swap models/frameworks. Verify the

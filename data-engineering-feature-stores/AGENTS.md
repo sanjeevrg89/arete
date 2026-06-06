@@ -31,6 +31,17 @@
 - **Default to batch; reach for streaming only when staleness measurably moves the metric.** Avoid two
   drifting implementations (batch + streaming) of the same feature — share the logic (Beam/Flink) or let
   the feature store target both.
+- **Streaming features (Kafka/Pulsar log → Flink / Spark Structured Streaming / Beam → online store; CDC via
+  Debezium):** compute on **event time** with windows + watermarks + an explicit late/out-of-order policy;
+  target exactly-once (or at-least-once + idempotent sink). Enforce **online/offline consistency** — online
+  value must equal the offline as-of value; use one definition for both paths and diff them continuously.
+  Streaming earns its cost only for fraud / session recsys / dynamic pricing. See `[[distributed-systems-fundamentals]]`.
+- **Analytics/query side (where labels + batch features are derived):** warehouses (BigQuery/Snowflake/
+  Redshift) and OLAP engines (Spark SQL, Trino, DuckDB) over columnar/Parquet. **Partition by event date and
+  prune; no `SELECT *`/full scans** (bytes scanned = cost). Use SQL window functions and **point-in-time/
+  as-of joins** (never `JOIN` to "current" — that leaks the future). Use **dbt** for versioned, tested
+  transformation/label derivation with `not_null`/`unique`/`relationships` tests. dbt/SQL *derives*; the
+  feature store *serves* — don't conflate them.
 - **Version data and features, not just code.** Pin every training run to a concrete data version —
   lakehouse snapshot (Delta/Iceberg time travel), DVC rev, or LakeFS commit — and record it with the model.
   "Which data trained this model?" must have a precise answer. Pipelines must be idempotent and backfillable.

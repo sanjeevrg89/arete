@@ -48,6 +48,9 @@ Claude Code (`SKILL.md`), AGENTS.md-compatible agents / agentic IDEs (`AGENTS.md
 | [`pretraining-data-tokenizers`](pretraining-data-tokenizers/) | Web-scale pretraining-data curation (extraction, filtering, MinHash-LSH dedup, decontamination, mixtures) + tokenizer engineering (BPE/Unigram, vocab, fertility). |
 | [`graph-ml-gnns`](graph-ml-gnns/) | Graph ML & GNNs: message passing, GCN/GraphSAGE/GAT/GIN, scalability (neighbor/Cluster-GCN sampling), PyG/DGL, recsys/fraud/molecules, GNN4TS. |
 | [`embedding-model-training`](embedding-model-training/) | Training embedding/retrieval models: contrastive/InfoNCE, hard-negative mining (false negatives, positive-aware), cross-encoder distillation, Matryoshka, MTEB/BEIR. |
+| [`adversarial-ml-robustness`](adversarial-ml-robustness/) | Model-level adversarial ML (defense): NIST AML taxonomy & MITRE ATLAS, evasion/poisoning/backdoors/extraction/membership-inference, adversarial training, robustness eval (AutoAttack/RobustBench). |
+| [`privacy-preserving-ml`](privacy-preserving-ml/) | PETs for ML: differential privacy (DP-SGD/accounting), federated learning (FedAvg/secure aggregation), HE/MPC/TEEs, machine unlearning, privacy budgets. |
+| [`edge-on-device-ml`](edge-on-device-ml/) | Edge/mobile/embedded deployment: ExecuTorch, LiteRT/TFLite, ONNX Runtime, Core ML, llama.cpp; NPUs/TinyML, on-device quantization, conversion & parity validation. |
 
 ## Cross-link graph (high-traffic edges)
 - The four `kubernetes-*` skills form the platform core; `aiml-on-kubernetes` is the umbrella that routes
@@ -72,11 +75,12 @@ Claude Code (`SKILL.md`), AGENTS.md-compatible agents / agentic IDEs (`AGENTS.md
    `ai-networking-collectives`, `fine-tuning-peft`, `inference-optimization`, `ml-compilers-codegen`,
    `gpu-performance-engineering`.
 4. **Serving/apps:** `serving-frameworks`, `gke-inference-gateway`, `llm-app-agent-frameworks`,
-   `rag-vector-databases`, `multimodal-ml`, `recsys-ranking`, `embedding-model-training`.
+   `rag-vector-databases`, `multimodal-ml`, `recsys-ranking`, `embedding-model-training`, `edge-on-device-ml`.
 5. **ML lifecycle & craft:** `aiml-on-kubernetes`, `ml-system-design`, `mlops-lifecycle`,
    `data-engineering-feature-stores`, `ml-evaluation-evals`, `ml-observability-monitoring`, `rl-rlhf-frameworks`,
    `experimentation-causal-inference`, `pretraining-data-tokenizers`.
 6. **CS foundations & breadth:** `distributed-systems-fundamentals`, `graph-ml-gnns`, `time-series-forecasting`.
-7. **Trust & leadership:** `ai-security-on-gke`, `responsible-ai-governance`, `staff-plus-engineering`.
+7. **Trust & leadership:** `ai-security-on-gke`, `responsible-ai-governance`, `staff-plus-engineering`,
+   `adversarial-ml-robustness`, `privacy-preserving-ml`.
 
 > Maintenance: add a new skill as a directory following `SKILL-AUTHORING-SPEC.md`, then add a row here.

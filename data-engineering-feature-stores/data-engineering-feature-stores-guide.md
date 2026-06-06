@@ -50,7 +50,7 @@ The canonical ML data pipeline, regardless of tooling:
    third-party feeds) into a raw/bronze layer. Capture *event time* and *ingestion time* separately;
    you need event time for correct point-in-time joins.
 2. **Validation** — check the raw/landed data against a schema and distribution expectations *before*
-   it propagates. Fail fast on contract violations. (Section 6.)
+   it propagates. Fail fast on contract violations. (Section 8.)
 3. **Transformation / feature engineering** — clean, join, aggregate, encode into features. This is the
    logic that **must be shared** between training and serving. ELT (transform in the warehouse/lakehouse
    with SQL/dbt) is the default for batch ML data; reserve heavy out-of-warehouse compute (Spark) for
@@ -227,7 +227,202 @@ sharing features and online serving needs**; a single batch model may not need o
 
 ---
 
-## 6. Data quality & validation
+## 6. Streaming & real-time data systems for ML
+
+Section 2 framed batch vs streaming as a freshness/cost tradeoff. This section is the depth: how the
+streaming side actually works, and the one hard problem it forces on you — **online/offline consistency**.
+Reach for any of this only when staleness measurably moves the model's metric (fraud, real-time recsys,
+dynamic pricing, abuse/anomaly detection). When it does, getting it wrong is the dominant source of
+training-serving skew.
+
+### 6.1 The architecture: log + compute + sink
+
+Real-time feature systems are layered. Keep the layers distinct in your head:
+
+- **The log (durable, replayable event bus)** — **Apache Kafka** (the de-facto standard) or **Apache
+  Pulsar**. This is the source of truth for events: an append-only, partitioned, ordered-within-partition,
+  retained log you can **replay**. Replayability is what makes streaming features reproducible — you can
+  reprocess history through the same logic. **CDC (Change Data Capture)** with **Debezium** turns an
+  operational database's write-ahead log into a Kafka topic, so feature freshness tracks the source DB
+  without dual-writes or polling. CDC is the most common way to keep online features fresh from an OLTP
+  system.
+- **The compute (stream processor)** — consumes the log, computes stateful aggregations, writes results:
+  - **Apache Flink** — the reference stateful stream processor: true event-time processing, rich windowing,
+    large managed keyed state with checkpointing, exactly-once sinks. The strongest choice for heavy
+    stateful streaming features.
+  - **Spark Structured Streaming** — micro-batch (and a lower-latency continuous mode); attractive when you
+    already run Spark and want the *same* DataFrame/SQL code for batch and stream (helps consistency).
+  - **Apache Beam** — a unified batch+streaming *programming model* (one pipeline, multiple runners:
+    Dataflow/Flink/Spark). Its event-time/windowing model is the cleanest way to express "one definition,
+    both modes."
+  - **Kafka Streams / ksqlDB** — lighter-weight, library/SQL-based stream processing co-located with Kafka;
+    fine for simpler per-key aggregations without standing up Flink.
+- **The sink** — the online store (Redis/DynamoDB/Bigtable/Cassandra) for low-latency serving, and/or the
+  offline store (lakehouse/warehouse) for training history. Streaming features typically write **both**.
+
+The streaming engine is a distributed stateful system; its correctness rests on the foundations in
+`[[distributed-systems-fundamentals]]` (partitioning, ordering, consensus/checkpointing, delivery
+semantics). The concepts below are those foundations applied to feature computation.
+
+### 6.2 Event time, windows, watermarks, late data
+
+The four concepts that make or break streaming feature correctness:
+
+- **Event time vs processing time.** Compute features on **event time** (when the event happened), never
+  processing time (when your job saw it) — otherwise a consumer lag spike silently changes feature values.
+  This is the streaming analogue of point-in-time correctness.
+- **Windows** — bound an aggregation over time: **tumbling** (fixed, non-overlapping: "count per 1-min
+  bucket"), **sliding/hopping** (overlapping: "count over the last 5 min, updated every 30 s"), **session**
+  (gap-delimited activity bursts). "Transactions in the last 5 minutes" is a sliding event-time window.
+- **Watermarks** — the engine's estimate of "event time has progressed to T; assume no events older than T
+  will still arrive." A watermark lets a window *close* and emit. Set it from the **allowed lateness** you
+  can tolerate: too tight drops legitimately late events (undercount); too loose holds state and delays
+  emission (latency + memory). This is a direct freshness-vs-correctness knob.
+- **Late / out-of-order data** — events arrive after their window closed (mobile clients, network delays,
+  CDC backlog). Decide explicitly: drop, route to a side output, or allow-late-and-update (recompute and
+  re-emit). The choice changes the feature value; pick it deliberately and make batch match it.
+- **Exactly-once** — duplicate or lost events corrupt counters/aggregates. Achieved end-to-end via
+  checkpointed operator state plus transactional/idempotent sinks (Flink checkpoints + transactional Kafka;
+  idempotent writes to the online store). "At-least-once + idempotent sink" is the common pragmatic target.
+  Understand the guarantee your pipeline actually provides — see `[[distributed-systems-fundamentals]]`.
+
+### 6.3 Online feature stores & the online/offline consistency problem
+
+A streaming feature must be computed in the stream **and** be reconstructable as point-in-time-correct
+history for training. The hazard: you write a streaming job for the online value and a *separate* batch job
+for the training history, and they diverge — the headline training-serving skew bug, now with two codebases
+instead of one.
+
+The **online/offline consistency** requirement: the value served online at time `t` must equal what an
+as-of join would produce offline for that same entity and `t`. Concretely, "5-minute purchase count"
+must use the same window definition, the same late-data policy, and the same null/default handling in both
+paths. How platforms address it (**verify current capabilities — this space moves fast**):
+
+- **Single definition, dual execution.** A feature platform (Tecton-style; the broad pattern popularized by
+  Uber's published *Michelangelo* platform) takes **one feature definition** and runs it as a streaming job
+  for online freshness *and* as a backfill over historical logs for the offline training set — same logic,
+  two runtimes. This is the structural fix for streaming skew.
+- **Push computed features into the store's online layer.** **Feast** supports a stream/push path
+  (`push` / a stream source) so a Flink/Spark job writes freshly computed features into the online store
+  while the offline store retains history for point-in-time joins. Feast itself does not heavily *compute*
+  streaming aggregations — you compute upstream and push. **Verify the current Feast stream API.**
+- **Unify the engine.** Express the feature once in Beam or in Spark/Flink SQL and run the *same* code as a
+  bounded (batch backfill) and unbounded (streaming) job. Fewer moving parts, less drift.
+- **Continuously test consistency.** Periodically diff online-served values against an offline as-of
+  recomputation for the same entities/timestamps; alert on divergence. This is a feature-level skew monitor
+  and belongs in `[[ml-observability-monitoring]]`.
+
+**Freshness vs cost.** Streaming is materially more expensive and operationally heavier than batch
+(standing stateful jobs, state backends, checkpoint storage, on-call). Set a **freshness SLO per feature**
+and pay for streaming only where the model's metric is sensitive to staleness. Many "real-time" features
+are fine at minute-level micro-batch; reserve sub-second streaming for the few features that need it.
+
+### 6.4 Real-time inference pipelines — when streaming features matter
+
+The end-to-end real-time path: event → stream processor updates a feature in the online store → at request
+time the model reads online features by entity key (plus on-demand/request-time features computed from the
+request itself) → prediction. Streaming features earn their cost when **the signal is in very recent
+behavior**:
+
+- **Fraud / abuse / anomaly detection** — "velocity" features (count/amount in the last N seconds/minutes,
+  count of distinct devices/IPs) are the canonical case; a 5-minute-stale counter misses the attack.
+- **Real-time recsys / ranking** — session and within-session signals (what the user clicked *this
+  session*), trending-now item counts. Often **batch features for stable profile/embedding signals +
+  streaming features for session freshness**, combined at request time. See `[[recsys-ranking]]`.
+- **Dynamic pricing, real-time bidding, live ops** — decisions on the current state of a fast-moving system.
+
+For everything else, batch features served from the online store are simpler, cheaper, and correct. The
+question is never "batch or streaming?" but "which *features* need streaming freshness?" — usually a small
+subset, mixed with a batch majority in the same model.
+
+---
+
+## 7. Analytical data, SQL & OLAP — the warehouse/query side
+
+Feature stores are the *serving* side. This section is the *analytics & derivation* side: the warehouse and
+query engines where you explore data, derive labels, build cohorts, and compute batch features in SQL before
+they are published to the offline store and materialized online. Most batch features and nearly all labels
+originate here. (How this feeds the feature pipeline: derive in SQL/dbt → land in the offline store →
+point-in-time-join for training and materialize for serving, per Sections 2 and 4.)
+
+### 7.1 Warehouses and lakehouse query engines
+
+- **Cloud data warehouses** — **BigQuery**, **Snowflake**, **Amazon Redshift**: managed, columnar,
+  massively-parallel (MPP) SQL engines that separate (or elastically scale) storage and compute. The default
+  home for analytical SQL and ELT-based feature/label derivation.
+- **Lakehouse query engines** — read SQL directly over open table formats (Iceberg/Delta/Hudi on Parquet,
+  Section 3) without loading into a warehouse:
+  - **Spark SQL** — SQL over the lakehouse on the Spark engine; same engine you use for heavy transforms.
+  - **Trino / Presto** — distributed MPP SQL query engine; federates across the lakehouse, warehouses, and
+    operational stores; strong for interactive analytics over large data without ingestion.
+  - **DuckDB** — in-process (single-node) columnar OLAP engine; superb for local/medium-scale analytics,
+    notebook feature exploration, and reading Parquet/Iceberg directly. Often the fastest path for "analyze
+    this dataset" without standing up a cluster.
+
+### 7.2 Columnar / OLAP fundamentals (why these are fast — and how to keep them cheap)
+
+- **Columnar storage** — values of one column are stored contiguously, so a query reads only the columns it
+  references (**column pruning**) and compresses well (run-length/dictionary encoding on like values). This
+  is why analytical reads of a few columns over billions of rows are cheap; row stores (OLTP) are the
+  opposite tradeoff. Parquet is the on-disk embodiment.
+- **OLAP vs OLTP** — OLAP (these engines) is scan-and-aggregate over many rows, few columns; OLTP is
+  point read/write of whole rows. Don't run analytics on the OLTP DB (and don't serve point lookups from
+  the warehouse — that's the online store's job).
+- **Partitioning** — physically split a table by a column (usually **event date**) so the engine scans only
+  relevant partitions (**partition pruning**). The single biggest lever on query cost. Always partition
+  large feature/event tables by event date and filter on it.
+- **Clustering / sorting / bucketing** — order data within partitions by frequently-filtered columns
+  (BigQuery clustering, Snowflake clustering keys, Spark/Iceberg sort/bucket) so the engine skips blocks
+  (min/max **data skipping**) and joins/aggregations are cheaper.
+- **Query cost** — on consumption-priced warehouses (e.g. BigQuery bytes-scanned, Snowflake credits) cost is
+  driven by **bytes scanned**: prune columns (never `SELECT *` on wide tables), prune partitions (filter on
+  the partition column), and pre-aggregate. A careless full-table scan over a fact table is a real bill.
+  Materialize expensive repeated aggregations rather than recomputing them per query.
+
+### 7.3 SQL proficiency for ML
+
+The SQL that matters for ML data work goes well beyond `GROUP BY`:
+
+- **Window functions** — `OVER (PARTITION BY entity ORDER BY event_time ...)` with
+  `ROW_NUMBER`/`RANK`/`LAG`/`LEAD` and framed aggregates (`SUM(...) OVER (... ROWS/RANGE BETWEEN ...)`).
+  These compute per-entity running aggregates and "last value before time T" **without leaking the future**
+  — the SQL backbone of feature derivation and of hand-rolled point-in-time joins.
+- **Point-in-time / as-of joins** — the most important and most error-prone pattern: for each label event,
+  pick the most recent feature row with `feature_ts <= label_ts` (honoring a TTL). Expressed via a lateral
+  join or a windowed `ROW_NUMBER() ... QUALIFY row_num = 1` over the union of label and feature timestamps.
+  A plain `JOIN ON entity_id` to a "current" value leaks the future (Section 4.3). See `examples.md` for the
+  full pattern; it is the #1 leakage bug.
+- **Cohorting & funnels** — grouping entities by an acquisition/first-event period and tracking behavior over
+  subsequent periods (retention/cohort tables, funnel step conversion). The basis of many labels (churn,
+  conversion, LTV) and of segment features.
+- **Sessionization** — grouping events into sessions by inactivity gap (window functions over event-time
+  diffs) — the batch counterpart of streaming session windows (Section 6.2); keep the two definitions aligned.
+
+### 7.4 dbt-style transformation & modeling
+
+**dbt** (and equivalents) brings software engineering to warehouse SQL: transformations as version-controlled
+`SELECT` models with a dependency DAG, environments, and tests. For ML it is the standard way to derive
+labels and batch features in the warehouse/lakehouse before they reach the feature store:
+
+- **Models & DAG** — each transform is a `ref()`-linked model; dbt builds the dependency graph, handles
+  incremental materializations (process only new partitions), and gives you lineage.
+- **Tests as a data contract** — built-in `not_null` / `unique` / `accepted_values` / `relationships` tests
+  plus custom tests run in CI and **fail the build** on violation — cheap warehouse-side validation that
+  complements Great Expectations/TFDV (Section 8). This is where many data contracts (Section 8) live.
+- **Docs & lineage** — generated model docs and a lineage graph make derived features discoverable and
+  auditable, feeding governance (Section 10).
+- **Where it sits** — dbt/SQL is **analytics and feature/label *derivation***; the feature store is
+  *registration, point-in-time training retrieval, and low-latency serving*. dbt produces the offline-store
+  tables a feature view points at; it does **not** replace point-in-time joins or the online store. Keep the
+  boundary clear: derive in SQL, serve through the store.
+
+**Verify against current docs:** warehouse-specific syntax differs (BigQuery `QUALIFY`, Snowflake
+`QUALIFY`, `ASOF JOIN` support varies by engine — DuckDB and some engines have a native `ASOF JOIN`; others
+require the lateral/window pattern). dbt's materialization and testing APIs also evolve across versions.
+
+---
+
+## 8. Data quality & validation
 
 Validation is the immune system of the pipeline. Without it, bad data is indistinguishable from good data
 until the model degrades in production.
@@ -269,7 +464,7 @@ publish. See `[[responsible-ai-governance]]`.
 
 ---
 
-## 7. Labeling, datasets, and corpus curation
+## 9. Labeling, datasets, and corpus curation
 
 Model accuracy is capped by label quality; this is often the highest-leverage place to spend effort.
 
@@ -297,7 +492,7 @@ Model accuracy is capped by label quality; this is often the highest-leverage pl
 
 ---
 
-## 8. Governance: lineage, PII, contracts
+## 10. Governance: lineage, PII, contracts
 
 - **Lineage** — end-to-end traceability from raw source → transform → feature → model → prediction. Needed
   for debugging ("which upstream change moved this feature?"), impact analysis, audits, and incident
@@ -308,12 +503,12 @@ Model accuracy is capped by label quality; this is often the highest-leverage pl
   deletion/right-to-be-forgotten down through derived features and training snapshots (immutable snapshots
   make deletion genuinely hard — design for it). Never put raw PII into feature names, logs, or embeddings
   carelessly.
-- **Data contracts** (Section 6) are the governance mechanism between teams.
+- **Data contracts** (Section 8) are the governance mechanism between teams.
 - Full treatment in `[[responsible-ai-governance]]`.
 
 ---
 
-## 9. Anti-patterns (these are the ones that bite)
+## 11. Anti-patterns (these are the ones that bite)
 
 - **Training-serving feature skew** — separate code paths for training features (offline batch) and serving
   features (online). They drift; the model silently degrades. *Fix:* one definition served to both (feature
@@ -331,7 +526,14 @@ Model accuracy is capped by label quality; this is often the highest-leverage pl
 - **"Latest" used as a feature value in training** — same as leakage; the latest value didn't exist at the
   historical decision time.
 - **Streaming and batch implementations of the same feature that drift** — two sources of truth. *Fix:*
-  unified definition (Beam/Flink shared logic, or a feature store that targets both).
+  unified definition (Beam/Flink shared logic, or a feature store that targets both); diff online vs an
+  offline as-of recomputation and alert on divergence (Section 6.3).
+- **Aggregating streaming features on processing time** — a consumer-lag spike silently shifts feature
+  values, and late events undercount. *Fix:* event-time windows with explicit watermarks and a deliberate
+  late-data policy (Section 6.2); make the batch backfill use the *same* window/late-data semantics.
+- **Full-table scans / `SELECT *` on fact tables** — slow queries and (on consumption-priced warehouses) a
+  real bill, from scanning columns/partitions you don't need. *Fix:* prune columns, filter the partition
+  column, pre-aggregate/materialize repeated heavy aggregations (Section 7.2).
 - **Mutating data in place** — non-reproducible training. *Fix:* immutable, versioned snapshots
   (lakehouse time travel / LakeFS / DVC).
 - **Validating only at train time, not at serve time** — skew goes undetected in production. *Fix:* monitor
@@ -339,7 +541,7 @@ Model accuracy is capped by label quality; this is often the highest-leverage pl
 
 ---
 
-## 10. Performance & scale
+## 12. Performance & scale
 
 - **Push transforms to the data** (ELT in the warehouse / Spark over the lakehouse) rather than pulling raw
   data into Python. Columnar Parquet + predicate/column pushdown make feature reads cheap; select only the
@@ -357,7 +559,7 @@ Model accuracy is capped by label quality; this is often the highest-leverage pl
 
 ---
 
-## 11. Troubleshooting (symptom → likely cause → fix)
+## 13. Troubleshooting (symptom → likely cause → fix)
 
 - **Offline metrics excellent, production poor** → training-serving skew **or** leakage. Diff the
   serving feature values against an as-of offline computation for the same entities/timestamps; audit the
@@ -366,8 +568,15 @@ Model accuracy is capped by label quality; this is often the highest-leverage pl
   label timestamp; ensure the as-of join and TTL are correct.
 - **Model degraded gradually with no deploy** → upstream data drift or a silent schema/units change. Run
   distribution checks (TFDV/GE) against the training reference; inspect recent partitions.
-- **Online predictions use stale features** → materialization lag. Check materialization job freshness vs
-  SLO; check online-store TTL/eviction; alert on max-event-timestamp age.
+- **Online predictions use stale features** → materialization lag (batch) or stream-processor consumer lag
+  /backpressure (streaming). Check materialization job freshness vs SLO; check online-store TTL/eviction;
+  check the stream processor's consumer lag and checkpoint health; alert on max-event-timestamp age.
+- **Streaming feature value disagrees with the offline as-of value** → online/offline inconsistency: the
+  stream and the batch backfill use different window/late-data/null semantics, or processing vs event time.
+  Align both to one definition; diff them continuously (Section 6.3).
+- **Warehouse query slow or expensive** → no partition pruning / `SELECT *` / unclustered scan. Filter on the
+  partition (event-date) column, select only needed columns, add clustering/sort keys, pre-aggregate
+  (Section 7.2).
 - **Nulls/defaults in serving that weren't in training** → entity missing in online store, or different
   null handling between paths. Align default/imputation logic across train and serve (put it in the shared
   definition).
@@ -378,7 +587,7 @@ Model accuracy is capped by label quality; this is often the highest-leverage pl
 
 ---
 
-## 12. Version awareness
+## 14. Version awareness
 
 This ecosystem changes fast (2026). Specifically **verify against current docs** before relying on:
 
@@ -387,15 +596,18 @@ This ecosystem changes fast (2026). Specifically **verify against current docs**
   Feast's compute/registry capabilities.
 - Lakehouse format support in a given engine/catalog (Iceberg/Delta/Hudi support in BigQuery/BigLake,
   Snowflake, Trino, Spark, Flink shifts frequently).
-- Orchestrator data-asset/lineage features (Airflow, Dagster, Flyte) and streaming-engine semantics.
+- Orchestrator data-asset/lineage features (Airflow, Dagster, Flyte) and streaming-engine semantics
+  (Flink/Spark Structured Streaming windowing, watermark, and exactly-once details; Feast's stream/push API).
 - Great Expectations / TFDV API surfaces (both have had notable API changes across major versions).
+- Warehouse/engine SQL surface — `QUALIFY`, native `ASOF JOIN` support, and clustering/partitioning syntax
+  differ across BigQuery, Snowflake, Trino, Spark SQL, and DuckDB; dbt materialization/test APIs evolve too.
 
 Don't quote version numbers or limits you can't confirm; prefer describing the capability and pointing to
 the current docs.
 
 ---
 
-## 13. Canonical references (real URLs)
+## 15. Canonical references (real URLs)
 
 - Google Cloud — *MLOps: Continuous delivery and automation pipelines in machine learning*:
   `https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning`
@@ -407,6 +619,14 @@ the current docs.
 - Apache Iceberg: `https://iceberg.apache.org/` · Delta Lake: `https://delta.io/` ·
   Apache Hudi: `https://hudi.apache.org/`
 - Apache Beam: `https://beam.apache.org/` · Apache Spark: `https://spark.apache.org/`
+- Apache Kafka: `https://kafka.apache.org/documentation/` · Apache Pulsar: `https://pulsar.apache.org/docs/` ·
+  Debezium (CDC): `https://debezium.io/documentation/`
+- Apache Flink: `https://nightlies.apache.org/flink/flink-docs-stable/` ·
+  Spark Structured Streaming: `https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html`
+- Uber *Michelangelo* ML platform (published overview): `https://www.uber.com/blog/michelangelo-machine-learning-platform/`
+- dbt: `https://docs.getdbt.com/` · Trino: `https://trino.io/docs/current/` ·
+  DuckDB: `https://duckdb.org/docs/` · BigQuery: `https://cloud.google.com/bigquery/docs` ·
+  Snowflake: `https://docs.snowflake.com/`
 - Dagster: `https://docs.dagster.io/` · Apache Airflow: `https://airflow.apache.org/` ·
   Flyte: `https://docs.flyte.org/`
 - DVC: `https://dvc.org/doc` · LakeFS: `https://docs.lakefs.io/`
