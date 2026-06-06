@@ -51,6 +51,7 @@ Claude Code (`SKILL.md`), AGENTS.md-compatible agents / agentic IDEs (`AGENTS.md
 | [`adversarial-ml-robustness`](adversarial-ml-robustness/) | Model-level adversarial ML (defense): NIST AML taxonomy & MITRE ATLAS, evasion/poisoning/backdoors/extraction/membership-inference, adversarial training, robustness eval (AutoAttack/RobustBench). |
 | [`privacy-preserving-ml`](privacy-preserving-ml/) | PETs for ML: differential privacy (DP-SGD/accounting), federated learning (FedAvg/secure aggregation), HE/MPC/TEEs, machine unlearning, privacy budgets. |
 | [`edge-on-device-ml`](edge-on-device-ml/) | Edge/mobile/embedded deployment: ExecuTorch, LiteRT/TFLite, ONNX Runtime, Core ML, llama.cpp; NPUs/TinyML, on-device quantization, conversion & parity validation. |
+| [`ai-research-science`](ai-research-science/) | Research-scientist depth across training/inference/fine-tuning/RL/RLHF: architectures, objectives, optimizers, scaling laws, reward modeling, PPO/DPO/GRPO/RLVR theory, test-time compute, open problems. |
 
 ## Cross-link graph (high-traffic edges)
 - The four `kubernetes-*` skills form the platform core; `aiml-on-kubernetes` is the umbrella that routes
@@ -73,7 +74,7 @@ Claude Code (`SKILL.md`), AGENTS.md-compatible agents / agentic IDEs (`AGENTS.md
 2. **Batch/scheduling:** `kueue-advanced`, `jobset-leaderworkerset`, `slurm-hpc-on-kubernetes`, `ray-on-kubernetes`.
 3. **Model compute & perf:** `ml-frameworks`, `training-frameworks`, `maxtext-jax-llm`, `ml-checkpointing-orbax`,
    `ai-networking-collectives`, `fine-tuning-peft`, `inference-optimization`, `ml-compilers-codegen`,
-   `gpu-performance-engineering`.
+   `gpu-performance-engineering`, `ai-research-science` (the research/science layer over all of these).
 4. **Serving/apps:** `serving-frameworks`, `gke-inference-gateway`, `llm-app-agent-frameworks`,
    `rag-vector-databases`, `multimodal-ml`, `recsys-ranking`, `embedding-model-training`, `edge-on-device-ml`.
 5. **ML lifecycle & craft:** `aiml-on-kubernetes`, `ml-system-design`, `mlops-lifecycle`,
