@@ -40,6 +40,14 @@ Claude Code (`SKILL.md`), AGENTS.md-compatible agents / agentic IDEs (`AGENTS.md
 | [`responsible-ai-governance`](responsible-ai-governance/) | Responsible AI: NIST AI RMF, EU AI Act, model cards, fairness/bias, LLM safety & red-teaming, privacy, auditability. |
 | [`recsys-ranking`](recsys-ranking/) | Recommender & ranking systems at scale: retrieval→ranking→re-ranking funnel, two-tower, DLRM/DCN, multi-task, online eval, position bias. |
 | [`multimodal-ml`](multimodal-ml/) | Multimodal AI: CLIP/SigLIP, VLMs (encoder→projector→LLM), speech (Whisper/TTS), video, diffusion generation, multimodal RAG & serving. |
+| [`time-series-forecasting`](time-series-forecasting/) | Time-series & classical/tabular ML: forecasting/classification/anomaly/imputation, ARIMA/ETS/Theta/Prophet, GBDT (LightGBM/XGBoost) on lag features, deep (DeepAR/N-HiTS/TFT/PatchTST) & foundation models (TimesFM/Chronos), rolling-origin backtesting, leakage, intervals. |
+| [`distributed-systems-fundamentals`](distributed-systems-fundamentals/) | CAP/PACELC/FLP, consensus (Paxos/Raft), replication & consistency models, quorums, sharding, clocks, 2PC/sagas, idempotency, fencing tokens. |
+| [`ml-compilers-codegen`](ml-compilers-codegen/) | ML compilers: MLIR, XLA (HLO/StableHLO, fusion, PJRT), Triton (TTIR→TTGIR→PTX), torch.compile/Inductor, TensorRT, kernel codegen. |
+| [`gpu-performance-engineering`](gpu-performance-engineering/) | Roofline, Nsight Compute/Systems, occupancy/memory analysis, eBPF + NCCL cross-rank profiling, straggler diagnosis, MLPerf benchmarking methodology. |
+| [`experimentation-causal-inference`](experimentation-causal-inference/) | Online controlled experiments / A/B testing: OEC, guardrails, SRM, CUPED, sequential testing, interference; causal inference (DiD/RD/IV/PSM, uplift/CATE). |
+| [`pretraining-data-tokenizers`](pretraining-data-tokenizers/) | Web-scale pretraining-data curation (extraction, filtering, MinHash-LSH dedup, decontamination, mixtures) + tokenizer engineering (BPE/Unigram, vocab, fertility). |
+| [`graph-ml-gnns`](graph-ml-gnns/) | Graph ML & GNNs: message passing, GCN/GraphSAGE/GAT/GIN, scalability (neighbor/Cluster-GCN sampling), PyG/DGL, recsys/fraud/molecules, GNN4TS. |
+| [`embedding-model-training`](embedding-model-training/) | Training embedding/retrieval models: contrastive/InfoNCE, hard-negative mining (false negatives, positive-aware), cross-encoder distillation, Matryoshka, MTEB/BEIR. |
 
 ## Cross-link graph (high-traffic edges)
 - The four `kubernetes-*` skills form the platform core; `aiml-on-kubernetes` is the umbrella that routes
@@ -57,15 +65,18 @@ Claude Code (`SKILL.md`), AGENTS.md-compatible agents / agentic IDEs (`AGENTS.md
   and `responsible-ai-governance` as the cross-cutting guardrail.
 - `staff-plus-engineering` is the non-technical multiplier that turns the rest into org-level impact.
 
-## Library map (6 clusters)
+## Library map (7 clusters)
 1. **Language/platform:** `go-best-practices`, the four `kubernetes-*`, `gke-master`, `autoscaling-kubernetes`.
 2. **Batch/scheduling:** `kueue-advanced`, `jobset-leaderworkerset`, `slurm-hpc-on-kubernetes`, `ray-on-kubernetes`.
-3. **Model compute:** `ml-frameworks`, `training-frameworks`, `maxtext-jax-llm`, `ml-checkpointing-orbax`,
-   `ai-networking-collectives`, `fine-tuning-peft`, `inference-optimization`.
+3. **Model compute & perf:** `ml-frameworks`, `training-frameworks`, `maxtext-jax-llm`, `ml-checkpointing-orbax`,
+   `ai-networking-collectives`, `fine-tuning-peft`, `inference-optimization`, `ml-compilers-codegen`,
+   `gpu-performance-engineering`.
 4. **Serving/apps:** `serving-frameworks`, `gke-inference-gateway`, `llm-app-agent-frameworks`,
-   `rag-vector-databases`, `multimodal-ml`, `recsys-ranking`.
+   `rag-vector-databases`, `multimodal-ml`, `recsys-ranking`, `embedding-model-training`.
 5. **ML lifecycle & craft:** `aiml-on-kubernetes`, `ml-system-design`, `mlops-lifecycle`,
-   `data-engineering-feature-stores`, `ml-evaluation-evals`, `ml-observability-monitoring`, `rl-rlhf-frameworks`.
-6. **Trust & leadership:** `ai-security-on-gke`, `responsible-ai-governance`, `staff-plus-engineering`.
+   `data-engineering-feature-stores`, `ml-evaluation-evals`, `ml-observability-monitoring`, `rl-rlhf-frameworks`,
+   `experimentation-causal-inference`, `pretraining-data-tokenizers`.
+6. **CS foundations & breadth:** `distributed-systems-fundamentals`, `graph-ml-gnns`, `time-series-forecasting`.
+7. **Trust & leadership:** `ai-security-on-gke`, `responsible-ai-governance`, `staff-plus-engineering`.
 
 > Maintenance: add a new skill as a directory following `SKILL-AUTHORING-SPEC.md`, then add a row here.
