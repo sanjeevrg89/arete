@@ -68,6 +68,11 @@ This repo ships skills in **two forms** so it works with any loader:
 Point a flat-markdown loader at the `skills/` directory; point a folder-based/Claude loader at the
 repo root (skill directories).
 
+## Testing skill routing
+[`tests/skill-routing-checklist.md`](tests/skill-routing-checklist.md) has one discriminating prompt
+per skill (46) with the skill it should route to — use it to confirm each skill installs and routes
+correctly in Claude Code (`/skills` should also list all 46).
+
 ## Validation / CI
 `scripts/validate.py` (stdlib only) checks every skill: valid `SKILL.md` frontmatter, `name` matches
 the directory and is unique, a router-grade `description`, the required files (`SKILL.md` / guide /
