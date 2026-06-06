@@ -406,7 +406,156 @@ single-shot inference:
 
 ---
 
-## 10. Decision guide — which sibling skill / tool for which problem
+## 10. AI FinOps — cost & capacity planning
+
+Accelerators are the dominant cost line of any ML platform, so FinOps for ML is not spreadsheet hygiene —
+it is a Staff-level engineering concern that shapes scheduling, autoscaling, storage, and serving
+architecture. §9's "Cost & utilization" note is the one-liner; this section is the discipline.
+
+### Why it's a Staff concern: utilization is the real KPI
+
+The price tag is set by **accelerator-hours**, not nodes, requests, or CPU. So the metric that matters is
+not spend — it's **spend per unit of useful result**:
+
+- **Training:** **MFU** (model FLOPs utilization — achieved vs theoretical-peak FLOPs) and **goodput**
+  (fraction of wall-clock doing non-wasted, recoverable compute). A run at 35% MFU costs ~2× a run at 70%
+  MFU for the same model. The cost KPI is **$/useful-training-FLOP** or, pragmatically, **$/training-run**
+  and **cost-per-experiment**.
+- **Inference:** **tokens/$/accelerator-hour** and **$/token** (or $/Mtok) at a target latency SLO. A
+  server that is fast but runs at batch=1 can be far more expensive per token than a slightly slower one
+  at high continuous-batch occupancy. Always quote unit cost **at an SLO**, never raw throughput.
+
+The trap a Staff engineer must kill org-wide: **optimizing price-per-hour instead of price-per-result.**
+A cheaper GPU/hour that yields lower MFU or fewer tokens/sec can cost *more* per result. Decisions are
+made on $/result, with utilization as the lever.
+
+### Cost levers (and where each lives in this library)
+
+| Lever | What it does | Where |
+|-------|--------------|-------|
+| **Right-size the accelerator** | Match SKU to the workload (don't serve a 7B on B200; don't train on inference-tuned chips). Pick the smallest accelerator that hits the SLO/step-time. | §2; `[[gke-master]]` |
+| **Spot / preemptible + checkpointing** | Spot/preemptible capacity is far cheaper but can be reclaimed; only viable with frequent, fast checkpoint + auto-resume. Pair Spot with restartable JobSets. | §5; `[[ml-checkpointing-orbax]]`, `[[kueue-advanced]]` |
+| **Bin-packing & sharing** | Pack small models / dev / PEFT onto fractional accelerators via **MIG** (isolated) or **time-slicing** (no memory isolation) so one GPU serves many tenants. | §2 |
+| **Scale-to-zero for inference** | Idle model servers burn the most expensive resource doing nothing. Scale replicas (and node pools) to zero off-peak; budget for cold-start = weight-load time. | §4; `[[autoscaling-kubernetes]]` |
+| **Quota / fair-share** | Cap and share scarce accelerators across teams so no one hoards; borrowing + reclaim keeps utilization high. | `[[kueue-advanced]]` |
+| **Commitment posture** | Match purchase mode to demand shape (below). | this section |
+| **Inference optimization** | Quantization (FP8/INT8), speculative decoding, prefix/KV-cache reuse, continuous batching, prefill/decode disaggregation — each raises tokens/$/accelerator. | §4; `[[inference-optimization]]` |
+
+**Right-sizing in practice.** The cheapest run is the one that doesn't waste FLOPs: profile MFU before
+scaling out, fix the data loader before adding chips (a starved accelerator is 100% waste), and prefer a
+smaller contiguous slice at high MFU over a larger sprawling one at low MFU.
+
+**Spot + checkpoint is the single biggest training cost lever** for fault-tolerant work. With
+checkpoint-on-preemption and JobSet auto-restart (§5), preemption costs minutes, not the run — so a large
+fraction of training can ride cheaper preemptible capacity. Never run Spot without a tested fast-resume
+path; never run steady 24×7 base load on Spot.
+
+**Commitment posture — match purchase mode to demand shape:**
+
+- **Committed-use / reservations** — for **steady, predictable base load** (always-on serving, long
+  multi-month pretraining). Lowest unit price in exchange for a commitment; an empty reservation is pure
+  burn (see anti-patterns).
+- **On-demand** — for **unpredictable or short** needs and headroom above the committed base. Highest unit
+  price; pay only for what you use.
+- **Spot / preemptible** — for **interruptible, checkpointed** work (most training, batch eval, PEFT,
+  offline data prep). Cheapest, but reclaimable.
+- **Calendar/queued reservations (e.g. DWS-style flex-start/calendar on GKE)** — for **bursty large
+  gangs** you can wait for: get a guaranteed contiguous block at a scheduled time without holding it 24×7.
+
+Blend them: a reserved/committed base for steady load, on-demand for headroom, Spot for the
+restartable bulk, and queued reservations for big scheduled gangs. **Verify current pricing, discount
+rates, commitment terms, and SKU/region availability against live cloud pricing/docs — these move every
+quarter; do not hardcode rate assumptions.**
+
+### Capacity planning
+
+Capacity planning answers "how many accelerators, of which kind, for how long, where?" *before* you
+commit budget — and it's an estimate you refine with measured MFU/throughput.
+
+**Training — estimate accelerator-hours from FLOPs.** The textbook approximation for a dense transformer
+is **compute ≈ 6 × parameters × training-tokens** FLOPs (forward+backward). Then:
+
+```
+accelerator-hours  ≈  (6 × params × tokens)  /  (peak_FLOPs_per_accelerator × MFU × 3600)
+wall-clock-hours   ≈  accelerator-hours / number_of_accelerators
+estimated cost     ≈  accelerator-hours × blended_$_per_accelerator_hour
+```
+
+- Use a **realistic MFU** (measure it on a short pilot — don't assume peak; large dense runs commonly land
+  well below peak, and the exact figure is hardware/parallelism-specific — measure, don't fabricate).
+- Add **goodput overhead**: restart/recovery, checkpoint I/O, stragglers, and warm-up. A run is *never*
+  100% goodput; budget the gap explicitly.
+- Re-derive after a pilot run; the pilot's measured tokens/sec is worth more than any a-priori estimate.
+
+**Inference — throughput planning (QPS × tokens → accelerators).**
+
+```
+required_tokens_per_sec ≈ peak_QPS × (avg_input + avg_output tokens) × safety_margin
+accelerators            ≈ required_tokens_per_sec / (measured tokens/sec/accelerator at target SLO)
+```
+
+- The denominator (**tokens/sec/accelerator at the SLO**) must be **measured** under realistic batching and
+  context length — it varies enormously with model, quantization, batch, and TTFT/TPOT targets.
+- Plan **headroom** for peak-vs-average traffic, failover, and rollout (surge) — a fleet sized to average
+  QPS will fall over at peak. Size to peak × margin, then claw back idle cost with scale-to-zero/autoscaling.
+- Separate **prefill** and **decode** capacity if you disaggregate; they scale on different signals.
+
+**Cross-cutting capacity constraints:**
+
+- **Quota & region.** Accelerator quota is per-region and often the *real* limiting reserve, not budget.
+  Multi-region spreads risk and unlocks capacity but adds data-gravity, egress, and weight-sync cost.
+- **Contiguity.** A capacity number is meaningless if it can't be placed as one contiguous topology — a
+  multi-host gang needs a contiguous network domain (Topology-Aware Scheduling, `[[kueue-advanced]]`), not
+  just N free chips scattered across the fleet.
+- **Buy-vs-rent / cloud-vs-on-prem.** Steady, high-utilization, multi-year base load can favor owned/
+  on-prem or long commitments; bursty, uncertain, or fast-evolving (chase-the-latest-SKU) demand favors
+  cloud on-demand/Spot/reservations. The break-even hinges on **realized utilization** — owned hardware at
+  30% utilization is usually worse than rented at 80%. Frame it as a utilization-and-horizon decision, not
+  a sticker-price one.
+
+### Measurement & accountability
+
+You cannot manage what you don't attribute. The platform must answer "what did each team/run/experiment
+cost, and what did it return?"
+
+- **Cost attribution by team/namespace.** Accelerator utilization metrics (DCGM for GPUs, TPU runtime
+  metrics; §9) are exported on the **`k8s_container`** monitored resource, which carries
+  **`namespace_name`** (and pod/container labels). Joining accelerator-hours per namespace to the
+  accelerator's cost rate gives **per-team cost** without bespoke metering. Enforce one-team-per-namespace
+  (or per-label) discipline so the attribution is clean; mirror it in Kueue ClusterQueue/cohort names so
+  quota and cost line up.
+- **Showback vs chargeback.** *Showback* reports each team's spend for visibility; *chargeback* actually
+  bills it back. Showback first to build the culture, chargeback once attribution is trusted — chargeback
+  is what makes teams turn off idle reservations.
+- **Unit economics.** Track and publish **$/token** (serving), **$/training-run** and
+  **cost-per-experiment** (training/research), and **tokens/$/accelerator-hour**. Unit economics — not raw
+  spend — is what tells you whether scaling up is healthy or wasteful.
+- **Dashboards & alerts.** A FinOps dashboard pairs **utilization** (MFU/goodput, KV-cache utilization,
+  tokens/sec/accelerator) with **cost** (per namespace/queue, per model, per run) on the same pane, plus
+  **idle-accelerator** and **reservation-utilization** panels. Alert on low utilization of *committed*
+  capacity (you're paying for it regardless) and on cost-per-token regressions after a deploy. Defer
+  metric pipelines/dashboards depth to `[[ml-observability-monitoring]]`.
+
+### Anti-patterns
+
+- **Idle reserved/committed accelerators.** Paying the commitment price for capacity that sits empty — the
+  worst of both worlds (committed *and* unused). Right-size commitments to measured steady demand; fill
+  reservations with preemptible batch backfill.
+- **No utilization target.** Running with no MFU/goodput or tokens/sec/accelerator SLO means no one owns
+  waste. Set a target (and alert below it).
+- **Optimizing price-per-hour, not price-per-result.** Chasing the cheapest GPU/hour while ignoring that it
+  yields lower MFU or fewer tokens/sec — often a net loss per result.
+- **Spot without checkpoint.** Running on preemptible capacity with no fast checkpoint/resume — a
+  preemption then throws away hours of work, erasing the discount many times over.
+- **No cost attribution.** A single shared namespace / no team labels → no one can see or own their spend,
+  so nobody optimizes. The tragedy of the commons on the most expensive resource you have.
+- **Over-provisioned inference.** A fleet sized to peak (or worse, to a vanity SLO) that never scales down,
+  burning accelerators at low occupancy off-peak. Use scale-to-zero/model-aware autoscaling and right-size
+  to measured load + headroom.
+
+---
+
+## 11. Decision guide — which sibling skill / tool for which problem
 
 | You are doing... | Reach for | Sibling skill |
 |------------------|-----------|---------------|
@@ -435,7 +584,7 @@ single-shot inference:
 
 ---
 
-## 11. Canonical references (verify currency — 2026)
+## 12. Canonical references (verify currency — 2026)
 
 - GKE GPUs: https://cloud.google.com/kubernetes-engine/docs/how-to/gpus
 - GKE TPUs: https://cloud.google.com/kubernetes-engine/docs/concepts/tpus

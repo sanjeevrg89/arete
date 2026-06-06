@@ -49,6 +49,16 @@
   Prometheus with namespace-level accelerator metrics. Alert on XID, NCCL timeouts, stalled all-reduce.
 - **Multi-tenancy = quota + isolation:** Kueue ClusterQueues/cohorts for fair-share of scarce
   accelerators; namespaces + ResourceQuota + taints + NetworkPolicy + Workload Identity per tenant.
+- **AI FinOps = optimize price-per-result, not price-per-hour.** Accelerators dominate cost, so utilization
+  *is* cost: KPIs are MFU/goodput + $/training-run (training) and $/token + tokens/$/accel-hr at an SLO
+  (serving). Levers: right-size SKUs, Spot/preemptible + checkpoint ([[ml-checkpointing-orbax]]), bin-pack
+  (MIG/time-slicing), scale-to-zero ([[autoscaling-kubernetes]]), quota/fair-share ([[kueue-advanced]]),
+  inference optimization ([[inference-optimization]]), and a reservation/on-demand/Spot/committed-use blend
+  matched to demand shape. Capacity: training accel-hrs ≈ 6·params·tokens / (peak-FLOPs·MFU); inference
+  accel ≈ peak-QPS·tokens / measured-tokens-sec-per-accel-at-SLO + headroom. Attribute cost by team via
+  namespace-scoped accelerator metrics (`k8s_container`/`namespace_name`) → showback/chargeback. Avoid:
+  idle reserved capacity, no utilization target, Spot without checkpoint, over-provisioned inference. See
+  guide §10. Verify current pricing/commitment terms against live docs — never hardcode rates.
 
 ## Version awareness (2026)
 Accelerator SKUs (H100/H200/B200/GB200; TPU v5e/v5p/v6e Trillium), GKE features (DRA, DWS, GPUDirect-

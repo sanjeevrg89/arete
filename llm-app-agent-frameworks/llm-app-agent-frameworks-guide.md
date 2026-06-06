@@ -220,7 +220,7 @@ model choice is config, not code.
 - **Right-size the model per node.** Use a small/cheap model for routing, classification, extraction,
   and tool-arg formatting; reserve the frontier model for hard reasoning. This is the single biggest
   cost lever.
-- **Cache aggressively** (see §8): prompt/prefix caching on the provider side, plus your own
+- **Cache aggressively** (see §8 and §9): prompt/prefix caching on the provider side, plus your own
   response/embedding cache for deterministic sub-calls.
 - **Watch the token bill compounding:** every agent turn re-sends growing history × every tool result ×
   every reflection round. Loops multiply tokens. Budget and cap (§7, §9).
@@ -276,7 +276,122 @@ pre-fetch. Essentials:
 
 ---
 
-## 8. Production concerns
+## 8. Prompt & context engineering
+
+Prompt and context engineering are the two highest-leverage disciplines in an LLM app — more so than
+framework choice. **Prompt engineering** is how you write the instructions; **context engineering** is
+how you decide *what goes into the window at all*, and in what order, on every turn. The model only
+ever sees the tokens you assemble. Treat that assembly as a first-class, versioned, evaluated system —
+not string concatenation buried in code.
+
+### 8.1 Prompt engineering
+
+- **System vs. user prompt.** The **system** prompt carries durable role, policy, format rules, and
+  tool-use guidance — it's stable and should be the cacheable prefix (§9). The **user** turn carries the
+  variable task. Don't smuggle per-request data into the system prompt (it breaks prefix caching and
+  blurs the trust boundary). Keep developer/system instructions and untrusted user/tool content clearly
+  separated — never concatenate retrieved or tool-returned text into the instruction region.
+- **Few-shot / in-context learning.** Provide 1–N worked examples to pin format and behavior. Few-shot
+  is most valuable for *format/style* and edge-case handling; for pure capability, a clearer instruction
+  often beats more examples. Keep examples diverse, correct, and representative of hard cases; order
+  matters (recency bias — the last example carries weight). Strip few-shot down as the instruction
+  matures — examples are expensive tokens on every call. For dynamic few-shot, retrieve the *k* most
+  similar examples per query (this overlaps with RAG → [[rag-vector-databases]]).
+- **Chain-of-thought & structured reasoning.** Asking the model to reason step-by-step before answering
+  improves multi-step/math/logic tasks. Modern **reasoning models** do this natively — for those, do
+  *not* hand-roll "think step by step" scaffolding or force a visible scratchpad; give them the goal and
+  constraints and let them reason. For non-reasoning models, explicit CoT, decomposition, or
+  self-consistency (sample several reasoning paths, take the majority) still help. When you need both
+  reasoning *and* clean structured output, separate the reasoning channel from the final answer (e.g. a
+  `reasoning` field or a thinking phase) so parsing isn't polluted. **Reasoning is fast-moving — verify
+  current model behavior and the provider's reasoning/thinking API against current docs.**
+- **Role / format / delimiter discipline.** State the role, the task, the constraints, and the exact
+  output format explicitly. Delimit sections with stable, unambiguous markers (XML-ish tags, headings,
+  fenced blocks) so the model — and your parser — can tell instructions from data from examples. Put the
+  most important instruction where it's least likely to be lost (start and end; see "lost in the middle"
+  below). Be positive and specific ("respond in ≤3 sentences") over vague negatives.
+- **Output schemas / structured output.** When you need machine-parseable output, **constrain, don't
+  hope** — native JSON-schema / grammar / tool-as-schema, then validate (full treatment in §2 and
+  `examples.md`). Describe each field in the schema; the schema *is* prompt.
+- **Prompt templating & versioning.** Prompts are code: parameterized templates, under source control,
+  reviewed, and tied to eval results (§9 evaluation, [[ml-evaluation-evals]]). Externalize them so you
+  can iterate/roll back without redeploying, but pin which prompt version a deployment runs. Never
+  string-concatenate logic into prompts ("prompt spaghetti", §10).
+- **Decoding params.** `temperature` and `top_p` (nucleus) control randomness — lower (≈0) for
+  extraction/classification/tool-arg formatting and anything you'll parse; higher for creative
+  generation. Tune *one* of temperature or top_p, not both. `max_tokens` bounds cost and runaway output;
+  `stop` sequences cut generations cleanly; penalties (frequency/presence) curb repetition. Pick params
+  per node, not globally. **Reasoning models often ignore or restrict these knobs — verify per model.**
+- **Determinism & caching.** Even at temperature 0, outputs are *not* bit-exact (batching/kernel
+  effects) — never depend on exact-string reproducibility. For sub-tasks that should be stable, cache by
+  a hash of the exact input. Order the prompt so the long *stable* prefix (system prompt, tool defs,
+  pinned context) comes first to maximize provider/engine **prefix caching** (§9). Make cache hit rate a
+  tracked cost metric.
+- **Prompt injection is a security property, not a prompt trick.** Any instruction-looking text inside
+  untrusted content (tool output, retrieved docs, MCP results, user-supplied files, web pages) can
+  hijack the model ("ignore previous instructions", exfiltration, unintended tool calls). You **cannot**
+  fully solve this with prompt wording. Mitigate in layers: keep untrusted content out of the
+  instruction region and clearly delimited as data; least-privilege tools; human-gate destructive
+  actions; output/egress guardrails; sandbox tool execution. Full threat model → [[ai-security-on-gke]].
+
+### 8.2 Context engineering — the context window is a managed resource
+
+The bigger modern idea: the context window is **finite, attention is non-uniform across it, and every
+token costs money and can dilute the rest.** Context engineering is the discipline of curating *exactly*
+the right tokens for each model call. More context is not better — beyond a point it *hurts* (cost,
+latency, and quality). **This is a fast-moving best-practice area — verify against current writing from
+model providers and tooling before treating any specific tactic or limit as settled.**
+
+- **Retrieval & selection — pick what goes in.** Don't dump everything you have; select the minimal
+  sufficient context for *this* turn: the relevant docs (RAG → [[rag-vector-databases]]), the relevant
+  memories, the relevant tool results, the relevant slice of history. Relevance-rank and cap each
+  source. Selection quality is usually a bigger lever than model size.
+- **Ordering & "lost in the middle."** Models attend most strongly to the **beginning and end** of a
+  long context and can miss material buried in the middle. Put the task/question and the highest-value
+  context at the edges; don't rely on a critical fact sitting at position 4,000 of 12,000. Re-ranking so
+  the best retrieved chunks sit at the top/bottom matters as much as retrieving them.
+- **Compression & summarization.** When history or tool output grows, compress it: summarize old turns
+  into a running synopsis, extract just the facts you need from a large tool result, drop superseded
+  content. Protect the system prompt and active task framing from eviction. Summarization is lossy —
+  summarize *deliberately* (keep ids/citations/decisions), and keep the raw artifact retrievable if the
+  agent might need it again.
+- **Memory & state across turns.** Short-term (working) memory = what's in the window now; manage it via
+  trimming/summarization. Long-term memory = facts/preferences/episodes persisted *outside* the window
+  and retrieved on demand (semantic / episodic / procedural — see §2 Memory). Write to memory
+  deliberately (not everything), retrieve selectively, and **treat retrieved memory as untrusted input.**
+- **Tool-result management.** Tool/observation output is the fastest way to blow the budget. Return
+  terse, structured observations; truncate or summarize large payloads before they enter context; keep
+  large blobs out-of-band (store them, pass a handle/id the agent can re-fetch). Prune stale
+  observations from earlier steps once they've served their purpose.
+- **Long-context vs. RAG.** Large context windows don't make retrieval obsolete. Stuffing a huge corpus
+  into the window costs more, adds latency, and degrades quality (lost-in-the-middle, dilution) versus
+  retrieving the relevant slice. Rule of thumb: **retrieve to narrow, use long context for the
+  narrowed-down material** and for genuinely whole-document reasoning. Measure both with evals
+  ([[ml-evaluation-evals]]) rather than assuming. RAG depth → [[rag-vector-databases]].
+- **Token / cost budgeting.** Set an explicit context budget per call and per run (system + tools +
+  retrieved + history + headroom for the response). Every agent turn re-sends growing history × tool
+  results × reflection rounds — loops multiply tokens (§5, §9). Track tokens per node and per session as
+  a first-class metric; right-size the model per node so cheap nodes don't pay frontier prices.
+- **Context rot.** Over a long session, context accumulates stale, contradictory, or low-value tokens
+  that quietly degrade quality and inflate cost ("context rot"). Counter it: periodically compact/
+  re-summarize, drop superseded content, re-anchor the task framing, or start a fresh window seeded with
+  a clean summary + the live state. Don't let a session's window grow monotonically forever.
+
+### 8.3 How this couples to evals and RAG
+
+- **Evals are how you know any of this works.** Prompt edits, few-shot sets, decoding params, context-
+  selection strategy, compression thresholds, and long-context-vs-RAG choices are all changes you must
+  measure, not guess. Hold a versioned offline set; A/B prompt and context strategies; track quality vs.
+  tokens/cost/latency. Every prompt or context change re-runs evals in CI (§9). Full eval discipline →
+  [[ml-evaluation-evals]].
+- **RAG is context engineering applied to a corpus.** Chunking, embeddings, hybrid retrieval, and
+  re-ranking are all in service of *putting the right tokens in the window* — the selection/ordering/
+  compression principles above are exactly the RAG quality levers. Defer the retrieval mechanics to
+  [[rag-vector-databases]]; treat every retrieved span as untrusted input (§8.1, §7).
+
+---
+
+## 9. Production concerns
 
 ### Evaluation (you cannot ship an agent you can't measure)
 - **Offline evals**: a versioned dataset of inputs + expected behavior. Evaluate at multiple levels —
@@ -328,7 +443,7 @@ defense-in-depth, not a substitute for least-privilege tools and sandboxing → 
 
 ---
 
-## 9. Anti-patterns (these cause the production incidents)
+## 10. Anti-patterns (these cause the production incidents)
 
 - **Unbounded agent loops → runaway cost / hangs.** No step cap, no token budget, no timeout, no
   loop-detection. A single stuck session can burn thousands of dollars. *Always* bound every loop.
@@ -352,7 +467,7 @@ defense-in-depth, not a substitute for least-privilege tools and sandboxing → 
 
 ---
 
-## 10. Version awareness
+## 11. Version awareness
 
 This space changes monthly. Model names, context limits, pricing, structured-output support, MCP spec
 revisions and transport details, OpenTelemetry GenAI convention attribute names, and every framework's
@@ -362,7 +477,7 @@ current official docs.** The *patterns* here are durable; the *surfaces* are not
 
 ---
 
-## 11. Canonical references (verify currency)
+## 12. Canonical references (verify currency)
 
 - **Model Context Protocol** — spec & docs: https://modelcontextprotocol.io and
   https://spec.modelcontextprotocol.io
@@ -376,3 +491,10 @@ current official docs.** The *patterns* here are durable; the *surfaces* are not
 - **gVisor (runsc sandbox)** — https://gvisor.dev/docs/
 - Anthropic, "Building effective agents" — https://www.anthropic.com/research/building-effective-agents
 - ReAct paper — https://arxiv.org/abs/2210.03629 · Reflexion — https://arxiv.org/abs/2303.11366
+- **Prompt & context engineering** — provider prompting guides (verify current): Anthropic
+  https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview · OpenAI
+  https://platform.openai.com/docs/guides/prompt-engineering · Google
+  https://ai.google.dev/gemini-api/docs/prompting-strategies
+- "Lost in the Middle: How Language Models Use Long Contexts" — https://arxiv.org/abs/2307.03172
+- Chain-of-Thought prompting — https://arxiv.org/abs/2201.11903 · Self-Consistency —
+  https://arxiv.org/abs/2203.11171

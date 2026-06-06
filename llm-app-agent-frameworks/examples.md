@@ -156,7 +156,68 @@ and vet remote servers; human-gate destructive tools → [[ai-security-on-gke]].
 
 ---
 
-## 4. Sandboxed tool execution on GKE (untrusted code/tools)
+## 4. Context engineering: assemble a budgeted, cache-friendly context
+
+Context engineering is *what tokens go in the window, in what order, within a budget* — not string
+concatenation. This sketch shows the durable shape: a **stable cacheable prefix first** (system + tool
+defs), then **selected + re-ranked** retrieved context with the best chunks at the edges (lost in the
+middle), then a **compressed** history, then the live turn — all under an explicit token budget. Treat
+retrieved/tool text as untrusted data, clearly delimited from instructions.
+
+```python
+# Illustrative shape — verify your tokenizer/SDK APIs against current docs.
+TOKEN_BUDGET = 8000          # per-call ceiling: prefix + context + history + headroom for the answer
+ANSWER_HEADROOM = 1200
+
+def count(text: str) -> int: ...        # use the model's real tokenizer, not len()/4
+
+# 1) STABLE PREFIX FIRST — maximizes provider/engine prefix caching; never put per-request data here.
+SYSTEM = "You are a support agent. Answer ONLY from <context>. If it's not there, say you don't know."
+
+def select_context(chunks: list[dict], budget: int) -> list[dict]:
+    """Select + re-rank, then place best chunks at the EDGES (start/end) to fight lost-in-the-middle."""
+    ranked = rerank(chunks)                       # relevance-rank; don't dump everything you retrieved
+    kept, used = [], 0
+    for c in ranked:                              # greedily fill against the budget
+        t = count(c["text"])
+        if used + t > budget:
+            break
+        kept.append(c); used += t
+    # interleave so the top items land first AND last (edges), weaker ones in the middle
+    edges = kept[::2] + kept[1::2][::-1]
+    return edges
+
+def compress_history(history: list[dict], budget: int) -> str:
+    """Summarize old turns into a running synopsis; keep ids/decisions; protect the task framing."""
+    if count(render(history)) <= budget:
+        return render(history)
+    return summarize(history, keep=["decisions", "ids", "open_questions"])   # lossy ON PURPOSE
+
+def build_messages(query: str, retrieved: list[dict], history: list[dict]) -> list[dict]:
+    ctx_budget  = TOKEN_BUDGET - count(SYSTEM) - count(query) - ANSWER_HEADROOM
+    hist_budget = ctx_budget // 3                 # explicit split: history gets a slice, context the rest
+    ctx_chunks  = select_context(retrieved, ctx_budget - hist_budget)
+
+    # Untrusted retrieved text is DATA, fenced and tagged — never merged into the instruction region.
+    context_block = "\n".join(f'<doc id="{c["id"]}">{c["text"]}</doc>' for c in ctx_chunks)
+    return [
+        {"role": "system", "content": SYSTEM},                       # stable, cacheable
+        {"role": "system", "content": f"<context>\n{context_block}\n</context>"},
+        {"role": "system", "content": f"<history>\n{compress_history(history, hist_budget)}\n</history>"},
+        {"role": "user",   "content": query},                        # variable task last
+    ]
+```
+
+Why this is the GOOD shape: a stable prefix maximizes prefix-cache hits (cost/latency); retrieval is
+**selected and budgeted**, not dumped; the best chunks sit at the **edges** (lost-in-the-middle);
+history is **compressed** so the window doesn't rot; untrusted retrieved content is fenced as data with
+source ids for citation/grounding. Measure selection/ordering/compression choices with evals
+([[ml-evaluation-evals]]); retrieval mechanics (chunking/embeddings/hybrid/re-rank) →
+[[rag-vector-databases]]; injection threat model → [[ai-security-on-gke]].
+
+---
+
+## 5. Sandboxed tool execution on GKE (untrusted code/tools)
 
 When a tool runs model-generated code or touches the network/filesystem, isolate it. Run the sandbox in
 its own pod under the **gVisor (`runsc`) runtime class**, with no credentials, restricted egress,

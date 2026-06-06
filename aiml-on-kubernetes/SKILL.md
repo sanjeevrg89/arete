@@ -6,8 +6,11 @@ description: Umbrella/strategy skill for running the full ML lifecycle on Kubern
   Trillium, single/multi-host slices, topology) on K8s/GKE; gang/queued batch jobs; multi-host distributed
   training (FSDP/ZeRO, tensor/pipeline/sequence parallel); checkpointing to GCS/Parallelstore; multi-host
   vLLM/SGLang serving with LWS; GPUDirect-TCPX/RDMA/NCCL networking; accelerator observability (DCGM,
-  Managed Prometheus), MFU/goodput, quota and multi-tenancy. Routes to deeper sibling skills for framework
-  internals; owns the end-to-end picture and the K8s-specific orchestration.
+  Managed Prometheus), MFU/goodput, quota and multi-tenancy. Also covers AI FinOps — accelerator cost and
+  capacity planning: MFU/goodput and $/token unit economics, right-sizing, Spot + checkpointing,
+  reservations vs on-demand vs committed-use, scale-to-zero, GPU/TPU-hour estimation, and cost attribution/
+  showback by team/namespace. Routes to deeper sibling skills for framework internals; owns the end-to-end
+  picture and the K8s-specific orchestration.
 ---
 
 # AI/ML on Kubernetes & GKE
@@ -67,6 +70,15 @@ K8s/GKE orchestration, and routes to the deeper sibling skills for framework int
 - **Multi-tenancy is quota + isolation.** Kueue ClusterQueues/cohorts for fair-share of scarce
   accelerators; per-tenant namespaces, ResourceQuotas, and node taints. Reserved capacity (CUD/flex-start/
   DWS on GKE) vs on-demand changes how you queue.
+- **AI FinOps: optimize price-per-result, not price-per-hour.** Accelerators are the dominant cost, so
+  utilization *is* cost — the KPIs are MFU/goodput and $/training-run (training) and $/token &
+  tokens/$/accelerator-hour at an SLO (serving). Levers: right-size SKUs, Spot/preemptible + checkpointing
+  ([[ml-checkpointing-orbax]]), bin-pack (MIG/time-slicing), scale-to-zero ([[autoscaling-kubernetes]]),
+  quota/fair-share ([[kueue-advanced]]), and the right reservation/on-demand/Spot/committed-use blend.
+- **Plan capacity before you commit budget.** Estimate training accelerator-hours from
+  ≈6·params·tokens / (peak-FLOPs·MFU); size inference from peak-QPS·tokens / measured tokens-sec-per-
+  accelerator-at-SLO, plus headroom. Attribute cost by team via namespace-scoped accelerator metrics
+  (`k8s_container`/`namespace_name`) → showback/chargeback and unit economics. See guide §10.
 
 ## Related skills
 

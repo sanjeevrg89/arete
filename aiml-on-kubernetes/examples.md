@@ -260,3 +260,9 @@ LoRA-adapter multiplexing — superior to round-robin for LLM serving.
 - Always set a readiness probe that reflects real weight-load time, and stage weights on a fast volume to
   cut cold start.
 - Keep multi-host slices contiguous (Topology-Aware Scheduling) so collectives hit line rate.
+- **FinOps hooks (guide §10):** the JobSet's `failurePolicy.maxRestarts` + checkpoint path is exactly what
+  makes the training run safe to place on **Spot/preemptible** capacity (cheapest accelerators, reclaimable)
+  — pair them, never run Spot without the fast-resume path. The LWS readiness probe's `initialDelaySeconds`
+  is your cold-start budget; size it so **scale-to-zero** ([[autoscaling-kubernetes]]) stays viable off-peak.
+  Keep one team per `namespace` so namespace-scoped accelerator metrics (`k8s_container`/`namespace_name`)
+  give clean per-team cost attribution / showback.

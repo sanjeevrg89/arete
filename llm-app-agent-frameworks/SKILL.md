@@ -3,7 +3,10 @@ name: llm-app-agent-frameworks
 description: Expert guidance for building and shipping production LLM applications and agentic systems.
   Use when designing or reviewing agents — ReAct, tool/function calling, planning, reflection, routing,
   multi-agent (supervisor/worker, handoffs), short/long-term memory, structured output / constrained
-  decoding, control-flow-as-graph. Covers framework choice (Google ADK, LangChain/LangGraph,
+  decoding, control-flow-as-graph. Covers prompt engineering and context engineering (system/user
+  prompts, few-shot, chain-of-thought, output schemas, prompt templating/versioning, decoding params,
+  context-window budgeting, retrieval/ordering/compression, lost-in-the-middle, context rot,
+  long-context-vs-RAG, prompt injection). Covers framework choice (Google ADK, LangChain/LangGraph,
   LlamaIndex, CrewAI, AutoGen, Pydantic-AI, Haystack), MCP (Model Context Protocol) servers/clients/
   transports/tools, connecting to OpenAI-compatible and self-hosted models, deploying agents on
   Kubernetes/GKE (stateless vs session, queueing, scaling, sandboxed tool execution), RAG integration,
@@ -42,6 +45,15 @@ the problem, and put hard bounds back on everything the model gets to decide.**
   handoffs; give each agent minimum context + tools; log handoffs. It costs tokens and debuggability.
 - **Constrain structured output** (native JSON-schema / grammar / tool-as-schema), then validate the
   parsed object. Never depend on exact output strings or bit-exact determinism (true even at temp 0).
+- **Prompt engineering as a discipline.** System prompt = durable role/policy/format (cacheable prefix);
+  user turn = variable task; keep untrusted tool/RAG content out of the instruction region. Few-shot for
+  format, CoT/decomposition for reasoning (let reasoning models reason — don't hand-roll scratchpads),
+  schemas for output. Prompts are versioned code tied to evals; tune decoding params (temp/top_p) per
+  node. Prompt injection is a security property, not a wording trick → [[ai-security-on-gke]].
+- **Context engineering — the window is a managed resource.** Curate the minimal sufficient tokens per
+  call: retrieve/select what's relevant, order it for "lost in the middle" (best at start/end), compress
+  history & tool results, budget tokens/cost, and fight context rot (periodically compact/re-anchor).
+  Long context doesn't kill RAG — retrieve to narrow, then reason; measure both with evals.
 - **MCP** is the open standard to connect tools/data/context: servers expose tools/resources/prompts,
   clients consume over stdio or streamable HTTP. Use it for cross-agent reuse and a trust boundary.
   Treat every MCP server as untrusted code and every tool/resource result as untrusted (injection) input.
@@ -63,7 +75,9 @@ the problem, and put hard bounds back on everything the model gets to decide.**
 ## Related skills
 
 - `[[rag-vector-databases]]` — retrieval, chunking, embeddings, vector DBs, hybrid search, re-ranking
-  (RAG depth; this skill only sketches integration).
+  (RAG depth; this skill only sketches integration). The core context-engineering lever.
+- `[[ml-evaluation-evals]]` — eval discipline (offline datasets, LLM-as-judge, CI gating) for measuring
+  prompt and context-engineering changes; pair with every prompt/context strategy change.
 - `[[ai-security-on-gke]]` — guardrails, sandboxing untrusted tool/code execution, agent threat model.
 - `[[serving-frameworks]]` — self-hosting models (vLLM/SGLang/Triton/KServe) + constrained decoding.
 - `[[gke-inference-gateway]]` — model-aware routing/load-balancing/fallback in front of model replicas.
