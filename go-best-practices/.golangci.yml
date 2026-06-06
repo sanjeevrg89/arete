@@ -1,0 +1,110 @@
+# .golangci.yml — starter config for golangci-lint v2 (golangci-lint 2.x, 2025+).
+# Curated, high-signal set aligned with go-guidelines.md — not "enable everything".
+# If you're on golangci-lint v1.x, see the note at the bottom of this file.
+#
+# Usage:  golangci-lint run        (or `make lint`)
+#         golangci-lint run --fix  (apply autofixes)
+
+version: "2"
+
+run:
+  timeout: 5m
+  # Lint test files too — tests are code.
+  tests: true
+
+linters:
+  # Start from the curated default set (errcheck, govet, ineffassign, staticcheck, unused)...
+  default: standard
+  # ...and add the high-signal linters that enforce the guidelines.
+  enable:
+    - bodyclose       # http.Response.Body always closed (resource leaks)
+    - noctx           # don't make HTTP requests without a context
+    - contextcheck    # ctx is propagated, not dropped
+    - errorlint       # correct %w wrapping, errors.Is/As over ==, type asserts
+    - nilerr          # `return nil` when err is non-nil (and vice versa)
+    - rowserrcheck    # sql.Rows.Err() checked
+    - sqlclosecheck   # sql.Rows/Stmt closed
+    - copyloopvar     # loop-variable capture bugs (Go <1.22 footgun)
+    - gosec           # security: crypto/rand, SQL, command injection, etc.
+    - revive          # style/naming successor to golint
+    - gocritic        # broad correctness/style/perf diagnostics
+    - misspell        # spelling in comments/strings
+    - unconvert       # redundant type conversions
+    - unparam         # unused function parameters/results
+    - nakedret        # naked returns in long functions
+    - wastedassign    # assignments never used
+    - usestdlibvars   # use std-lib constants (http.MethodGet, etc.)
+    - perfsprint      # fmt.Sprintf where a faster std call exists
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true        # flag `_ = f()` that drops an error
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment       # too noisy; enable deliberately for hot structs
+    revive:
+      rules:
+        - name: exported            # exported identifiers need doc comments
+        - name: var-naming          # initialisms (ID/URL/HTTP), no stutter
+        - name: context-as-argument
+        - name: error-strings       # lowercase, no trailing punctuation
+        - name: error-return        # error is the last return value
+        - name: indent-error-flow
+        - name: unexported-return
+    gocritic:
+      enabled-tags: [diagnostic, performance, style]
+      disabled-checks:
+        - hugeParam             # pairs badly with fieldalignment off; profile instead
+        - rangeValCopy
+    nakedret:
+      max-func-lines: 30
+    gosec:
+      excludes:
+        - G104  # duplicate of errcheck
+
+  exclusions:
+    generated: lax            # don't lint generated files
+    presets:
+      - comments
+      - std-error-handling
+    rules:
+      # Tests may use weak rand, skip some error checks, and hold larger inputs.
+      - path: _test\.go
+        linters:
+          - gosec
+          - errcheck
+          - unparam
+          - bodyclose
+      # main packages legitimately call os.Exit / log.Fatal.
+      - path: cmd/
+        text: "deep-exit"
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+
+# Formatting is handled by the formatters block in v2 (was the `gofmt`/`goimports` linters in v1).
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      # Group your module's own imports last. Set to your module path.
+      local-prefixes:
+        - your.org/your-module
+
+issues:
+  # Report everything, not just new issues; raise these as you adopt incrementally.
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+# ---------------------------------------------------------------------------
+# golangci-lint v1.x users:
+#   The schema above is v2-only. For v1, remove `version: "2"`, the `formatters`
+#   block (add `gofmt`/`goimports` back under `linters.enable`), and move
+#   `linters.settings` → `linters-settings`, `linters.exclusions` → `issues`.
+#   Easiest path: upgrade to golangci-lint v2 and run `golangci-lint migrate`.
+# ---------------------------------------------------------------------------
