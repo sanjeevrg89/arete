@@ -1,12 +1,14 @@
 # skills
 
+[![validate-skills](https://github.com/sanjeevrg89/skills/actions/workflows/ci.yml/badge.svg)](https://github.com/sanjeevrg89/skills/actions/workflows/ci.yml)
+
 A cross-agent skill library: distinguished-engineer reference skills for Go, Kubernetes (use/control/
 operator/internals), and the ML-infra stack (Kueue, JobSet/LWS, ML & serving & training frameworks,
 Slurm/HPC, GKE, autoscaling). Each skill is **one self-contained directory** that works across
 Claude Code, Gemini CLI, and AGENTS.md-compatible agents/IDEs from a single source of truth.
 
 See **[REGISTRY.md](REGISTRY.md)** for the full index and **[SKILL-AUTHORING-SPEC.md](SKILL-AUTHORING-SPEC.md)**
-for how to add one.
+for how to add one (see also [CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ## What each skill directory contains
 | File | Consumed by | Role |
