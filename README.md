@@ -38,6 +38,13 @@ cp -R ~/Documents/skills/gke-master ./            # then GEMINI.md imports the g
 Drop the relevant skill's `AGENTS.md` + guide into the repo root, or reference the guide from your
 existing `AGENTS.md`. The content is vendor-neutral Markdown, so it ports to any "custom rules" surface.
 
+## Validation / CI
+`scripts/validate.py` (stdlib only) checks every skill: valid `SKILL.md` frontmatter, `name` matches
+the directory and is unique, a router-grade `description`, the required files (`SKILL.md` / guide /
+`AGENTS.md` / `GEMINI.md`), resolvable `[[cross-links]]`, and no vendor-locked framing or co-author
+trailers. Run it locally with `python scripts/validate.py`; `.github/workflows/ci.yml` runs it on every
+push and PR. Errors fail the build; warnings don't.
+
 ## Design notes
 - **On-demand loading is what makes a large library viable.** Claude Code discovers skills by their
   `description` and loads only what's relevant — never all guides at once. Keep `AGENTS.md`/`GEMINI.md`
