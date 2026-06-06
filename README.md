@@ -21,6 +21,20 @@ for how to add one (see also [CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ## Install
 
+### Quick start (clone + `install.sh`)
+The repo is private — clone with your GitHub auth (SSH key or `gh auth login` / a PAT over HTTPS):
+```bash
+git clone git@github.com:sanjeevrg89/skills.git
+cd skills
+
+./install.sh list                 # list the skills
+./install.sh claude               # symlink all skills into ~/.claude/skills (Claude Code)
+./install.sh flat ~/.gemini/skills  # copy the flat <name>.md bundle for a markdown-file loader
+./install.sh help
+```
+`install.sh flat <dest>` regenerates the flat bundle and copies it to whatever directory your loader
+scans (set `<dest>` to your tool's skills path). Manual equivalents below.
+
 ### Claude Code (skills load on demand — all of them can coexist)
 ```bash
 mkdir -p ~/.claude/skills
