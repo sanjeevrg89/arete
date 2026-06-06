@@ -38,6 +38,20 @@ cp -R ~/Documents/skills/gke-master ./            # then GEMINI.md imports the g
 Drop the relevant skill's `AGENTS.md` + guide into the repo root, or reference the guide from your
 existing `AGENTS.md`. The content is vendor-neutral Markdown, so it ports to any "custom rules" surface.
 
+## Two consumable layouts
+This repo ships skills in **two forms** so it works with any loader:
+
+1. **Directory-per-skill** (source of truth) — `<name>/SKILL.md` + `<name>/<name>-guide.md` +
+   `AGENTS.md` + `GEMINI.md` + `examples.md`. Best for Claude Code (`SKILL.md` discovery) and tools
+   that read a skill folder.
+2. **Flat self-contained bundle** — `skills/<name>.md`, one file per skill with the frontmatter, the
+   **full guide, and examples inlined**. Best for loaders that read **markdown files from a `skills/`
+   directory** (the deep content travels in the file, not a separate guide). Regenerate with
+   `python scripts/build_bundle.py` after editing any skill.
+
+Point a flat-markdown loader at the `skills/` directory; point a folder-based/Claude loader at the
+repo root (skill directories).
+
 ## Validation / CI
 `scripts/validate.py` (stdlib only) checks every skill: valid `SKILL.md` frontmatter, `name` matches
 the directory and is unique, a router-grade `description`, the required files (`SKILL.md` / guide /

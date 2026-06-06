@@ -1,0 +1,592 @@
+---
+name: ml-observability-monitoring
+description: Production ML/LLM observability and monitoring — the discipline of knowing when a deployed model
+  is silently degrading, with no errors and no stack trace. Use when designing or debugging model monitoring:
+  data/covariate drift, concept/label drift, prediction drift, training-serving skew, feature-attribution
+  drift; drift detectors (PSI, KL/JS divergence, KS test, Wasserstein, embedding drift) and their pitfalls;
+  data-quality validation (schema/range/null/cardinality/freshness, Great Expectations / TFDV style); model-
+  performance monitoring with delayed/absent ground truth, proxy metrics, slice/segment & fairness analysis,
+  calibration; LLM observability (OpenTelemetry GenAI tracing, spans for chains/agents/tools, Langfuse/Phoenix/
+  LangSmith, token/cost/latency TTFT/ITL, hallucination signals, online LLM-as-judge eval, guardrail hit rates);
+  alerting, retraining triggers, incident response for model regressions, and dashboards. Covers Evidently,
+  Arize, WhyLabs, Fiddler, Vertex AI Model Monitoring, Prometheus/Grafana. Not CI/CD or feature pipelines.
+---
+
+# ML Observability & Monitoring
+
+Apply the judgment of an engineer who owns the pager for production models and has watched accuracy rot for a
+week before anyone noticed. **The defining fact of ML monitoring: a model can be 100% healthy by every software
+SLO — no errors, p99 latency fine — while its predictions are quietly wrong.** Your job is to catch that
+*before* the business does.
+
+## How to use this skill
+
+1. **Read `ml-observability-monitoring-guide.md`** in this directory — the full reference (why ML monitoring
+   differs from software monitoring, the four monitoring layers, drift detection math and pitfalls, data-quality
+   checks, performance monitoring under label lag, LLM observability, closing the loop, tooling, anti-patterns).
+   Apply it to the system at hand.
+2. For a concrete Evidently-style drift report config and an OpenTelemetry/Langfuse LLM tracing + online-eval
+   instrumentation snippet to imitate, read **`examples.md`**.
+3. Match the existing observability stack (Prometheus/Grafana, the chosen ML-monitoring vendor) and conventions;
+   apply the correctness rules regardless. Treat managed-product features and SDK surfaces (Vertex AI Model
+   Monitoring, Evidently, Langfuse, OTel GenAI semantic conventions) as **verify against current docs** — this
+   space moves fast and it is 2026.
+
+## Essentials (full detail in `ml-observability-monitoring-guide.md`)
+
+- **Models fail silently.** There is no exception when a model degrades — the prediction just gets worse. Monitor
+  the *statistics of inputs, outputs, and outcomes*, not just the service health. Software SLOs are necessary,
+  not sufficient.
+- **Monitor four layers, in this order of leading-ness:** (1) data quality (schema/null/range/freshness),
+  (2) **training-serving skew** and drift (inputs change), (3) prediction drift (outputs change), (4) actual
+  performance vs ground truth (the lagging truth). Layers 1–3 are *leading* signals you have today; layer 4 is
+  *lagging* and may arrive days or weeks late — or never.
+- **Ground-truth lag is the central problem.** Labels for a fraud/churn/conversion model can take days to months.
+  Design for it: proxy metrics, delayed-label backfill/joins, human labeling on a sample, and drift as an
+  early-warning stand-in for unmeasurable accuracy.
+- **Training-serving skew is the highest-ROI thing to catch** and the most common production failure: the feature
+  the model sees at serving time differs from training (different code path, stale feature, unit/encoding
+  mismatch, time-travel leakage). Compare the *serving* feature distribution to the *training* distribution, and
+  log served feature vectors. See `[[data-engineering-feature-stores]]`.
+- **Pick the drift test for the data type and know its failure mode.** PSI/JS-divergence for binned numeric/
+  categorical, KS/Wasserstein for continuous, chi-square for categorical, embedding-distance/domain-classifier
+  for text/images. **All drift tests are sample-size sensitive** — at high volume everything is "significant";
+  threshold on *effect size* (PSI, Wasserstein), not raw p-values, and fix a reference window.
+- **Drift ≠ decay.** Input drift is a *hypothesis* that performance may drop, not proof. Concept drift (the
+  X→y relationship changes) can crater accuracy with *zero* input drift. Always tie drift alerts back to a
+  performance or business metric before you retrain.
+- **Slice everything.** Aggregate accuracy hides per-segment collapse. Monitor key segments (geo, device, new vs
+  returning, language, customer tier) and protected groups for **fairness**, and track **calibration** (predicted
+  probability vs observed rate), not just a point metric.
+- **LLM observability is tracing + eval, not a single accuracy number.** Emit OpenTelemetry GenAI spans for each
+  chain/agent/tool/retrieval/LLM call (model, prompt, tokens, cost, latency, TTFT/ITL); log prompt+response; run
+  **online LLM-as-judge** evals and reference-free quality/groundedness checks on sampled live traffic; track
+  guardrail hit rates. See `[[ml-evaluation-evals]]` and `[[ai-security-on-gke]]`.
+- **Close the loop or it's just dashboards.** Every monitor needs an owner, a threshold with hysteresis, a
+  runbook, and a defined action: alert, auto-rollback, open incident, or trigger retraining (continuous training
+  lives in `[[mlops-lifecycle]]`). Tune for signal — alert fatigue kills monitoring programs.
+- **Anti-patterns that bite:** accuracy-only (no leading signals), no skew detection, no slicing, no ground-truth
+  pipeline at all, drift alerts with no performance tie-in, and per-feature alerts that page on every wiggle.
+
+## Related skills
+- `[[mlops-lifecycle]]` — CI/CD, model registry, and continuous training that retraining triggers feed into.
+- `[[ml-evaluation-evals]]` — offline/online eval methodology and LLM-as-judge that online evals reuse.
+- `[[data-engineering-feature-stores]]` — feature pipelines, online/offline parity, the source of skew.
+- `[[ai-security-on-gke]]` — guardrails whose hit rates you monitor as a safety signal.
+- `[[aiml-on-kubernetes]]` / `[[autoscaling-kubernetes]]` / `[[gke-master]]` — infra-side metrics (GPU util,
+  queue depth, autoscaling) that complement model-quality signals.
+
+---
+
+# Reference — ml-observability-monitoring
+
+# ML / LLM Observability & Monitoring — Field Guide
+
+The authoritative reference for this skill. Read it fully, then apply it. Scope: knowing when a **deployed**
+model is degrading. Build/train/registry/CI live in `[[mlops-lifecycle]]`; feature pipelines in
+`[[data-engineering-feature-stores]]`; eval methodology in `[[ml-evaluation-evals]]`; infra metrics (GPU, queue
+depth, autoscaling) in `[[gke-master]]` / `[[autoscaling-kubernetes]]` / `[[aiml-on-kubernetes]]`.
+
+---
+
+## 1. Mental model — why ML monitoring is not software monitoring
+
+A web service fails *loudly*: it throws, returns 5xx, latency spikes, a probe goes red. You alert on the
+symptom. A model fails *silently*: it keeps returning a well-formed `0.87` for every request, on time, with no
+error — the number is just **wrong**, and it gets wronger as the world drifts away from the data it was trained
+on. There is no exception to catch.
+
+So ML observability monitors a different object. Not "is the service up?" but **"are the predictions still
+trustworthy?"** That requires watching the *statistics* of three things over time:
+
+- **Inputs** — the feature distributions the model receives.
+- **Outputs** — the prediction distribution the model emits.
+- **Outcomes** — what actually happened (ground truth), and the performance metric computed against it.
+
+Software SLOs (availability, latency, error rate) are **necessary but not sufficient**. You still need them
+(see infra skills) — a model that's down is also broken — but a green dashboard tells you nothing about whether
+the model is right.
+
+### The ground-truth lag / feedback-loop problem
+
+The metric you actually care about — accuracy, AUC, RMSE, conversion lift — requires labels, and **labels are
+delayed, partial, or absent**:
+
+- A fraud model: the chargeback that confirms "fraud" lands 30–90 days later.
+- A churn model: you learn the true label at the end of the subscription period.
+- A loan-default model: ground truth arrives over the *loan's lifetime*.
+- A recommendation: you get a weak, biased signal (clicks) immediately, the real one (retention) much later — and
+  it's confounded by the recommendation itself (**feedback loop**: the model shapes the data it's later judged on).
+
+This lag is the organizing constraint of the whole discipline. You cannot wait weeks to discover a regression. So
+you build a **ladder of leading-to-lagging signals** and use the leading ones as early warnings for the metric you
+can't yet measure.
+
+---
+
+## 2. The four monitoring layers (leading → lagging)
+
+Design every monitoring system as these four layers. Earlier layers are *leading* (available now, cheap) and
+*proxies*; the last is *lagging* (the truth, but late).
+
+| Layer | Question | Signal availability | Examples |
+|---|---|---|---|
+| 1. Data quality | Is the input even valid? | Immediate | schema, nulls, ranges, cardinality, freshness |
+| 2. Drift / **skew** | Has the input world changed vs training? | Immediate | PSI, KS, embedding drift, train-vs-serve skew |
+| 3. Prediction drift | Has the output distribution shifted? | Immediate | mean score shift, class-balance shift |
+| 4. Performance | Is the model actually right? | **Delayed / partial** | accuracy, AUC, RMSE, calibration, business KPI |
+
+The trap is monitoring only layer 4 (because it's the metric leadership asks for) and discovering a problem two
+weeks after it started. The leverage is in layers 1–3, which you have *today*. Layer 4, when labels arrive,
+*validates and recalibrates* your leading thresholds.
+
+---
+
+## 3. Drift & decay
+
+### 3.1 Vocabulary — be precise, these are not synonyms
+
+- **Data drift / covariate shift:** P(X) changes; P(y|X) unchanged. The input distribution moves (new user
+  cohort, new device, seasonality). The model may still be valid — but it's now extrapolating.
+- **Concept drift:** P(y|X) changes — the *relationship* the model learned is now wrong. This is the dangerous
+  one: accuracy can collapse with **zero** input drift (e.g. spammers change tactics, prices in a recession).
+  - *Sudden* (regime change), *gradual* (slow erosion), *incremental*, and *recurring/seasonal* concept drift
+    each need different windows.
+- **Label drift / prior probability shift:** P(y) changes — the class balance shifts (fraud rate triples).
+- **Prediction drift:** the model's *output* distribution shifts. A leading proxy you can always compute — if the
+  output moved and inputs didn't, suspect a pipeline/feature bug; if inputs moved too, suspect real drift.
+- **Training-serving skew:** training-time features ≠ serving-time features for the *same* entity. Not drift over
+  time — a *static mismatch* between two code paths. The #1 silent production failure (see §3.5).
+- **Feature-attribution drift:** the *importance ranking* of features (e.g. mean |SHAP|) shifts, even if marginal
+  distributions look stable. Catches subtler concept drift and broken features that a marginal-distribution test
+  misses. Vertex AI Model Monitoring offers this as feature-attribution monitoring (verify current docs).
+
+**Drift is a hypothesis, not a verdict.** Drift means "the world looks different; performance *may* have dropped."
+It is not proof of decay. Always confirm against a performance or business metric before acting — alerting on
+drift alone produces noise and erodes trust.
+
+### 3.2 Detection methods — pick by data type, threshold on effect size
+
+| Method | Use for | Notes / pitfalls |
+|---|---|---|
+| **PSI** (Population Stability Index) | binned numeric / categorical | Industry default. Rules of thumb: <0.1 stable, 0.1–0.25 moderate, >0.25 significant. Sensitive to binning; undefined on empty bins (add ε). |
+| **KL divergence** | distribution shift | Asymmetric, unbounded, blows up when ref has 0 where current has mass. Rarely thresholded directly. |
+| **JS divergence** | distribution shift | Symmetric, bounded [0,1] (log2), well-behaved version of KL. Good general categorical/binned choice. |
+| **KS test** (Kolmogorov–Smirnov) | continuous, univariate | Compares CDFs. **p-value is sample-size sensitive** — at high N everything is "significant." Use the KS *statistic* (effect size), not p. |
+| **Wasserstein / Earth Mover's** | continuous | Measures how *far* mass moved, not just "different." More robust and interpretable than KS for magnitude. |
+| **Chi-square** | categorical | Same N-sensitivity caveat as KS. |
+| **Embedding drift** | text / images / high-dim | Embed inputs, compare distributions: centroid/MMD distance, or a **domain classifier** (train a model to tell reference vs current — high AUC ⇒ drift). The practical way to drift-monitor unstructured data and LLM inputs/outputs. |
+
+### 3.3 Pitfalls that make drift monitoring lie to you
+
+- **Sample-size sensitivity / p-value abuse.** Statistical-significance tests detect *any* difference at scale.
+  At millions of requests, KS/chi-square always reject. **Threshold on effect-size metrics** (PSI, JS, Wasserstein,
+  classifier AUC), and pick the threshold from a *backtest* on a stable period, not a textbook constant.
+- **Multiple comparisons.** 500 features × a daily test = a flood of false alarms. Apply correction (Bonferroni/BH),
+  rank by importance, or monitor a single multivariate signal — don't page on every feature.
+- **Reference-window choice.** A drifting reference (rolling 7d) hides slow drift; a fixed reference (training set)
+  catches it but flags benign seasonality. Often you want *both*: vs-training (decay risk) and vs-recent (anomaly).
+- **Seasonality.** Weekday/weekend, holidays, campaigns. Compare like-to-like windows or deseasonalize first.
+- **Binning artifacts.** PSI depends entirely on bin edges. Fix bins from the reference and reuse them; handle new
+  categories and empty bins explicitly.
+- **Mixing missingness into the distribution.** A spike in nulls can masquerade as drift (or hide it). Monitor
+  missingness as its own signal (§4).
+- **Aggregate-only drift.** Global stability can hide a drifting *segment*. Slice (§5.3).
+
+### 3.4 Drift on the prediction side
+
+Always monitor **prediction drift** — it needs no labels and is your earliest output-side signal. For
+classifiers: mean predicted probability, class-balance, and score-histogram drift. For regressors: output
+distribution shift. A jump in prediction drift with stable inputs almost always means a **broken feature or
+pipeline**, not the world changing — check skew and data quality first.
+
+### 3.5 Training-serving skew — the highest-ROI catch
+
+Skew is when the model sees a different feature value at serving time than it would have at training time, for the
+same input. Causes:
+
+- Different code computing the feature in the training pipeline vs the serving path (the classic).
+- A **stale or missing feature** at serving (online store didn't have it; defaulted to 0/NaN/imputed mean).
+- Unit / encoding / scaling mismatch (cents vs dollars, different category map, different tokenizer).
+- **Time-travel / leakage:** training used a value that isn't actually available at prediction time.
+
+Detection: log the **exact feature vector served to the model** and compare its distribution to the training
+distribution (TFDV's `validate_statistics` / skew comparators, or Vertex AI Model Monitoring's training-serving
+skew mode — verify current docs). The durable fix is to **compute features once and share** training and serving
+through a feature store with point-in-time-correct reads — see `[[data-engineering-feature-stores]]`.
+
+---
+
+## 4. Data-quality monitoring (layer 1 — do this first)
+
+Most "model is broken" pages are actually **data** broken. Cheapest, most actionable layer. Validate every batch
+or a sample of every request:
+
+- **Schema:** expected columns present, correct types, no surprise columns. Pin a schema and diff against it.
+- **Range / domain:** numeric within `[min,max]`; categoricals in the known set (flag **new categories**).
+- **Null / missing rate:** per-feature null fraction vs reference; alert on spikes. Decide *and monitor* the
+  missing-feature policy (impute, default, reject) — a feature defaulting silently to 0 is a stealth outage.
+- **Cardinality:** unique-count drift catches IDs leaking in, hashing changes, exploding categoricals.
+- **Freshness / staleness:** timestamp of the feature vs now; an upstream pipeline that stopped at 02:00 serves
+  yesterday's features all day with no error. Monitor data age and row counts/volume.
+- **Uniqueness / duplicates / referential integrity** where relevant.
+
+**Pipeline validation tooling:** **Great Expectations** (expectation suites, checkpoints, data docs) for tabular
+batch validation; **TensorFlow Data Validation (TFDV)** for schema inference, statistics, and skew/drift
+comparators in TFX-style pipelines; **Evidently** for combined data-quality + drift reports/test-suites; **Pandera**
+for dataframe schema contracts; **Deequ/PyDeequ** for Spark-scale checks. Wire validation as a **gate**: fail the
+batch / hold the prediction / page, don't just log.
+
+---
+
+## 5. Model-performance monitoring (layer 4 — the lagging truth)
+
+### 5.1 Living with delayed and partial labels
+
+- **Delayed-label join/backfill:** persist every prediction with a key and timestamp; when ground truth arrives
+  (chargeback, label event, manual review), join it back and compute metrics on the now-complete window. Your
+  performance dashboard is therefore always "as of labels available," lagging real time.
+- **Proxy metrics:** when true labels lag, monitor correlated signals you *do* get fast — clicks/dwell for recsys,
+  user edits/thumbs for assistants, complaint/refund rate, downstream override rate. Validate the proxy correlates
+  with the real metric before trusting it; proxies are biased (feedback loops) — treat as directional.
+- **Sampled human labeling:** label a random (and a *targeted*, e.g. low-confidence) sample continuously to get an
+  unbiased-ish accuracy estimate without waiting for organic labels.
+- **Confidence / uncertainty:** drops in mean confidence or rises in near-decision-boundary rate are leading
+  proxies for trouble.
+
+### 5.2 Calibration
+
+Track **calibration**, not just a point metric: when the model says 0.8, does the event happen ~80% of the time?
+Use reliability diagrams and ECE (Expected Calibration Error). Models drift *out of calibration* before — and more
+detectably than — they lose ranking power (AUC). Critical anywhere the probability is used directly (pricing, bidding,
+risk thresholds).
+
+### 5.3 Slice / segment analysis and fairness
+
+**Aggregate metrics lie.** A model can hold 92% overall while collapsing on a 5% segment that just doubled in
+volume. Always monitor performance **by slice**: geography, device, language, new vs returning, customer tier,
+product category, time-of-day. Auto-surface the **worst-performing slices** rather than eyeballing a global number.
+
+**Fairness monitoring** is slicing on protected/sensitive groups: track performance and error-rate parity
+(e.g. FPR/FNR gaps, demographic parity, equalized-odds-style gaps) across groups over time — fairness regresses
+with drift even when overall accuracy holds. See `[[responsible-ai-governance]]` for the governance framing.
+
+---
+
+## 6. LLM observability
+
+LLMs break the classic playbook: outputs are free text, there's rarely a label, "accuracy" isn't one number,
+apps are multi-step (RAG/agents/tools), and cost+latency are first-class. LLM observability = **tracing +
+online evaluation + cost/latency + safety signals**.
+
+### 6.1 Tracing (the backbone)
+
+Instrument with **distributed tracing** where each LLM/retrieval/tool/agent step is a **span** in a trace. Use the
+**OpenTelemetry GenAI semantic conventions** (`gen_ai.*` attributes — system, request/response model, input/output
+token counts, etc.; conventions are evolving — **verify current names against the OTel spec**). Capture per span:
+
+- model + parameters (temperature, max tokens), the **prompt/input and response/output**,
+- **token counts** (prompt/completion) and **cost**,
+- **latency**, split into **TTFT** (time-to-first-token) and **ITL/TPOT** (inter-token latency) for streaming,
+- tool name + args + result for tool calls; retrieved chunks + scores for retrieval steps,
+- status/error, and a session/user/trace id to follow a whole conversation.
+
+Tooling: **Langfuse** (open-source, self-hostable), **Arize Phoenix** (OSS, OTel-native), **LangSmith** (LangChain),
+plus Arize/WhyLabs/Fiddler on the platform side. Prefer OTel-native instrumentation so you're not locked in. Trace
+**chains and agents** end-to-end — for agents the value is seeing the *whole decision path* (which tool, why a loop,
+where latency/cost went). App/agent framework details are in `[[llm-app-agent-frameworks]]`.
+
+### 6.2 Online evaluation in production
+
+Offline evals gate releases (`[[ml-evaluation-evals]]`); **online evals** watch live traffic. On a sample of real
+requests, run:
+
+- **LLM-as-judge** scoring on dimensions you care about (helpfulness, correctness, tone, instruction-following).
+- **Reference-free quality checks:** groundedness/faithfulness (is the answer supported by the retrieved context?
+  — the core RAG hallucination signal, see `[[rag-vector-databases]]`), relevance, answer completeness,
+  toxicity/PII.
+- **Heuristics:** regex/format/schema-valid (did it return valid JSON?), refusal rate, response length, language.
+
+Caveats: LLM-as-judge is **itself a model that drifts and is biased** (position, verbosity, self-preference) — pin
+the judge model/version, calibrate it against human labels periodically, and treat its scores as a *monitored
+metric*, not ground truth. Sample (don't judge 100% — cost) but **stratify** so rare/risky cases are represented.
+
+### 6.3 Cost, latency, throughput, and safety signals
+
+- **Cost/token:** tokens and \$ per request, per route, per user/tenant, per model — the fastest-moving and
+  easiest-to-blow-up dimension. Alert on cost-per-request and total spend; watch for prompt bloat and runaway agent
+  loops.
+- **Latency:** TTFT and end-to-end p50/p95/p99; for streaming, ITL. Tie to serving infra (`[[serving-frameworks]]`,
+  `[[gke-inference-gateway]]`, `[[inference-optimization]]`).
+- **Quality/hallucination signals:** groundedness scores, contradiction/uncertainty cues, citation-coverage, user
+  thumbs/edits/regenerations as implicit feedback.
+- **Guardrail hit rates:** rate of prompt-injection/jailbreak/PII/toxicity guardrail triggers (in and out). A *change*
+  in hit rate is signal — both a spike (attack, drift) and a drop to zero (guardrail silently broke). See
+  `[[ai-security-on-gke]]`.
+- **Prompt/response logging:** log inputs and outputs (with PII handling) — you cannot debug, eval, or build a
+  regression set without them. Mind privacy/retention.
+
+---
+
+## 7. Closing the loop — alerting, triggers, incident response
+
+Dashboards nobody acts on are theater. Every monitor must have an **owner, a threshold, a runbook, and an action.**
+
+- **Thresholds with hysteresis.** Backtest thresholds on historical stable + incident periods. Require persistence
+  (e.g. N consecutive windows or a sustained breach) to fire — single-window blips are noise. Use effect-size
+  metrics, not raw p-values.
+- **Retraining triggers.** Define what fires a retrain: sustained performance drop, drift past threshold *confirmed*
+  by a performance/proxy regression, or scheduled cadence. The retrain/continuous-training pipeline itself lives in
+  `[[mlops-lifecycle]]` — monitoring's job is to *trigger and validate*, not to run training.
+- **Incident response for model regressions.** Treat a model regression like an outage: detect → triage (data?
+  skew? concept drift? bad deploy?) → **mitigate fast** (roll back to the last-good model/prompt, shadow/canary the
+  fix) → root-cause → backfill labels to confirm. Keep the last-known-good model deployable for instant rollback.
+- **Dashboards** layered to the four layers (§2): a top-line health view (perf + business KPI + cost), drilldowns to
+  drift/skew/data-quality, and per-slice/per-segment views. The on-call should answer "is the model OK, and if not
+  which layer broke?" in under a minute.
+- **Alert fatigue is the failure mode.** Too many alerts ⇒ all ignored. Consolidate per-feature noise into
+  importance-weighted or multivariate signals; route by severity; review and prune alerts regularly.
+
+---
+
+## 8. Tooling landscape (verify current capabilities against vendor docs)
+
+| Tool | Niche |
+|---|---|
+| **Evidently** (OSS + cloud) | Tabular + text/LLM: drift, data-quality, performance reports & test-suites; good default for self-hosted tabular monitoring. |
+| **Arize** / **Phoenix** (OSS) | ML + LLM observability; Phoenix is OTel-native tracing/eval, OSS and self-hostable. |
+| **WhyLabs** / **whylogs** | Lightweight data-logging *profiles* (privacy-preserving aggregates) for drift/data-quality at scale. |
+| **Fiddler** | Model monitoring + explainability + LLM observability. |
+| **Langfuse** / **LangSmith** | LLM tracing, prompt mgmt, online/offline eval (Langfuse OSS; LangSmith LangChain-centric). |
+| **Vertex AI Model Monitoring** | Managed skew/drift (and feature-attribution) monitoring for models on Vertex; integrates with feature store/registry. Verify current modes/limits. |
+| **Great Expectations / TFDV / Pandera / Deequ** | Data-quality validation (§4). |
+| **Prometheus / Grafana / OpenTelemetry** | Infra + service metrics (QPS, latency, GPU util, errors) and the substrate for custom ML metrics and GenAI traces. Pair an ML-monitoring tool *with* these — they answer different questions. |
+
+Heuristics: don't buy a platform before you have layers 1–3 instrumented; **emit OTel-native** signals to avoid
+lock-in; keep raw prediction+feature logs (you'll need them for backfill, eval sets, and root-cause) regardless of
+which dashboard you use.
+
+---
+
+## 9. Anti-patterns (the ways monitoring programs fail)
+
+- **Accuracy-only monitoring.** Waiting on the one lagging metric ⇒ you learn about regressions weeks late and have
+  no leading signal. Build layers 1–3.
+- **No training-serving skew detection.** The single most common silent production failure goes uncaught.
+- **No slicing.** A green aggregate hiding a dead segment / fairness regression.
+- **No ground-truth pipeline.** Predictions logged with no path to ever attach the label ⇒ you can *never* compute
+  real performance or build a training set. Design the label join on day one.
+- **Drift alerts with no performance tie-in.** Paging on input drift that didn't actually hurt the model ⇒ noise ⇒
+  ignored alerts.
+- **Per-feature alert spam.** 500 features × a test = alert fatigue. Importance-weight / consolidate / multivariate.
+- **p-value thresholding at scale.** Everything is "significant"; you drown. Threshold effect size.
+- **Static reference forever (or a drifting one only).** Use the right reference(s) for the question (§3.3).
+- **LLM "vibes" monitoring.** No tracing, no online eval, no cost tracking — just spot-checks. You'll miss quality
+  regressions, hallucination spikes, and cost blowups until a user or a finance report tells you.
+- **Monitoring you never act on.** No owner, no runbook, no trigger ⇒ it's decoration.
+
+---
+
+## 10. Version awareness
+
+This ecosystem moves fast (it is 2026). **Verify against current docs** before relying on specifics: the
+OpenTelemetry **GenAI semantic conventions** (attribute names and stability are still evolving); **Vertex AI Model
+Monitoring** modes, supported model types, and limits; **Evidently**, **Langfuse**, **Phoenix**, **Arize**,
+**WhyLabs**, **Fiddler** APIs and feature sets; and **Great Expectations** / **TFDV** APIs (GX's API changed
+substantially across major versions). The *concepts* here (the four layers, drift vocabulary, effect-size
+thresholding, ground-truth lag, tracing+online-eval for LLMs) are durable; the **API surfaces are not** — don't
+hardcode from memory.
+
+---
+
+## 11. Canonical references (real URLs; verify currency)
+
+- ML-Ops principles & monitoring: https://ml-ops.org/
+- Evidently — drift detection & metrics: https://docs.evidentlyai.com/
+- Evidently — LLM evaluation/observability: https://www.evidentlyai.com/llm-guide
+- OpenTelemetry GenAI semantic conventions: https://opentelemetry.io/docs/specs/semconv/gen-ai/
+- Vertex AI Model Monitoring: https://cloud.google.com/vertex-ai/docs/model-monitoring/overview
+- TensorFlow Data Validation (TFDV): https://www.tensorflow.org/tfx/guide/tfdv
+- Great Expectations: https://docs.greatexpectations.io/
+- Langfuse (LLM observability): https://langfuse.com/docs
+- Arize Phoenix (OSS tracing/eval): https://docs.arize.com/phoenix
+- whylogs / WhyLabs: https://docs.whylabs.ai/
+- Google "Rules of ML" (best-practice background): https://developers.google.com/machine-learning/guides/rules-of-ml
+
+---
+
+# Examples — drift detection & LLM tracing/online-eval
+
+Two canonical, imitate-this artifacts: (1) a tabular drift + data-quality report config (Evidently-style), and
+(2) an OpenTelemetry-GenAI + Langfuse LLM tracing + online-eval instrumentation snippet. Both are
+runnable-in-spirit; **verify the exact SDK surface against current docs** — these libraries change across
+versions (it is 2026). Imports are real but feature names may have moved.
+
+---
+
+## 1. Tabular drift + data-quality report (Evidently-style)
+
+The shape that matters: a **fixed reference** (training or a stable production window), the **current** window,
+a **column mapping** (so prediction/target/categoricals are treated correctly), and **effect-size** drift tests
+with explicit thresholds — not raw p-values. Run on a schedule; fail/alert on the test suite, not the eyeball.
+
+```python
+import pandas as pd
+from evidently import ColumnMapping
+from evidently.report import Report
+from evidently.metric_preset import DataDriftPreset, DataQualityPreset, TargetDriftPreset
+from evidently.test_suite import TestSuite
+from evidently.tests import (
+    TestShareOfMissingValues,
+    TestNumberOfColumnsWithMissingValues,
+    TestColumnDrift,
+    TestShareOfDriftedColumns,
+)
+
+# Reference = training data (catches decay vs the world the model learned).
+# Current   = the last window of LIVE features actually SERVED to the model
+#             (logging the served vector is what catches training-serving skew).
+reference: pd.DataFrame = load_training_features()
+current:   pd.DataFrame = load_served_features(window="last_24h")
+
+column_mapping = ColumnMapping(
+    target="label",                 # may be absent/delayed in production
+    prediction="pred_score",        # always present -> prediction-drift monitoring
+    numerical_features=["amount", "account_age_days", "txn_velocity_1h"],
+    categorical_features=["country", "device_type", "merchant_category"],
+)
+
+# --- Diagnostic report: drift + data quality + target/prediction drift -------------
+report = Report(metrics=[
+    DataDriftPreset(
+        # Threshold on EFFECT SIZE; pick the test per column type.
+        num_stattest="wasserstein",  cat_stattest="jensenshannon",
+        num_stattest_threshold=0.1,  cat_stattest_threshold=0.1,
+        # alternative for binned/categorical: stattest="psi", threshold=0.2
+    ),
+    DataQualityPreset(),             # nulls, ranges, cardinality, new categories
+    TargetDriftPreset(),             # prediction (and target, when labels exist) drift
+])
+report.run(reference_data=reference, current_data=current, column_mapping=column_mapping)
+report.save_html("drift_report.html")   # human drilldown / data-docs
+
+# --- Gate: a TestSuite that PASSES/FAILS, wired to alerting/CI ----------------------
+suite = TestSuite(tests=[
+    # Data quality (layer 1) — usually the real cause of "model broke".
+    TestNumberOfColumnsWithMissingValues(eq=0),
+    TestShareOfMissingValues(column_name="account_age_days", lte=0.01),
+    # Drift (layer 2) — alert only when a MEANINGFUL share of features moved.
+    TestShareOfDriftedColumns(lt=0.30),
+    # Watch the high-importance features individually (not all 500).
+    TestColumnDrift(column_name="txn_velocity_1h", stattest="wasserstein", lt=0.1),
+    TestColumnDrift(column_name="merchant_category", stattest="psi", lt=0.2),
+])
+suite.run(reference_data=reference, current_data=current, column_mapping=column_mapping)
+
+result = suite.as_dict()
+if result["summary"]["failed_tests"] > 0:
+    # DON'T auto-retrain on drift alone. Drift is a hypothesis:
+    # open an incident / page on-call, then CONFIRM against a performance or
+    # proxy metric (backfilled labels, override rate) before triggering a retrain.
+    raise_alert(result)
+```
+
+**Why it's built this way**
+- **Reference = training, current = *served* features** — comparing the served vector to training is what
+  surfaces **training-serving skew**, the #1 silent failure. Log the exact vector the model scored.
+- **`prediction` mapped** ⇒ you get prediction drift with zero labels — your earliest output-side signal.
+- **Effect-size tests with thresholds** (Wasserstein/JS/PSI), not p-values — at high volume a KS/chi-square
+  p-value is always "significant."
+- **`TestShareOfDriftedColumns` + a few per-feature tests on important features** instead of one alert per
+  column — avoids the 500-features alert-fatigue trap.
+- The diagnostic **Report** is for humans; the **TestSuite** is the machine gate that pages.
+
+---
+
+## 2. LLM tracing + online eval (OpenTelemetry GenAI + Langfuse)
+
+Each LLM/retrieval/tool step is a **span** in a trace, annotated with OTel `gen_ai.*` attributes (model, token
+counts, cost) plus latency split into **TTFT/ITL**. A **sampled** subset of live traffic gets an **online
+LLM-as-judge / groundedness** eval whose score is attached to the trace as a monitored metric.
+
+> Verify attribute names against the current OTel GenAI semantic-conventions spec — they are still evolving.
+
+```python
+import time, random
+from opentelemetry import trace
+from langfuse import Langfuse           # OSS LLM observability; Phoenix/LangSmith are alternatives
+
+tracer = trace.get_tracer("rag-service")
+lf = Langfuse()
+
+def answer(question: str, user_id: str) -> str:
+    # One trace per user request; carries session/user id to follow a conversation.
+    with tracer.start_as_current_span("rag.request") as root:
+        root.set_attribute("gen_ai.system", "openai")
+        root.set_attribute("user.id", user_id)
+
+        # --- retrieval span: log chunks + scores (groundedness needs the context) ---
+        with tracer.start_as_current_span("retrieve") as rspan:
+            chunks = vector_search(question, k=5)        # see [[rag-vector-databases]]
+            rspan.set_attribute("retrieval.k", len(chunks))
+            rspan.set_attribute("retrieval.top_score", chunks[0].score)
+
+        # --- LLM span: model, tokens, COST, latency split TTFT / ITL ----------------
+        with tracer.start_as_current_span("llm.generate") as span:
+            span.set_attribute("gen_ai.request.model", "gpt-4o-mini")
+            t0 = time.perf_counter(); first_token_t = None; out = []
+            for tok in stream_completion(question, chunks):
+                if first_token_t is None:
+                    first_token_t = time.perf_counter()
+                out.append(tok)
+            t_end = time.perf_counter()
+            answer_text = "".join(out)
+
+            usage = last_usage()  # provider-reported token usage
+            span.set_attribute("gen_ai.usage.input_tokens",  usage.prompt_tokens)
+            span.set_attribute("gen_ai.usage.output_tokens", usage.completion_tokens)
+            span.set_attribute("gen_ai.cost.usd",            estimate_cost(usage))
+            span.set_attribute("gen_ai.latency.ttft_ms", (first_token_t - t0) * 1000)  # streaming UX
+            span.set_attribute("gen_ai.latency.e2e_ms",  (t_end - t0) * 1000)
+            if usage.completion_tokens > 1:                                            # ITL / TPOT
+                span.set_attribute("gen_ai.latency.itl_ms",
+                                   (t_end - first_token_t) * 1000 / (usage.completion_tokens - 1))
+
+        # --- guardrail signal: monitor the HIT RATE, in and out (see [[ai-security-on-gke]]) ---
+        flagged = output_guardrail(answer_text)
+        root.set_attribute("guardrail.flagged", flagged)
+
+        # --- prompt/response logging: required for debug, eval sets, regression tests ---
+        gen = lf.trace(name="rag.request", user_id=user_id, input=question,
+                       output=answer_text)
+
+        # --- ONLINE eval on a SAMPLE (cost) — stratify so risky cases are represented ---
+        if flagged or random.random() < 0.05:
+            # Groundedness = is the answer supported by retrieved context? The core RAG
+            # hallucination signal. LLM-as-judge methodology lives in [[ml-evaluation-evals]].
+            scores = run_online_eval(question, answer_text, context=chunks,
+                                     judge_model="gpt-4o", judge_version="2026-xx")  # PIN the judge
+            gen.score(name="groundedness", value=scores["groundedness"])
+            gen.score(name="answer_relevance", value=scores["relevance"])
+            gen.score(name="toxicity", value=scores["toxicity"])
+
+        return answer_text
+```
+
+**Why it's built this way**
+- **Tracing is the backbone** — for RAG/agents the value is the *whole decision path* (which chunks, which tool,
+  where cost/latency went), not a single number.
+- **Tokens, cost, TTFT/ITL on the span** — cost-per-request and TTFT are the fastest-moving, easiest-to-blow-up
+  dimensions; watch for prompt bloat and runaway agent loops.
+- **Online eval is sampled and stratified** — 100% judging is too expensive, but always eval the **flagged/risky**
+  slice plus a random sample so rare failures show up.
+- **Pin the judge model+version** — LLM-as-judge is itself a drifting, biased model; treat its score as a
+  *monitored metric*, recalibrate it against human labels periodically.
+- **Guardrail hit rate is a monitored signal** both ways: a spike (attack/drift) and a drop to zero (guardrail
+  silently broke) are both alerts.
+- **Log prompt+response** — you can't debug, build eval sets, or create regression tests without them (mind
+  PII/retention).
+
+> Pair these model-quality signals with infra metrics (GPU util, queue depth, autoscaling) from
+> `[[serving-frameworks]]` / `[[gke-inference-gateway]]` / `[[autoscaling-kubernetes]]` — they answer different
+> questions, and you need both to root-cause an LLM latency or quality regression.

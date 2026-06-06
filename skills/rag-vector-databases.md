@@ -1,0 +1,719 @@
+---
+name: rag-vector-databases
+description: Expert Retrieval-Augmented Generation (RAG) and vector-database engineering for production
+  systems over large corpora. Use when building or debugging a RAG pipeline (ingestion, chunking,
+  embeddings, indexing, retrieval, reranking, context assembly, generation), choosing or tuning a vector
+  DB (Milvus, Qdrant, Weaviate, pgvector/AlloyDB AI, Pinecone, Vespa, Elasticsearch/OpenSearch), picking
+  ANN indexes (HNSW, IVF, IVF-PQ/OPQ, ScaNN, DiskANN) and quantization (PQ/SQ/binary), implementing
+  hybrid search (BM25/SPLADE + dense, RRF fusion), cross-encoder reranking, query rewriting/HyDE/multi-query/
+  multi-hop/GraphRAG/contextual retrieval, metadata filtering, evaluation (recall@k, MRR, nDCG, RAGAS,
+  faithfulness), or deploying a vector DB on Kubernetes/GKE (StatefulSet, sharding, replication, sizing,
+  backups). Triggers on symptoms like poor recall, irrelevant chunks, hallucinated answers, slow ANN
+  queries, OOM on in-memory indexes, or "cosine vs dot vs L2" distance-metric mismatch.
+---
+
+# RAG & Vector Databases
+
+Apply the judgment of an engineer who has run production RAG over tens of millions of documents for
+years: the retrieval quality ceiling, not the LLM, usually decides whether the system works. Optimize
+the whole pipeline against an eval harness — never tune one stage by vibes.
+
+## How to use this skill
+
+1. **Read `rag-vector-databases-guide.md`** in this directory — the full reference (pipeline,
+   retrieval methods, ANN internals, vector-DB selection, K8s deployment, evaluation). Apply it to the
+   task at hand. For concrete artifacts to imitate (K8s StatefulSet, hybrid+rerank pipeline, HNSW/pgvector
+   index config), read **`examples.md`**.
+2. Match the surrounding stack's conventions (existing DB, embedding model, framework). Apply the
+   correctness rules — distance-metric/embedding match, an eval harness, reranking — regardless.
+3. Before declaring a RAG change "done," measure it: retrieval metrics (recall@k, nDCG) on a labeled
+   set **and** end-to-end (faithfulness / answer-relevance). Report numbers, not impressions.
+
+## Essentials (full detail in `rag-vector-databases-guide.md`)
+
+- **The distance metric must match how the embedding model was trained.** Most modern dense models are
+  trained for cosine; many are normalized so dot product == cosine. Mismatch silently wrecks recall.
+  Verify the model card; normalize vectors if you use dot/IP.
+- **Chunking is the highest-leverage knob.** Default to structure-aware recursive splitting on natural
+  boundaries (headings, paragraphs, code blocks), not blind fixed-size cuts. Tune size/overlap against
+  eval. Consider parent-document / auto-merging so you retrieve small but feed large.
+- **Hybrid > dense-only for most corpora.** Combine dense (semantic) + sparse (BM25/SPLADE, exact terms,
+  IDs, rare tokens) and fuse with **Reciprocal Rank Fusion (RRF)**. Dense alone misses exact matches.
+- **Always rerank.** Retrieve top-k (50–200) cheaply, then re-score with a cross-encoder and keep the
+  top-n (5–20) for the prompt. This is usually the single biggest precision win after hybrid.
+- **HNSW is the default in-memory ANN index** (high recall, low latency, RAM-bound: vectors + graph in
+  RAM). Tune `M` / `efConstruction` (build) and `efSearch` (query: recall↔latency). For huge corpora that
+  exceed RAM, use IVF-PQ or **DiskANN** to trade recall/latency for memory.
+- **Filter on metadata, and make it scale.** Pre-filtering is exact but can collapse the ANN graph;
+  post-filtering is fast but may return too few. Use a DB with first-class filtered ANN (Qdrant, Milvus,
+  Weaviate) and index the filtered fields.
+- **Pick the DB for the job:** pgvector/AlloyDB AI when data already lives in Postgres and scale is
+  moderate; Qdrant/Milvus/Weaviate for purpose-built scale, filtering, and hybrid; Vespa/Elasticsearch/
+  OpenSearch when you need mature lexical + vector in one engine. Pinecone for fully-managed.
+- **Vector DBs on K8s are stateful and RAM-bound.** Run as a `StatefulSet` with PVCs, anti-affinity,
+  sized for the in-memory index (rule of thumb: vectors `n × dim × 4 bytes` + graph overhead + headroom),
+  with replication for HA and a real backup/snapshot story. See `[[gke-master]]`, `[[kubernetes-expert]]`.
+- **Build an eval harness before optimizing.** Labeled query→relevant-doc set for retrieval (recall@k,
+  MRR, nDCG); RAGAS-style faithfulness / answer-relevance / context-precision for end-to-end. Iterate
+  against numbers.
+- **Watch the classic failure modes:** stale index (re-embed when the model changes), wrong distance
+  metric, naive fixed chunks, no reranking, ignoring filters, oversized context that buries the answer
+  ("lost in the middle"), and embedding queries with a different model/prompt than documents.
+- **Advanced retrieval when basics plateau:** query rewriting/expansion, HyDE, multi-query, multi-hop,
+  contextual retrieval (prepend doc context to each chunk before embedding), GraphRAG, agentic RAG.
+- **Fast-moving ecosystem (2026):** embedding models, rerankers, and DB index features change monthly.
+  Verify model dims/metric, index params, and DB API surface against current docs before relying on them.
+
+## Related skills
+
+- `[[llm-app-agent-frameworks]]` — agentic RAG, tool-calling retrieval, multi-step orchestration.
+- `[[serving-frameworks]]` — serving the embedding/reranker/generator models (vLLM, Triton, KServe).
+- `[[gke-master]]` — running the vector DB and embedding services on GKE (node pools, networking, storage).
+- `[[kubernetes-expert]]` — StatefulSets, PVCs, scaling, backups for the vector DB.
+- `[[aiml-on-kubernetes]]` — the broader AI/ML-on-K8s platform this RAG stack plugs into.
+
+---
+
+# Reference — rag-vector-databases
+
+# RAG & Vector Databases — Deep Reference
+
+The reference for building, debugging, and operating production Retrieval-Augmented Generation over
+large corpora. The governing principle: **retrieval quality is the ceiling.** A frontier LLM cannot
+answer from context it never received; it *can* hallucinate confidently over irrelevant chunks. Treat
+RAG as an information-retrieval problem with an LLM on the end, and measure every stage.
+
+---
+
+## 1. Mental model: the pipeline is a funnel, measured end to end
+
+```
+                  ┌──────────── offline / ingestion ────────────┐
+documents ──► parse ──► chunk ──► embed ──► index (ANN + metadata + sparse)
+                                                          │
+                  ┌──────────── online / query ───────────┼─────────────┐
+query ──► (rewrite/expand/HyDE) ──► embed ──► ANN search ─┘──► hybrid fuse
+        ──► rerank (cross-encoder) ──► assemble/pack context ──► generate ──► answer (+ citations)
+```
+
+Two independent loops:
+
+- **Ingestion (offline, batch):** correctness here is permanent — a bad chunking or embedding choice is
+  baked into the index until you re-ingest. Re-ingestion of a large corpus is expensive, so get parse /
+  chunk / embedding-model / distance-metric decisions right *before* the first full build.
+- **Query (online, latency-bound):** every stage adds latency and a chance to drop the right document.
+  Recall is set at the ANN stage (you can't rerank a doc you didn't retrieve); precision is set by
+  reranking and context assembly.
+
+**The retrieval inequality:** `recall@k_ANN ≥ precision after rerank ≥ what the LLM actually uses.`
+You lose documents at every stage. Over-retrieve early (high k), filter hard late (rerank → small n).
+
+---
+
+## 2. Ingestion & chunking
+
+### Parsing
+
+Garbage in, garbage out. PDFs, HTML, slides, and tables are where most real corpora bleed quality. Use
+layout-aware extraction (preserve headings, lists, tables, code blocks); strip boilerplate (nav, headers,
+footers). For tables and figures, extract structured text or a caption — embedding a mangled table as
+prose poisons retrieval. Keep source metadata (URL, title, section path, page, timestamp, ACLs).
+
+### Chunking strategies
+
+Chunking decides what a "unit of retrieval" is. Strategies, roughly increasing in sophistication:
+
+| Strategy | How | When |
+|---|---|---|
+| **Fixed-size** | N tokens, fixed overlap | Baseline only; cuts mid-sentence/mid-table. Avoid as final. |
+| **Recursive / structural** | Split on a hierarchy of separators (¶, sentence, heading, code fence) down to a target size | **Default.** Respects natural boundaries; cheap; robust. |
+| **Document-structure-aware** | Split by Markdown headings, HTML DOM, code AST, slide | Best for structured docs (docs sites, code, wikis). |
+| **Semantic** | Embed sentences, cut where adjacent similarity drops | Coherent chunks for prose; costs embeddings at ingest; tune the breakpoint threshold. |
+| **Parent-document / auto-merging** | Index small child chunks; at retrieval return the parent (or merge adjacent siblings) | Retrieve precisely, feed broad context. Very strong default. |
+| **Contextual retrieval** | Prepend an LLM-generated doc-level summary/context to each chunk *before* embedding | Fixes "this chunk is meaningless without its document." Adds ingest cost; large recall gains on ambiguous corpora. |
+
+**Size & overlap tradeoffs.** Smaller chunks → higher precision, more chunks, more index, risk of losing
+context the answer needs. Larger chunks → more context per hit but diluted embeddings (one vector
+averaging many topics → worse recall) and wasted prompt tokens. There is no universal number; common
+starting points are a few hundred tokens with 10–20% overlap, **then tune against eval.** Overlap exists
+to avoid cutting an answer across a boundary; too much overlap inflates the index and creates
+near-duplicate hits.
+
+**Failure modes:** mid-sentence/mid-table cuts; chunks too large (diluted vectors); chunks too small
+(missing context); no overlap (answers split across the seam); chunk text differing from what you embed.
+
+---
+
+## 3. Embeddings
+
+### Choosing a model
+
+A dense embedding maps text → a vector in `R^dim` where semantic similarity ≈ geometric proximity. Choose by:
+
+- **Task & domain:** general vs. code vs. multilingual vs. domain-specific. Consult current public
+  retrieval leaderboards (e.g. MTEB-style) — but **validate on your own corpus**, leaderboards don't
+  reflect your data. Verify against current docs; rankings churn monthly.
+- **Dimension:** higher dim ≈ more capacity but more RAM/latency. Some models support **Matryoshka
+  (MRL)** — truncate the vector to a smaller dim with graceful quality loss; useful to cut index size.
+- **Max sequence length:** must exceed your chunk size or the tail is silently truncated.
+- **Asymmetric models** use different prompts/prefixes for queries vs. documents (e.g. `query:` /
+  `passage:`). Using the wrong prefix — or none — quietly tanks recall. Read the model card.
+- **Distance metric** the model was trained for (§5). This is not optional.
+
+### Serving embeddings
+
+- **Batch ingestion** for throughput; embedding millions of chunks is the dominant ingest cost. Use a
+  GPU-served embedding endpoint (vLLM / TEI / Triton — see `[[serving-frameworks]]`) with large batches.
+- **Cache** query embeddings and re-use; embed queries with the *same model and version* as documents.
+- **Versioning:** pin the model+version per index. Changing the embedding model **requires a full
+  re-embed and re-index** — query and doc vectors from different models are not comparable.
+
+**Failure modes:** query/document model mismatch; missing asymmetric prefix; chunk longer than model
+context (silent truncation); mixing two embedding-model versions in one index (the #1 cause of a
+mysteriously broken index after an "upgrade").
+
+---
+
+## 4. Retrieval methods
+
+### Dense vector search
+
+Embed the query, ANN-search the index for nearest neighbors (§6). Strong on paraphrase/semantic match;
+**weak on exact terms** — IDs, SKUs, error codes, rare proper nouns, exact quotes — because those get
+averaged into the embedding.
+
+### Sparse retrieval
+
+- **BM25** — classic lexical/term-frequency ranking. Exact, interpretable, no training, excellent on
+  keywords, IDs, and rare tokens. The baseline you must beat, and often the half that saves dense search.
+- **Learned sparse (SPLADE)** — a neural model produces a sparse term-weight vector with term expansion;
+  combines lexical exactness with some semantic generalization. Heavier to compute/index than BM25.
+
+### Hybrid search + fusion
+
+Run dense and sparse, then merge. **Reciprocal Rank Fusion (RRF)** is the robust default — it fuses by
+rank, not raw scores (which live on incomparable scales):
+
+```
+RRF(d) = Σ_retrievers  1 / (k + rank_retriever(d))     # k ≈ 60 by convention
+```
+
+RRF needs no score normalization and no per-corpus weight tuning, which is why it's the go-to. Weighted
+score fusion (normalize then linearly combine) can edge it out but requires tuning. Hybrid beats
+dense-only on the large majority of real corpora — adopt it as the default, not an optimization.
+
+### Metadata filtering
+
+Restrict by `source`, `date`, `tenant`, `lang`, ACLs, etc. Three implementation strategies, each with a trap:
+
+- **Pre-filter** (filter, then ANN over the subset): exact results, but a restrictive filter can shred
+  the HNSW graph's connectivity → poor recall or slow fallback to brute force.
+- **Post-filter** (ANN, then drop non-matching): fast, but a selective filter can leave far fewer than k
+  results ("k underflow").
+- **Filtered/integrated ANN** (the index is filter-aware): Qdrant, Milvus, Weaviate do this well. **Index
+  the fields you filter on.** At scale, this is the difference between sub-100ms and a timeout.
+
+### Reranking (cross-encoders)
+
+Bi-encoder retrieval (separate query/doc embeddings, cosine) is cheap but coarse. A **cross-encoder**
+jointly encodes (query, document) and outputs a precise relevance score — far more accurate, far more
+expensive, so you can't run it over the whole corpus. The canonical two-stage pattern:
+
+```
+ANN/hybrid: retrieve top-k (50–200, recall-oriented)  →  cross-encoder rerank  →  keep top-n (5–20)
+```
+
+Reranking is typically the **largest precision win after hybrid** and it lets you retrieve aggressively
+(high k) without dumping junk into the prompt. Serve the reranker on GPU (`[[serving-frameworks]]`);
+batch the (query,doc) pairs.
+
+### Advanced retrieval (when the basics plateau)
+
+- **Query rewriting / expansion** — clean up conversational/underspecified queries; expand with synonyms.
+- **HyDE** (Hypothetical Document Embeddings) — have an LLM draft a hypothetical answer, embed *that*,
+  and search with it; the answer's vector often lands closer to real passages than the bare question.
+- **Multi-query** — generate several query variants, retrieve for each, fuse (RRF). Improves recall.
+- **Multi-hop** — for questions needing chained facts, retrieve → reason → retrieve again.
+- **GraphRAG** — build an entity/relationship graph from the corpus; retrieve subgraphs / community
+  summaries. Strong for global "summarize across the whole corpus" and connected-fact questions; heavy
+  to build and maintain.
+- **Agentic RAG** — an LLM agent decides when/what/how to retrieve, calls retrieval as a tool, and
+  iterates. See `[[llm-app-agent-frameworks]]`. Powerful but adds latency and failure surface; gate it.
+
+**Failure modes:** dense-only on a keyword-heavy corpus; no reranking; k too small (right doc never
+retrieved); filter applied wrong (underflow / graph collapse); HyDE/multi-query latency without measuring
+that it helps.
+
+---
+
+## 5. Distance metrics (get this right or nothing works)
+
+| Metric | Meaning | Use when |
+|---|---|---|
+| **Cosine** | Angle; magnitude-invariant | Most dense text models. Default unless the card says otherwise. |
+| **Dot / inner product (IP)** | Angle × magnitude | Models trained for IP, or normalized vectors (then IP ≡ cosine). |
+| **L2 (Euclidean)** | Straight-line distance | Some image/specialized models. |
+
+**The rule:** use the metric the embedding model was *trained* with — it's on the model card. A
+cosine-trained model queried with L2 returns plausible-but-wrong neighbors and **degrades silently** (no
+error, just bad recall). If you normalize vectors to unit length, dot product equals cosine and is
+faster — a common, valid optimization. **Configure the index's metric to match at creation time;** many
+DBs can't change it without a rebuild. This single mismatch is one of the most common production RAG bugs.
+
+---
+
+## 6. ANN index algorithms & quantization
+
+Exact nearest-neighbor search is O(n) per query — infeasible at scale. **Approximate** NN trades a little
+recall for orders-of-magnitude speedup. The eternal triangle: **recall ↔ latency ↔ memory.** You pick two.
+
+### HNSW (Hierarchical Navigable Small World) — the default
+
+A multi-layer proximity graph; search greedily descends layers to the nearest neighborhood. High recall,
+low latency, fast build — but **the entire graph + vectors live in RAM** (RAM-bound). Key params
+(conceptual; names vary slightly by library):
+
+- **`M`** — edges per node. Higher → better recall + more memory. Typical 16–64.
+- **`efConstruction`** — candidate breadth at build. Higher → better graph quality, slower build.
+- **`efSearch`** (a.k.a. `ef`) — candidate breadth at query. **The runtime recall↔latency dial:** raise
+  for recall, lower for speed. Tune this per latency budget against eval.
+
+### IVF (Inverted File)
+
+Cluster vectors into `nlist` centroids; at query, probe the nearest `nprobe` clusters. Lower memory than
+HNSW, but recall depends on `nprobe` (more probes → higher recall, slower) and on a representative
+training set. Good when HNSW's RAM cost is prohibitive.
+
+### Quantization (shrink the vectors)
+
+- **PQ (Product Quantization)** — split each vector into sub-vectors, quantize each to a codebook;
+  huge memory savings (often >10×), some recall loss. **OPQ** rotates first for a better fit.
+- **SQ (Scalar Quantization)** — e.g. float32 → int8; ~4× smaller, small recall hit, simple.
+- **Binary quantization** — 1 bit/dim; massive compression + Hamming-distance speed, larger recall hit;
+  usually paired with a re-ranking/rescoring pass over full vectors to recover precision.
+
+**IVF-PQ / OPQ** (IVF coarse partition + PQ-compressed residuals) is the workhorse for billion-scale
+in-RAM-constrained indexes. A common high-quality pattern: quantized index for the fast first pass,
+then **rescore** the top candidates with full-precision vectors.
+
+### Disk-based & specialized
+
+- **DiskANN** — graph index that keeps most data on SSD with a RAM cache; serves far larger-than-RAM
+  indexes at the cost of latency. The answer when the corpus genuinely can't fit in RAM.
+- **ScaNN** — anisotropic-quantization-based ANN, strong recall/latency on large datasets.
+
+### Choosing
+
+| Situation | Index |
+|---|---|
+| Fits in RAM, want best recall/latency | **HNSW** |
+| Too big for full-precision RAM | **IVF-PQ / OPQ** (+ rescore) |
+| Far larger than RAM | **DiskANN** |
+| Billion-scale, max recall/$ | **ScaNN** / IVF-PQ |
+
+**Sizing rule of thumb (full-precision HNSW):** RAM ≈ `n_vectors × dim × 4 bytes` (the vectors) + graph
+overhead (roughly `n × M × ~8 bytes`) + process/OS headroom. 100M × 768-dim float32 ≈ ~300GB *just for
+vectors* — at which point quantization or DiskANN stops being optional. Verify exact overheads against
+your DB's current docs.
+
+---
+
+## 7. Vector databases
+
+### The contenders
+
+- **Milvus** — purpose-built, distributed; multiple index types (HNSW, IVF-PQ, DiskANN, GPU indexes),
+  separates compute/storage, scales to billions. Heavier to operate; strong for very large scale.
+- **Qdrant** — Rust, ergonomic; excellent **filtered ANN** and payload indexing, hybrid, quantization
+  built in. Great default for filtered/metadata-heavy workloads; easy to run on K8s.
+- **Weaviate** — schema/object model, built-in hybrid (BM25 + dense) and modules; multi-tenancy.
+- **pgvector** (Postgres extension) / **AlloyDB AI** — vectors *inside* Postgres: keep relational data,
+  joins, transactions, and one operational surface. HNSW & IVFFlat indexes. **Best choice when your data
+  already lives in Postgres** and scale is moderate; AlloyDB AI adds managed scaling and optimized
+  vector indexing for larger workloads. Verify current index/feature support against docs.
+- **Pinecone** — fully managed, serverless; you trade control for zero ops.
+- **Vespa** — heavyweight engine combining tensor/vector + lexical + ranking; excellent for complex
+  ranking and hybrid at scale; steeper learning curve.
+- **Elasticsearch / OpenSearch** — mature lexical (BM25) + added kNN/HNSW vector search. Compelling when
+  you already run them and want lexical + vector in one place; vector ergonomics trail purpose-built DBs.
+
+### How to pick
+
+| Need | Lean toward |
+|---|---|
+| Data already in Postgres, moderate scale, transactional joins | **pgvector / AlloyDB AI** |
+| Heavy metadata filtering, hybrid, easy ops | **Qdrant** |
+| Very large scale (billions), tunable index zoo | **Milvus** |
+| Schema/objects + built-in hybrid + multi-tenancy | **Weaviate** |
+| Mature lexical + vector in one engine you already run | **Elasticsearch / OpenSearch / Vespa** |
+| Zero ops, managed | **Pinecone** |
+
+### Dimensions that actually differentiate them
+
+- **Filtering:** quality of *filtered* ANN (pre/post/integrated) varies enormously — test on your filters.
+- **Consistency:** most vector DBs are eventually consistent on inserts (a just-upserted vector may not be
+  immediately searchable). pgvector inherits Postgres transactional semantics. Know your read-after-write needs.
+- **Hybrid:** native BM25/sparse + dense + fusion vs. bolt-it-on-yourself.
+- **Scale model:** sharding/replication, compute-storage separation, multi-tenancy isolation.
+- **Quantization & index options:** what the engine supports natively.
+
+---
+
+## 8. Deploying a vector DB on Kubernetes / GKE
+
+Vector DBs are **stateful and (for in-memory indexes) RAM-bound** — the two facts that drive the design.
+See `[[kubernetes-expert]]` and `[[gke-master]]`.
+
+- **`StatefulSet`, not Deployment.** Stable network identity + stable per-pod storage via
+  `volumeClaimTemplates`. Use a headless `Service` for peer discovery.
+- **Persistent storage:** fast SSD-backed `StorageClass` (e.g. SSD persistent disks / local SSD on GKE).
+  For DiskANN-style on-disk indexes, storage IOPS/latency directly bound query latency.
+- **Sharding & replication:** shard to scale data/throughput beyond one node; replicate each shard for HA
+  and read scale. Spread replicas across zones/nodes with `podAntiAffinity` + topology spread.
+- **Resource sizing:** size **RAM for the in-memory index** (§6 sizing rule) plus working set and OS page
+  cache — under-provisioned RAM → OOMKill mid-build or thrash. Pin CPU for build/search; set requests=limits
+  for memory to avoid eviction surprises. Distinguish ingest (CPU/throughput-heavy) from serve (latency).
+- **Scaling:** these are stateful — naive HPA on a `StatefulSet` rebalances/reshards data, which is
+  expensive and not instant. Plan capacity; scale deliberately. Embedding/reranker *services* are
+  stateless and scale normally (HPA / KEDA — see `[[autoscaling-kubernetes]]`, `[[serving-frameworks]]`).
+- **Backups:** use the DB's native snapshot/backup (collection snapshots, segment backups), not just a
+  PVC snapshot mid-write (which can capture a torn index). Test restore. Re-embeddable source-of-truth
+  corpus is your ultimate backup, but re-ingesting millions of docs is slow — keep DB snapshots too.
+- **Operators/Helm:** most of these ship a Helm chart and/or operator — prefer them over hand-rolled
+  manifests, but read what they configure (anti-affinity, PDBs, resources) and override for your sizing.
+- **Co-locate or not:** embedding/reranker/LLM serving (GPU) vs. vector DB (RAM/CPU) want different node
+  pools. Use separate GKE node pools and `nodeSelector`/taints. See `[[aiml-on-kubernetes]]`.
+
+---
+
+## 9. Context assembly / packing
+
+Retrieved-and-reranked chunks still have to be turned into a prompt:
+
+- **Order matters — "lost in the middle."** LLMs attend best to the start and end of long contexts.
+  Put the most relevant chunks at the edges; don't bury the key passage in the middle of a huge context.
+- **Don't overfill.** More context is not better — it dilutes attention, costs tokens/latency, and raises
+  distraction/hallucination risk. A tight set of highly-relevant chunks beats a fat one. This is why
+  rerank → small n exists.
+- **Deduplicate** overlapping/near-duplicate chunks (overlap and multi-query create them).
+- **Carry citations:** include source IDs/URLs with each chunk and instruct the model to cite, enabling
+  attribution and verification.
+- **Prompt the model to abstain** ("if the context doesn't contain the answer, say so") — the main lever
+  against hallucination when retrieval misses.
+
+**Failure modes:** context window stuffed to the brim; key chunk in the dead middle; duplicate chunks
+crowding out diversity; no citations; no abstain instruction (model invents an answer).
+
+---
+
+## 10. Evaluation — the part that's usually skipped and shouldn't be
+
+You cannot improve what you don't measure, and RAG has two layers to measure.
+
+### Retrieval metrics (need a labeled query → relevant-doc set)
+
+- **Recall@k** — fraction of relevant docs retrieved in the top k. The ceiling: if it's not in top-k,
+  rerank and the LLM can't fix it. Watch this first.
+- **Precision@k** — fraction of top-k that are relevant.
+- **MRR** (Mean Reciprocal Rank) — rank of the first relevant doc; good when one right answer.
+- **nDCG@k** — rank-weighted, graded relevance; the standard when ranking quality matters.
+
+Build the labeled set from real queries (logs) + human or strong-LLM judgments. A few hundred labeled
+queries already drives most decisions.
+
+### End-to-end metrics (RAGAS-style)
+
+- **Faithfulness / groundedness** — is the answer supported by the retrieved context? (hallucination check)
+- **Answer relevance** — does it address the question?
+- **Context precision / recall** — was the retrieved context relevant and sufficient?
+
+Frameworks like **RAGAS** automate these with an LLM-as-judge; treat the numbers as directional and
+spot-check with humans. Verify the framework's current metric definitions/API against its docs.
+
+### How to iterate
+
+1. Freeze an eval set (retrieval + end-to-end). 2. Change **one** variable (chunking, model, k,
+reranker, fusion). 3. Re-run, compare. 4. Keep what moves the metric, revert what doesn't. Log every run.
+Without this loop you are tuning by vibes and will regress silently.
+
+---
+
+## 11. Anti-patterns (the traps that bite in production)
+
+- **Naive fixed-size chunking** as the final strategy — cuts answers, dilutes vectors. Use structural/recursive.
+- **No reranking** — leaving the biggest precision win on the table; dumping coarse ANN hits into the prompt.
+- **Distance-metric mismatch** — cosine model with L2 index (or unnormalized vectors with IP). Silent recall death.
+- **Dense-only retrieval** on keyword/ID/code-heavy corpora — add sparse + RRF.
+- **No eval harness** — optimizing by anecdote; can't tell improvement from regression.
+- **Stale index** — corpus changed but not re-indexed; or embedding model upgraded without re-embedding
+  (query and doc vectors now incompatible).
+- **Ignoring metadata filters at scale** — unindexed filter fields → full scans/timeouts; or post-filter underflow.
+- **Over-stuffed context** — max-filling the window, burying the answer ("lost in the middle"), paying
+  tokens for noise.
+- **Mixing embedding-model versions** in one index — the subtle "everything got worse after the upgrade" bug.
+- **Query embedded differently than documents** — missing asymmetric prefix, different model/version.
+- **No abstain path** — model hallucinates instead of saying "not in context."
+
+---
+
+## 12. Troubleshooting (symptom → likely cause → fix)
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Right doc never appears in results | Recall@k low: k too small, wrong metric, bad chunking, dense-only | Raise k; verify metric/normalization; add hybrid; fix chunking; check recall@k |
+| Relevant docs retrieved but answer is wrong | No reranking / poor context order / over-stuffed | Add cross-encoder rerank; put key chunks at edges; shrink n |
+| Exact IDs/codes/quotes not found | Dense-only averages them out | Add BM25/SPLADE + RRF |
+| Quality dropped after "upgrading" the model | Mixed embedding versions in one index | Full re-embed + reindex; pin version per index |
+| Hallucinated answers | Retrieval miss + no abstain | Improve recall; instruct abstain; measure faithfulness |
+| Slow queries / timeouts | efSearch/nprobe too high, no filter index, index > RAM (swapping) | Tune efSearch/nprobe; index filter fields; quantize or move to DiskANN; add RAM |
+| OOMKilled pod | In-memory index exceeds RAM | Quantize (PQ/SQ/binary), shard, or size RAM via §6 rule; use DiskANN |
+| Filtered queries return too few results | Post-filter underflow | Use integrated filtered ANN; raise k pre-filter; index the field |
+| Just-inserted doc not searchable | Eventual-consistency indexing lag | Wait for index flush / use the DB's consistency knob; pgvector is transactional |
+
+---
+
+## 13. Version awareness (2026)
+
+This stack moves monthly. **Verify against current docs before relying on specifics:**
+embedding-model dimensions, max length, asymmetric prefixes, and trained distance metric; reranker model
+availability; vector-DB index types, quantization options, filtering semantics, and consistency knobs;
+RAGAS metric definitions and APIs; pgvector/AlloyDB AI index feature support. Retrieval *principles*
+(hybrid, rerank, metric-match, eval-driven iteration) are stable; the knobs and APIs are not.
+
+---
+
+## 14. Canonical references (real URLs only)
+
+- HNSW paper — Malkov & Yashunin, "Efficient and robust approximate nearest neighbor search using
+  Hierarchical Navigable Small World graphs": https://arxiv.org/abs/1603.09320
+- Product Quantization — Jégou et al.: https://ieeexplore.ieee.org/document/5432202
+- DiskANN — https://github.com/microsoft/DiskANN
+- ScaNN — https://github.com/google-research/google-research/tree/master/scann
+- SPLADE — https://github.com/naver/splade
+- HyDE — "Precise Zero-Shot Dense Retrieval without Relevance Labels": https://arxiv.org/abs/2212.10496
+- "Lost in the Middle" — Liu et al.: https://arxiv.org/abs/2307.03172
+- RRF — Cormack et al.: https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf
+- MTEB embedding leaderboard: https://huggingface.co/spaces/mteb/leaderboard
+- RAGAS — https://github.com/explodinggradients/ragas
+- Milvus — https://milvus.io/docs · Qdrant — https://qdrant.tech/documentation/
+- Weaviate — https://weaviate.io/developers/weaviate · pgvector — https://github.com/pgvector/pgvector
+- AlloyDB AI — https://cloud.google.com/alloydb/docs/ai · Vespa — https://docs.vespa.ai/
+- Faiss (index/quantization reference) — https://github.com/facebookresearch/faiss/wiki
+
+---
+
+# RAG & Vector Databases — Worked Examples
+
+Canonical, correct-in-shape artifacts to imitate. Verify exact image tags, API fields, and model
+names/dims against current docs before deploying — this stack moves monthly (see the guide §13).
+
+---
+
+## 1. Qdrant StatefulSet on Kubernetes (sketch)
+
+A vector DB is **stateful and RAM-bound** — run it as a `StatefulSet` with per-pod PVCs, a headless
+Service for peer discovery, anti-affinity across nodes/zones, and RAM sized for the in-memory index.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: qdrant-headless          # headless service: stable per-pod DNS for the cluster
+  labels: { app: qdrant }
+spec:
+  clusterIP: None
+  selector: { app: qdrant }
+  ports:
+    - { name: http, port: 6333 }
+    - { name: grpc, port: 6334 }
+    - { name: p2p,  port: 6335 } # internal cluster (distributed mode)
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: qdrant
+spec:
+  serviceName: qdrant-headless
+  replicas: 3                     # shard + replicate across nodes for scale & HA
+  podManagementPolicy: Parallel
+  selector: { matchLabels: { app: qdrant } }
+  template:
+    metadata:
+      labels: { app: qdrant }
+    spec:
+      # Spread replicas across nodes/zones so one failure can't take the collection down.
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector: { matchLabels: { app: qdrant } }
+              topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector: { matchLabels: { app: qdrant } }
+      containers:
+        - name: qdrant
+          image: qdrant/qdrant:latest   # PIN a concrete version in real use
+          ports:
+            - { containerPort: 6333, name: http }
+            - { containerPort: 6334, name: grpc }
+            - { containerPort: 6335, name: p2p }
+          env:
+            - name: QDRANT__CLUSTER__ENABLED
+              value: "true"
+          resources:
+            requests:
+              cpu: "4"
+              memory: 32Gi          # size RAM for the in-memory HNSW index + working set
+            limits:
+              memory: 32Gi          # requests==limits for memory: avoid eviction surprises / OOM thrash
+          volumeMounts:
+            - { name: storage, mountPath: /qdrant/storage }
+          readinessProbe:
+            httpGet: { path: /readyz, port: 6333 }
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet: { path: /livez, port: 6333 }
+            initialDelaySeconds: 20
+  volumeClaimTemplates:            # stable per-pod persistent storage
+    - metadata: { name: storage }
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: premium-rwo   # fast SSD-backed class (e.g. SSD PD on GKE)
+        resources: { requests: { storage: 200Gi } }
+```
+
+Notes:
+- **Sizing:** memory request must cover `n_vectors × dim × 4 bytes` (vectors) + HNSW graph overhead +
+  OS page cache headroom (guide §6). Under-provision → OOMKill mid-build. If the index can't fit, enable
+  quantization or move to a disk-based index.
+- **Backups:** use Qdrant's native **collection snapshots**, not a raw PVC snapshot taken mid-write
+  (which can capture a torn index). Test restore. Prefer the official Helm chart/operator and override
+  resources for your sizing. See `[[kubernetes-expert]]`, `[[gke-master]]`.
+- Put embedding/reranker GPU serving on a **separate node pool** from the RAM/CPU vector DB
+  (`[[serving-frameworks]]`, `[[aiml-on-kubernetes]]`).
+
+---
+
+## 2. Hybrid retrieval (dense + sparse) → RRF fusion → cross-encoder rerank
+
+The canonical two-stage pattern: over-retrieve cheaply with hybrid, fuse by **rank** (RRF), then re-score
+the survivors with a cross-encoder and keep a small, high-precision set for the prompt. Illustrative
+Python — adapt client/model APIs to your stack.
+
+```python
+def reciprocal_rank_fusion(ranked_lists, k: int = 60, top: int = 100):
+    """Fuse multiple ranked result lists by rank (no score normalization needed)."""
+    scores = {}
+    for results in ranked_lists:                 # each list ordered best-first
+        for rank, doc_id in enumerate(results):
+            scores[doc_id] = scores.get(doc_id, 0.0) + 1.0 / (k + rank)
+    return [doc_id for doc_id, _ in
+            sorted(scores.items(), key=lambda kv: kv[1], reverse=True)[:top]]
+
+
+def retrieve(query: str, *, filters: dict, k: int = 100, n_final: int = 8):
+    # --- Stage 1: hybrid retrieval (recall-oriented, large k) ---
+    # IMPORTANT: embed the query with the SAME model+version as the documents,
+    # and the correct asymmetric prefix if the model uses one (e.g. "query: ").
+    q_vec = embed_query(query)                   # dense (metric MUST match the index, e.g. cosine)
+
+    dense_hits = vector_db.search(               # ANN over HNSW, with metadata pre/filtered ANN
+        vector=q_vec, limit=k, query_filter=filters,
+    )
+    sparse_hits = lexical_index.search(          # BM25 / SPLADE — exact terms, IDs, rare tokens
+        text=query, limit=k, filters=filters,
+    )
+
+    fused_ids = reciprocal_rank_fusion(
+        [[h.id for h in dense_hits], [h.id for h in sparse_hits]],
+        k=60, top=k,
+    )
+
+    # --- Stage 2: cross-encoder rerank (precision-oriented, small n) ---
+    candidates = fetch_documents(fused_ids)      # texts for the fused candidate ids
+    pairs = [(query, doc.text) for doc in candidates]
+    rel_scores = cross_encoder.predict(pairs)    # joint (query, doc) scoring — far more accurate than cosine
+    reranked = [doc for _, doc in
+                sorted(zip(rel_scores, candidates), key=lambda x: x[0], reverse=True)]
+
+    return reranked[:n_final]                     # small, high-precision set for the prompt
+
+
+def build_prompt(query: str, chunks: list) -> str:
+    # "Lost in the middle": put the strongest chunks at the EDGES, dedup, carry citations,
+    # and instruct the model to ABSTAIN if the context doesn't contain the answer.
+    ctx = "\n\n".join(f"[{c.source_id}] {c.text}" for c in chunks)
+    return (
+        "Answer ONLY from the context below. Cite sources as [id]. "
+        "If the answer is not in the context, say you don't know.\n\n"
+        f"Context:\n{ctx}\n\nQuestion: {query}\nAnswer:"
+    )
+```
+
+Why each step: dense catches paraphrase/semantics, sparse catches exact tokens, **RRF** merges them
+robustly without tuning weights, the **cross-encoder** fixes ranking precision, and the **prompt**
+controls ordering + hallucination. Drop any one and a class of queries silently degrades.
+
+---
+
+## 3. HNSW / pgvector index configuration
+
+### pgvector (HNSW inside Postgres)
+
+Pick the operator class that **matches the embedding model's distance metric** — this is load-bearing.
+
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE TABLE chunks (
+    id          bigserial PRIMARY KEY,
+    doc_id      text NOT NULL,
+    source      text NOT NULL,          -- metadata you will filter on
+    lang        text NOT NULL,
+    chunk       text NOT NULL,
+    embedding   vector(768)             -- dim MUST equal the embedding model's output dim
+);
+
+-- HNSW index. The operator class MUST match how the model was trained:
+--   vector_cosine_ops  -> cosine        (most dense text models; default choice)
+--   vector_ip_ops      -> inner product (use ONLY if vectors are normalized / model trained for IP)
+--   vector_l2_ops      -> Euclidean
+CREATE INDEX ON chunks
+    USING hnsw (embedding vector_cosine_ops)
+    WITH (m = 16, ef_construction = 64);   -- build-time: higher m/ef_construction => better recall, slower build
+
+-- B-tree on filter columns so metadata filtering doesn't force a full scan at scale.
+CREATE INDEX ON chunks (source);
+CREATE INDEX ON chunks (lang);
+
+-- Query-time recall<->latency dial (per session/transaction):
+SET hnsw.ef_search = 100;                  -- raise for recall, lower for latency
+
+-- A cosine query. Use the operator that MATCHES the index (<=> cosine, <#> ip, <-> L2).
+SELECT id, doc_id, source, chunk
+FROM   chunks
+WHERE  lang = 'en' AND source = 'docs'     -- metadata filter (indexed above)
+ORDER  BY embedding <=> $1                  -- $1 = query embedding, same model+version as docs
+LIMIT  100;                                 -- over-retrieve; rerank downstream
+```
+
+Gotchas:
+- Operator class (`vector_cosine_ops`/`ip`/`l2`) **and** the query operator (`<=>`/`<#>`/`<->`) must both
+  match the model's metric. Mixing them returns plausible-but-wrong neighbors with no error.
+- The index dimension must equal the model output dim exactly; a model swap means re-embed + reindex.
+- `ef_search` is the runtime recall/latency knob; `m` and `ef_construction` are fixed at build time.
+
+### HNSW params, conceptually (any engine — Qdrant/Milvus/Weaviate/Faiss)
+
+| Param | Phase | Effect | Direction |
+|---|---|---|---|
+| `M` | build | edges per node; recall + memory | higher → better recall, more RAM |
+| `efConstruction` | build | candidate breadth while building | higher → better graph, slower build |
+| `efSearch` / `ef` | query | candidate breadth while searching | **the recall↔latency dial** — tune per latency budget |
+
+Tune `efSearch` against an eval set (recall@k vs. p99 latency); raise `M`/`efConstruction` only if recall
+is still short after maxing reasonable `efSearch`. If the full-precision HNSW index won't fit in RAM,
+switch to a quantized index (PQ/SQ/binary, with a full-vector rescore pass) or IVF-PQ / DiskANN
+(guide §6).
