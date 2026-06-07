@@ -36,16 +36,15 @@ cd skills
 scans (set `<dest>` to your tool's skills path). Manual equivalents below.
 
 ### Updating
+One command — pulls latest and refreshes your install:
 ```bash
-cd skills && git pull
+cd skills
+./update.sh                 # git pull + refresh Claude Code install (~/.claude/skills)
+./update.sh ~/.gemini/<codename>/skills   # ...also refresh a flat-bundle copy at that path
 ```
-- **Claude Code (`claude` install)** — skills are **symlinks into this repo**, so `git pull` alone
-  refreshes existing skills' content. Re-run `./install.sh claude` only to pick up **newly added**
-  skills (it's idempotent).
-- **Flat loader (`flat` install)** — those are **copies**, so after `git pull` **re-run**
-  `./install.sh flat <dest>` to refresh them.
-
-Rule of thumb: *symlink install → `git pull` (+ re-run for new skills); copy install → `git pull` + re-run.*
+Under the hood: **symlink (Claude) installs** just need a re-link to pick up newly added skills;
+**flat installs are copies** and get re-copied. `update.sh` does the right thing for both (manual
+equivalent: `git pull` then re-run `./install.sh ...`).
 
 ### Claude Code (skills load on demand — all of them can coexist)
 ```bash
