@@ -1,2 +1,6 @@
 .DS_Store
 *.swp
+
+# validation evidence captures
+tests/evidence/*
+!tests/evidence/.gitkeep

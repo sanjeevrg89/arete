@@ -89,6 +89,12 @@ each is "given this prompt, the output must satisfy X" (regex assertions). CI li
 (`functional_test.py --lint`); to actually run them against an agent: `AGENT_CMD='claude -p' python
 scripts/functional_test.py`.
 
+**Validating a skill for real** — structure/routing/functional checks are necessary but not sufficient;
+real confidence comes from applying a skill to an actual repo/task and judging the output against an
+expert bar. See [`tests/VALIDATION.md`](tests/VALIDATION.md) for the 5-layer procedure (incl. A/B vs a
+no-skill baseline and a content-accuracy pass) and record results in
+[`tests/validation-log.md`](tests/validation-log.md). Green CI ≠ validated.
+
 ## Validation / CI
 `scripts/validate.py` (stdlib only) checks every skill: valid `SKILL.md` frontmatter, `name` matches
 the directory and is unique, a router-grade `description`, the required files (`SKILL.md` / guide /
