@@ -52,6 +52,13 @@ Claude Code (`SKILL.md`), AGENTS.md-compatible agents / agentic IDEs (`AGENTS.md
 | [`privacy-preserving-ml`](privacy-preserving-ml/) | PETs for ML: differential privacy (DP-SGD/accounting), federated learning (FedAvg/secure aggregation), HE/MPC/TEEs, machine unlearning, privacy budgets. |
 | [`edge-on-device-ml`](edge-on-device-ml/) | Edge/mobile/embedded deployment: ExecuTorch, LiteRT/TFLite, ONNX Runtime, Core ML, llama.cpp; NPUs/TinyML, on-device quantization, conversion & parity validation. |
 | [`ai-research-science`](ai-research-science/) | Research-scientist depth across training/inference/fine-tuning/RL/RLHF: architectures, objectives, optimizers, scaling laws, reward modeling, PPO/DPO/GRPO/RLVR theory, test-time compute, open problems. |
+| [`engineering-lifecycle`](engineering-lifecycle/) | **Process meta:** Define→Plan→Build→Verify→Review→Ship for AI infra, with the gate between each stage; routes to the stage skills. |
+| [`spec-driven-development`](spec-driven-development/) | **Define:** clarify before building — interview, write an AI-infra spec with testable acceptance criteria, SLOs, cost & failure modes; review gate. |
+| [`task-planning-decomposition`](task-planning-decomposition/) | **Plan:** decompose into small verifiable steps, sequence riskiest/most-expensive first, plan for partial failure; approach-review gate. |
+| [`test-driven-development`](test-driven-development/) | **Build:** red-green-refactor for infra/ML — table tests, envtest, eval-as-test (invariants not exact tokens), determinism, race; CI gate. |
+| [`verification-and-debugging`](verification-and-debugging/) | **Verify:** prove it works (e2e, eval gates, reproducibility) + systematic root-cause debugging for distributed/GPU/ML; regression-test gate. |
+| [`code-review-discipline`](code-review-discipline/) | **Review:** correctness/blast-radius/security/simplicity lens, IaC & manifest care, feedback etiquette; approved-against-checklist gate. |
+| [`shipping-and-release`](shipping-and-release/) | **Ship:** small, reversible, watched — progressive delivery, model canary/champion-challenger, tested rollback, monitoring-before-ramp gate. |
 
 ## Cross-link graph (high-traffic edges)
 - The four `kubernetes-*` skills form the platform core; `aiml-on-kubernetes` is the umbrella that routes
@@ -83,5 +90,8 @@ Claude Code (`SKILL.md`), AGENTS.md-compatible agents / agentic IDEs (`AGENTS.md
 6. **CS foundations & breadth:** `distributed-systems-fundamentals`, `graph-ml-gnns`, `time-series-forecasting`.
 7. **Trust & leadership:** `ai-security-on-gke`, `responsible-ai-governance`, `staff-plus-engineering`,
    `adversarial-ml-robustness`, `privacy-preserving-ml`.
+8. **Engineering process (Define→Plan→Build→Verify→Review→Ship):** `engineering-lifecycle` (meta),
+   `spec-driven-development`, `task-planning-decomposition`, `test-driven-development`,
+   `verification-and-debugging`, `code-review-discipline`, `shipping-and-release`.
 
 > Maintenance: add a new skill as a directory following `SKILL-AUTHORING-SPEC.md`, then add a row here.

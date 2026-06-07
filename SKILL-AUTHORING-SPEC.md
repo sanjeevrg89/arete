@@ -48,7 +48,20 @@ Mirror its structure and voice.
    - **Security / multi-tenancy** — where relevant.
    - **Version awareness** — note that the ecosystem moves fast (it is 2026); flag where APIs/versions
      matter and tell the reader to verify current docs. Don't invent version numbers you're unsure of.
+   - **Rationalizations & rebuttals** — a short list of the excuses an engineer or agent uses to skip
+     the right thing ("it's just a quick fix, skip the test"), each with a one-line rebuttal. This is
+     what makes a guide *agent-actionable* rather than merely informative. Include it where the skill
+     has real practices/decisions; **omit for pure-reference/mechanism topics** where it would be
+     artificial (don't force it).
+   - **Red flags** — a concise "stop and reconsider" list: signals that the current approach is wrong.
+   - **Verification gate (definition of done)** — the explicit checklist of what must be true/tested
+     before the work counts as complete (commands to run, properties to confirm, evidence to show).
    - **Canonical references** — authoritative links (project docs, KEPs, papers, source). Real URLs only.
+
+   **Process / workflow skills** (lifecycle skills like spec-driven dev, TDD, review, debugging,
+   shipping) are structured differently — lead with **Overview**, **When to use**, and **The process**
+   (numbered steps with explicit checkpoints/gates), then the Rationalizations / Red flags /
+   Verification sections above. They encode *how to work*, not *what to know*.
 
 3. **`AGENTS.md`** — cross-tool always-on summary. Short. Header pointing to `<slug>-guide.md` as the
    authoritative source, then a condensed always-on checklist of the highest-value rules. Keep it small
