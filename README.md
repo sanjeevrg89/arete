@@ -35,6 +35,18 @@ cd skills
 `install.sh flat <dest>` regenerates the flat bundle and copies it to whatever directory your loader
 scans (set `<dest>` to your tool's skills path). Manual equivalents below.
 
+### Updating
+```bash
+cd skills && git pull
+```
+- **Claude Code (`claude` install)** — skills are **symlinks into this repo**, so `git pull` alone
+  refreshes existing skills' content. Re-run `./install.sh claude` only to pick up **newly added**
+  skills (it's idempotent).
+- **Flat loader (`flat` install)** — those are **copies**, so after `git pull` **re-run**
+  `./install.sh flat <dest>` to refresh them.
+
+Rule of thumb: *symlink install → `git pull` (+ re-run for new skills); copy install → `git pull` + re-run.*
+
 ### Claude Code (skills load on demand — all of them can coexist)
 ```bash
 mkdir -p ~/.claude/skills
