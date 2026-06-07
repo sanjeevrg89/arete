@@ -619,6 +619,91 @@ defense-in-depth, not a substitute for least-privilege tools and sandboxing → 
 
 ---
 
+## Rationalizations & rebuttals
+
+The excuses an engineer or agent uses to skip the right thing when building an LLM app — each rebutted.
+
+- **"No eval needed — it demos fine."** A demo is one trajectory; production is a distribution. Without a
+  versioned eval set you regress silently on every prompt/model bump and learn from users (§10). Build
+  the dataset *before* the agent.
+- **"The unbounded agent loop is fine, it always terminates in testing."** "Always" until an injection,
+  an oscillation, or a flaky tool makes it spin — one stuck session can burn thousands of dollars (§10,
+  §11). Every loop gets a hard cap: max steps, tokens, wall-clock, and cost, plus degenerate-loop
+  detection.
+- **"Tool output is from our own systems, so I can trust it."** Tool, RAG, and MCP results are untrusted
+  input — any instruction-looking text in them can hijack the model ("ignore previous instructions",
+  exfiltration) (§4, §8, §9.1). Keep it out of the instruction region, delimited as data; you cannot fix
+  this with prompt wording.
+- **"In-memory state is fine, the run is short."** Short until a pod reschedule, OOM, or tool timeout
+  loses the whole run with no safe resume — and re-running re-fires side effects (§7). For long/stateful
+  agents use a durable backend; decide replay-vs-restore *before* shipping.
+- **"No sandbox — the model-generated code/tool call looks harmless."** One injection and the agent acts
+  with your credentials. Never run generated code or net/fs tools in-process or with cluster creds;
+  isolate (gVisor/microVM), least-privilege, egress-restrict, human-gate destructive actions (§6, §10).
+- **"Retries are safe, the engine guarantees exactly-once."** The engine guarantees the *workflow*
+  observes a result once; the *world* is made consistent by idempotency, not magic (§7.3). At-least-once
+  + a non-idempotent charge/send = duplicates. Pass a stable idempotency key derived from run+step id.
+- **"A multi-agent swarm will be more capable."** More agents = more tokens, more failure modes, harder
+  evals and debugging (§2). Use the least autonomy that works; don't reach for multi-agent until a single
+  well-tooled agent demonstrably can't do the job.
+- **"Bigger context window means I can skip retrieval and just stuff everything in."** More context costs
+  more, adds latency, and degrades quality (lost-in-the-middle, dilution, context rot) (§9.2). Retrieve
+  to narrow, then use long context for the narrowed material — and measure both with evals.
+
+---
+
+## Red flags
+
+Stop and reconsider if you see any of these:
+
+- **No loop bounds.** A loop without a max-steps / max-tokens / wall-clock / max-cost cap or
+  degenerate-loop detection — runaway cost and hangs waiting to happen (§10, §11).
+- **No evals.** Prompt/model/framework changes shipped on vibes, no versioned offline set, nothing
+  running in CI. "No evals = no production" (§10).
+- **Untrusted exec with no sandbox.** Model-generated code or network/filesystem tools running in-process
+  or with cluster/cloud credentials; destructive tools with no human gate (§6, §10).
+- **Non-idempotent side-effecting tools behind retries/replay.** Charges, sends, or provisioning calls
+  with no idempotency key — the single most damaging durable-agent bug (§7.3).
+- **In-memory loop holding all run state.** State only in local variables for a long/stateful run; no
+  durable backend, no defined recovery story (replay vs. restore, unit-of-retry) (§7).
+- **Prompt spaghetti.** Giant, unversioned, string-concatenated prompts with business logic buried in
+  them; untrusted tool/retrieved text concatenated into the instruction region (§9.1, §11).
+- **No tracing / observability.** Debugging an agent loop with no per-step span tree (LLM/tool/retrieval
+  inputs, outputs, tokens, latency, cost) — you can't reason about a loop you can't see (§10).
+- **Giant or overlapping tool sets.** 60 tools where 5–15 orthogonal ones would do; selection accuracy
+  degrades — route or split per sub-agent (§2).
+- **Hidden non-determinism.** Depending on exact output strings, unpinned model ids, or non-deterministic
+  calls (LLM/tool/clock/`random`) inside durable workflow code (§7.2, §10).
+
+---
+
+## Verification gate (definition of done)
+
+Before an LLM app/agent counts as shippable, confirm:
+
+- [ ] **Loops and cost are bounded.** Every loop has a hard cap (max steps, tool calls, tokens,
+  wall-clock, per-run cost budget); a tripped cap fails gracefully (best-effort + flag), and degenerate
+  loops (repeated tool+args, oscillation) are detected and aborted (§10).
+- [ ] **Evals exist and gate changes.** A versioned offline eval set covers final-answer, tool-selection,
+  retrieval, and trajectory; it runs in CI on every prompt/model/framework change; online signals
+  (success/abandonment, guardrail hits, cost/latency, loop counts) are tracked (§10).
+- [ ] **Untrusted execution is sandboxed.** Model-generated code and net/fs tools run isolated
+  (gVisor/microVM), least-privilege, egress-restricted, no node/cluster creds; destructive actions are
+  human-gated; all tool/RAG/MCP output is handled as untrusted, delimited data (§6, §9.1, §10).
+- [ ] **Side-effecting tools are idempotent.** Args validated server-side; a stable idempotency key
+  (derived from run+step id) is passed to every charge/send/provision call; retries are bounded and split
+  retryable vs. fatal (§2, §7.3).
+- [ ] **State is durable/resumable where the run is long or stateful.** Externalized session/state or a
+  durable-execution backend; an explicit recovery story (replay vs. restore, unit-of-retry); workflow
+  code kept deterministic so replay holds; stateless, horizontally scalable workers (§6, §7).
+- [ ] **Tracing is on.** Every run is a span tree (LLM/tool/retrieval/sub-agent spans with inputs,
+  outputs, token counts, latency, cost), ideally via OpenTelemetry GenAI conventions; prompts are
+  versioned with each trace so regressions reproduce; secrets are redacted from logs/traces (§10).
+- [ ] **Prompts and models are pinned and versioned.** Prompts under source control, tied to eval
+  results; model ids pinned; evals re-run on any bump (§9.1, §10).
+
+---
+
 ## 12. Version awareness
 
 This space changes monthly. Model names, context limits, pricing, structured-output support, MCP spec

@@ -607,6 +607,94 @@ the current docs.
 
 ---
 
+## Rationalizations & rebuttals
+
+The excuses that precede a skew or leakage incident, each with the one-line answer:
+
+- *"It's faster to just rewrite the feature in the serving service than wire up the store."* → That copy
+  is the #1 cause of training-serving skew (Section 11). Two implementations drift the day after you
+  ship. One tested definition served to both, or it isn't done.
+- *"Random k-fold CV is fine for this."* → Random splits leak the future across folds for any
+  time-ordered or entity-grouped data. Use time-based / out-of-time (and entity-grouped) splits, or your
+  offline score is fiction (Sections 4.3, 7.3).
+- *"Point-in-time joins are overkill — I'll just join the current feature value."* → A plain
+  `JOIN ON entity_id` to the latest value leaks information that didn't exist at decision time; metrics
+  inflate offline and collapse in production. As-of join on event time with a TTL is non-negotiable
+  (Section 4.3).
+- *"The upstream data is clean, we don't need validation."* → Clean today, a silent units/schema/null
+  change tomorrow — no error thrown, model just degrades (Section 8). Schema + distribution + freshness
+  checks that fail closed cost a day and save a quarter.
+- *"Undocumented features are fine, the author knows what they mean."* → The author leaves, the upstream
+  changes, and nobody knows if the feature is safe or what breaks. Registry entry with owner +
+  description + types, or it's not a feature, it's debt (Sections 4.1, 11).
+- *"We'll validate at training time; serving is the same data."* → It demonstrably isn't — that
+  assumption *is* skew. Monitor serving feature distributions against the training reference
+  (Sections 8, 11).
+- *"Processing-time windows are close enough for the streaming feature."* → A consumer-lag spike silently
+  shifts every value and late events undercount. Event-time windows with explicit watermarks and a
+  deliberate late-data policy, matched in the batch backfill (Section 6.2).
+- *"It's a one-off backfill, I'll mutate the table in place."* → Now the training run is unreproducible
+  forever. Immutable, versioned snapshots (lakehouse time travel / LakeFS / DVC) (Sections 3, 11).
+
+---
+
+## Red flags (stop and reconsider)
+
+- **Feature logic exists in more than one place** — the training notebook/job and the serving service
+  each compute "7-day count." Skew is already shipping (Sections 4, 11).
+- **A join to a feature with no event-time / TTL condition** in training-set construction — non-point-in-time
+  join, i.e. leakage by construction (Section 4.3).
+- **A feature that is "too predictive"** / an implausibly strong offline signal — almost always temporal
+  leakage; audit feature timestamp vs label timestamp (Sections 4.3, 13).
+- **No validation step between ingestion and the model** — or validation that logs a warning instead of
+  failing the run (does not "fail closed") (Section 8).
+- **Stale online features** — materialization/consumer lag with no freshness SLO or alert on
+  max-event-timestamp age; serving silently reads old values (Sections 4.4, 6.3).
+- **Schema/units drift entering untyped** — a new enum value, a renamed column, or a millis-vs-seconds
+  change flowing through with no contract to catch it (Sections 8, 11).
+- **Streaming and batch implementations of the same feature** with no continuous online-vs-offline
+  consistency diff — two sources of truth that will diverge (Sections 6.3, 11).
+- **Validating only at train time, never at serve time** — skew goes undetected in production
+  (Sections 8, 11).
+- **A training run with no pinned data version** (lakehouse snapshot / DVC rev / LakeFS commit) — "which
+  data trained this?" has no precise answer (Sections 3, 13).
+- **Raw PII in feature names, logs, or embeddings**, or no deletion path through derived features and
+  snapshots (Section 10).
+
+---
+
+## Verification gate (definition of done)
+
+The work is not done until every item is true:
+
+- [ ] **Single feature definition** for train and serve — no feature logic reimplemented in the serving
+  layer; the shared definition (feature store / shared transform lib) is what both paths call.
+- [ ] **Point-in-time-correct joins** for every training set — as-of join on event time honoring TTL; no
+  `JOIN`-to-current-value anywhere in training-set construction.
+- [ ] **Time-based (and entity-grouped where relevant) splits** — no random CV on time-ordered data.
+- [ ] **Data validation gates the pipeline and fails closed** — schema + distribution + volume/freshness +
+  cross-field checks; a violation stops the run / quarantines the partition and pages an owner.
+- [ ] **Serve-time validation / skew monitor in place** — serving feature distributions compared to the
+  training reference; alert on divergence.
+- [ ] **Streaming features prove online/offline consistency** (if any) — online-served value diffed
+  against an offline as-of recomputation; event-time windows, watermarks, and late-data policy matched in
+  batch.
+- [ ] **Freshness SLO defined per online feature** and alerted on (materialization/consumer lag,
+  max-event-timestamp age).
+- [ ] **Every served feature is registered** with owner, description, and types; every dataset has a
+  datasheet/data card.
+- [ ] **Lineage captured** raw source → transform → feature → model, and the training run is **pinned to a
+  concrete data version** (snapshot ID / DVC rev / LakeFS commit) recorded with the model.
+- [ ] **PII classified, tagged, and handled** — masked/tokenized where raw isn't needed; access control,
+  retention, and a deletion path through derived features and snapshots.
+
+> Note on fast-moving tooling: feature-store APIs (Vertex AI Feature Store, Feast stream/push),
+> lakehouse-format support per engine, Great Expectations/TFDV surfaces, and streaming-engine semantics
+> change frequently (2026) — verify the exact API/capability against current docs before relying on it
+> (Section 14).
+
+---
+
 ## 15. Canonical references (real URLs)
 
 - Google Cloud — *MLOps: Continuous delivery and automation pipelines in machine learning*:

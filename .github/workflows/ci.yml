@@ -19,3 +19,5 @@ jobs:
           python-version: "3.12"
       - name: Validate skill library
         run: python scripts/validate.py
+      - name: Lint functional checks
+        run: python scripts/functional_test.py --lint

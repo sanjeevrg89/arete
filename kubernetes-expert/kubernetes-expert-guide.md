@@ -426,7 +426,82 @@ Debugging is always **desired vs. actual**. Work top-down:
 
 ---
 
-## 13. Version awareness
+## 13. Rationalizations & rebuttals
+
+The excuses that precede a 2 a.m. page. When you catch yourself (or an agent) saying one of these, stop.
+
+| Rationalization | Rebuttal |
+|---|---|
+| "No resource limits, it's fine — it barely uses anything." | No requests = BestEffort = first evicted/OOM-killed, and the scheduler can't reserve for it. Set requests; `memory limit == request`. |
+| "`:latest` is convenient — always pulls the newest." | Mutable tags break rollbacks and reproducibility; two pods can run different code. Pin a digest/immutable tag. |
+| "I'll add probes later." | Without a `readinessProbe` the rollout never gates and you ship broken pods into the LB. It is one of the cheapest correctness wins — add it now. |
+| "It's a quick job, a naked Pod is enough." | A naked Pod is never rescheduled if its node dies. Wrap it in a Job/Deployment so the controller heals it. |
+| "Single replica is fine, the node won't go down." | Nodes drain on every upgrade and autoscale event. One replica with no PDB means guaranteed downtime during routine ops. Run ≥2 + spread + PDB. |
+| "cluster-admin so I stop fighting RBAC errors." | That SA owns the cluster the moment it leaks. Grant the narrow verbs the app actually uses; verify with `kubectl auth can-i --list`. |
+| "Secrets in env vars are simpler than mounts." | Env leaks into `/proc`, crash dumps, child processes, and logs, and never rotates. Mount as files from a secret store with encryption at rest. |
+| "Liveness probe hitting the DB proves it's healthy." | It turns a downstream blip into a cluster-wide restart storm and self-inflicted CrashLoopBackOff. Liveness checks the process only; depend on readiness. |
+
+---
+
+## 14. Red flags
+
+Stop and reconsider the moment you see any of these — they almost always signal a wrong approach:
+
+- **Naked Pods or bare ReplicaSets** in source — no self-healing; the controller is missing.
+- **`image: *:latest`** or any mutable tag — no rollback, no reproducibility.
+- **No `requests` (BestEffort), or memory `limit != request`** — eviction/OOM roulette.
+- **No `readinessProbe` on a serving workload** — rollout doesn't gate; traffic hits unready pods.
+- **`privileged: true`, `hostNetwork`/`hostPID`/`hostIPC`, or running as root with all caps** on an app
+  pod — outside infra DaemonSets this is almost always wrong.
+- **`cluster-admin` / wide ClusterRoles bound to apps, or `default` SA with token automount on.**
+- **Secrets in env vars, or committed to Git in plaintext** — leak-prone and unrotatable.
+- **Multi-replica service with no PodDisruptionBudget**, or all replicas on one node/zone — a node
+  drain or zone loss takes the whole service down.
+- **No default-deny NetworkPolicy in a shared/multi-tenant namespace** — everything can reach everything.
+- **Imperative `kubectl edit`/`patch` as the normal prod workflow** — config silently drifts from Git.
+
+---
+
+## 15. Verification gate (definition of done)
+
+A workload is not production-ready until every box is true. Confirm the last group by running the
+commands against the target cluster — don't assume.
+
+- [ ] **Controller, not a naked Pod** — Deployment/StatefulSet/DaemonSet/Job owns the pods.
+- [ ] **Resources:** `requests` set on every container; **memory `limit == request`**; CPU limit chosen
+      deliberately. QoS is Burstable or Guaranteed (never BestEffort).
+- [ ] **Probes:** `readinessProbe` present; `liveness`/`startup` only where justified, cheap, and not
+      checking downstream dependencies.
+- [ ] **`securityContext`:** `runAsNonRoot`, `allowPrivilegeEscalation: false`,
+      `readOnlyRootFilesystem`, `capabilities.drop: ["ALL"]`, `seccompProfile: RuntimeDefault`;
+      namespace labeled PSA `restricted`.
+- [ ] **RBAC/identity:** dedicated least-privilege ServiceAccount; `automountServiceAccountToken: false`
+      unless the pod calls the API; no `cluster-admin`.
+- [ ] **Secrets** mounted as files from a secret store / sealed, with encryption at rest — not env vars.
+- [ ] **Availability:** ≥2 replicas, `topologySpreadConstraints` across zone **and** node, and a
+      **PodDisruptionBudget**.
+- [ ] **Zero-downtime:** RollingUpdate with sane `maxUnavailable`/`maxSurge`, `preStop` drain hook,
+      SIGTERM handling, `terminationGracePeriodSeconds` ≥ longest request + preStop sleep.
+- [ ] **Namespace guardrails:** `ResourceQuota` + `LimitRange`; default-deny `NetworkPolicy` + explicit
+      allows.
+- [ ] **Image pinned** to an immutable tag/digest, scanned, non-root; recommended `app.kubernetes.io/*`
+      labels on every object; GitOps-managed (no live drift).
+
+**Commands to confirm before calling it done:**
+```bash
+kubectl apply --dry-run=server -f .          # validates against admission/PSA/quota/schema
+kubectl diff -f .                            # exactly what will change vs. live
+kubectl rollout status deploy/<x>            # rollout actually converged (probes gated it)
+kubectl get pdb,hpa,networkpolicy -n <ns>    # PDB + autoscaling + default-deny exist
+kubectl auth can-i --list \
+  --as=system:serviceaccount:<ns>:<sa>       # SA grants are narrow as intended
+kubectl get pod <p> -o jsonpath='{.status.qosClass}'   # Burstable/Guaranteed, not BestEffort
+kubectl rollout undo deploy/<x> --dry-run=client       # a rollback path exists
+```
+
+---
+
+## 16. Version awareness
 
 Kubernetes ships ~3 minor releases/year and supports ~the last 3; betas get enabled/disabled and
 defaults flip between them. Before relying on a specific field, default, or API:
@@ -439,7 +514,7 @@ defaults flip between them. Before relying on a specific field, default, or API:
 
 ---
 
-## 14. Canonical references
+## 17. Canonical references
 
 - Kubernetes documentation — https://kubernetes.io/docs/
 - Concepts (workloads, services, storage, config, security) — https://kubernetes.io/docs/concepts/

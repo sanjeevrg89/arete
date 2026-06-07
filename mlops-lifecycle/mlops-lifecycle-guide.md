@@ -324,6 +324,75 @@ Score yes/no; the no's are your backlog.
 - [ ] (LLM) **Eval gates** run in CI; prompts/index/model versioned and deployed as a bundle.
 - [ ] (Level 2) **CI/CD of the pipeline itself** — new pipeline logic ships through automated build/test.
 
+## Rationalizations & rebuttals
+
+The excuses for skipping MLOps discipline, each rebutted:
+
+- *"Notebook-to-prod by hand is fine, it's just one model."* — One model is how every unmanaged fleet
+  starts. The moment you must retrain, debug, or change it you're irreproducible. Automate to ≥ level 1
+  before it ships, not after it breaks.
+- *"No registry, just copy the file to the bucket."* — A bucket has no versioning, lineage, promotion
+  control, or approval trail. `model_final_v3_REALLY.pkl` is not a source of truth; you won't know what's
+  in prod or how to roll back. Register the version.
+- *"Skip CT, we'll retrain manually when accuracy drops."* — You only notice the drop after a business
+  metric craters, and manual retrains slip. The world shifts continuously; add a deliberate trigger
+  (schedule and/or drift) gated by validation.
+- *"No lineage needed, the data scientist remembers how it was trained."* — Memory is not an audit trail
+  and people leave. Without code SHA + data snapshot + container digest you cannot reproduce, debug, or
+  defend the model. Record ML metadata for every run.
+- *"Just deploy straight to 100%, the offline eval looked great."* — Offline eval doesn't catch
+  train/serve skew, latency regressions, or sliced failures on live traffic. Roll out behind
+  shadow/canary with guardrail metrics and one-step rollback.
+- *"We share the feature code in spirit; train and serve are basically the same."* — "Basically the same"
+  is exactly how skew hides — fill values, time zones, tokenization differ silently. Share the actual
+  transform (one library or in-graph) or a feature store, and validate serving inputs vs the training
+  schema.
+- *"CT can auto-promote; the pipeline produced it, so it's good."* — A retrained model that bypasses the
+  gates is an outage generator. Run the *same* data + model validation and champion comparison before any
+  promotion candidate is registered.
+
+## Red flags
+
+Stop and reconsider if you see any of these:
+
+- **No model registry** — models live in buckets/named files; nobody can state what's in prod or who
+  approved it.
+- **Manual deploys** — someone hand-wraps a notebook model or clicks "deploy" with no automated pipeline
+  or approval trail.
+- **Drift unmonitored** — no serving-time monitoring; decay and skew are invisible until a business
+  metric drops (`[[ml-observability-monitoring]]`).
+- **Not reproducible** — you cannot recreate a prod model from its registry entry (missing code SHA, data
+  snapshot, container digest, or seeds).
+- **No rollback path** — the previous good version isn't one-step deployable; a bad rollout means an
+  incident, not a revert.
+- **Train/serve skew risk** — separate, divergent feature code in training and serving; no input
+  validation against the training schema.
+- **CT without gates** — retraining auto-deploys with no data/model validation or champion comparison.
+- **Untested pipelines** — the pipeline that builds your model has no CI; a refactor can silently corrupt
+  features.
+- **(LLM) Prompts edited in prod** — prompt/index/model not versioned as a bundle; no eval gate before
+  promotion.
+
+## Verification gate (definition of done)
+
+The work is not done until all of these are true:
+
+- [ ] **Pipeline is reproducible** — training runs as an automated pipeline (≥ level 1), and any prod model
+  recreates from its registry entry (code SHA + data snapshot + container digest + config + seeds pinned).
+- [ ] **Registry + versioning + lineage** — every model is an immutable registered version with stages,
+  approval, and one-hop lineage back to its producing run, data, code, and image.
+- [ ] **CI/CD/CT gates wired** — CI tests code/data/model; CD verifies serving compatibility + SLOs; CT
+  runs on a deliberate trigger. Every promotion passes data validation and a **model eval gate** (absolute
+  threshold + vs-champion + sliced; for LLMs, the offline eval suite gates the merge).
+- [ ] **Progressive deploy + rollback** — rollout is shadow/canary/blue-green with guardrail metrics, and
+  the previous Production version is one-step redeployable.
+- [ ] **Monitoring wired** — serving-time monitoring is live and its drift/decay signals feed back into
+  CT and rollback (`[[ml-observability-monitoring]]`).
+- [ ] **Skew prevented** — train and serve share transform logic (or a feature store); serving inputs are
+  validated against the training schema.
+- [ ] **Governance hooks in place** — approval gate, model card, and audit/lineage are pipeline/registry
+  steps, not manual afterthoughts.
+
 ## Canonical references (verify current before relying on specifics)
 
 - Google, *Practitioner's Guide to MLOps* —

@@ -387,6 +387,77 @@ which dashboard you use.
 
 ---
 
+## Rationalizations & rebuttals
+
+The excuses for shipping a model with no real monitoring — and why each is wrong.
+
+- *"Accuracy looks fine on the eval set, so we're good."* — The eval set is a frozen snapshot of the past;
+  production is drifting away from it right now. Offline accuracy says nothing about live performance under
+  drift, skew, or a broken serving feature. Monitor layers 1–3 on *live* traffic (§2).
+- *"No errors, latency's green, dashboards are healthy."* — Software SLOs are necessary but not sufficient (§1).
+  A model fails silently: it returns a well-formed, on-time, *wrong* number with no exception to catch. Green
+  infra tells you nothing about whether predictions are right.
+- *"We'll skip drift detection — drift doesn't mean the model is wrong."* — Correct that drift ≠ decay (§3.1),
+  but drift is your only *immediate* leading signal while real performance is weeks late. Don't skip it; tie it
+  to a performance/proxy metric so you alert on *confirmed* drift, not raw input shift (§3.4, §7).
+- *"Ground truth is delayed weeks, so performance monitoring is pointless."* — The label lag is the reason to
+  build the leading-to-lagging ladder, not skip it. Persist predictions with keys, backfill-join labels when
+  they land, and use proxies / sampled human labels / confidence as early warnings (§5.1). Designing the label
+  join on day one is what lets you *ever* compute real performance.
+- *"One global accuracy number is enough — no slicing needed."* — Aggregates lie. A model can hold 92% overall
+  while collapsing on a 5% segment that just doubled in volume, and fairness regresses with drift even when
+  overall accuracy holds (§5.3). Auto-surface worst slices instead of eyeballing one number.
+- *"It's an LLM, you can't really measure it — we'll spot-check."* — Spot-checks miss quality regressions,
+  hallucination spikes, and cost blowups until a user or a finance report finds them. Tracing + online eval +
+  cost/latency + safety signals are all measurable and required (§6).
+- *"Train and serve share the same features, so skew can't happen."* — Skew is a *static mismatch between two
+  code paths* and the #1 silent production failure (§3.5): different feature code, a stale/missing online value
+  defaulting to 0, unit/encoding/tokenizer mismatch. Log the exact served vector and compare to training.
+
+## Red flags
+
+Stop and reconsider if any of these are true of your monitoring:
+
+- **Accuracy/AUC is the only thing monitored** — no leading layers, so you learn of regressions weeks late (§2).
+- **No training-serving skew detection** — the most common silent failure is uncaught; nobody compares the
+  exact served feature vector to the training distribution (§3.5).
+- **No drift/skew monitoring on inputs or predictions** — no immediate signal exists between deploy and the
+  next label arriving (§3).
+- **No ground-truth pipeline** — predictions logged with no key/timestamp or no path to attach labels later,
+  so real performance can *never* be computed and no fresh training set can be built (§5.1).
+- **Drift alerts with no performance tie-in** — paging on input drift that didn't hurt the model; or
+  per-feature alert spam (500 features × a daily test) ⇒ alert fatigue ⇒ everything ignored (§3.3, §7).
+- **p-values thresholded at scale** — KS/chi-square always "significant" at millions of rows; you're drowning
+  in false alarms instead of thresholding effect size (§3.3).
+- **No slicing / no fairness tracking** — only a global metric, so a dead segment or a fairness regression
+  hides behind a green aggregate (§5.3).
+- **LLM with no tracing or online eval** — free-text outputs, multi-step agents, and cost are unobserved;
+  "vibes" monitoring only (§6).
+- **Monitors with no owner, threshold, runbook, or trigger** — dashboards nobody acts on are decoration (§7).
+
+## Verification gate (definition of done)
+
+Monitoring for a deployed model is "done" only when all of the following are wired and firing:
+
+- [ ] **Data quality (layer 1)** monitored on every batch/sampled request: schema, ranges/new categories, null
+      rate, cardinality, freshness/volume — wired as a *gate* that fails/holds, not just logs (§4).
+- [ ] **Drift detected with effect-size metrics** (PSI/JS/Wasserstein/classifier-AUC, *not* raw p-values) on
+      inputs and on **prediction output**, with thresholds backtested on a stable period and multiple-comparison
+      noise consolidated (§3.2, §3.3).
+- [ ] **Training-serving skew** detected: the exact served feature vector is logged and compared to the training
+      distribution; missing-feature policy is monitored (§3.5).
+- [ ] **Performance under label lag** tracked: predictions persisted with key+timestamp, label backfill-join
+      computes metrics "as of labels available," plus proxies / sampled human labels / confidence and
+      **calibration (ECE)** as leading signals (§5.1–5.2).
+- [ ] **Slice & fairness monitoring** live: per-segment performance with worst-slice auto-surfacing, and
+      error-rate parity tracked across protected groups over time (§5.3).
+- [ ] **LLM apps:** OTel-native **tracing** (spans for LLM/retrieval/tool steps with model, tokens, cost,
+      TTFT/ITL, I/O) + **online eval** on a stratified sample (LLM-as-judge with a pinned judge, groundedness,
+      heuristics) + cost/latency/guardrail-hit-rate monitoring (§6).
+- [ ] **Alerting closed loop:** every monitor has an owner, a thresholded alert with hysteresis/persistence, a
+      runbook, and **retrain/rollback triggers** wired (sustained drop or confirmed drift ⇒ retrain;
+      last-known-good model kept deployable for instant rollback) (§7).
+
 ## 10. Version awareness
 
 This ecosystem moves fast (it is 2026). **Verify against current docs** before relying on specifics: the

@@ -589,6 +589,92 @@ Status is your controller's report on observed reality. It is read by users, oth
 
 ---
 
+## Rationalizations & rebuttals
+
+The excuses that show up in controller PRs and reconcile code, each with the one-line rebuttal.
+
+- **"I'll trust event ordering / the old object — I know an update fired."** A `reconcile.Request`
+  carries only `namespace/name`. Informers coalesce, drop, replay, and resync delivers synthetic
+  updates. Re-read current state and recompute every time; if you want "the previous value," your
+  design is edge-triggered and wrong (§1).
+- **"Skip the finalizer — GC will clean it up."** GC only deletes objects via ownerRefs, in-cluster,
+  same-namespace. It cannot delete external resources (cloud LBs, DNS, S3, DB rows) or cross-namespace
+  things. Without a finalizer those leak silently on delete (§5, §6).
+- **"Status writes are cheap — just write it every reconcile."** A no-op status `Update` still bumps
+  `resourceVersion`, fires your own watch, and re-enqueues you → hot loop. Gate the write on an actual
+  change and filter with `GenerationChangedPredicate` (§7, §9).
+- **"No need for idempotency — it only runs once per change."** It does not. The queue resyncs,
+  retries with backoff, and re-enqueues on any watch event. A non-idempotent "create cloud resource"
+  becomes duplicates, quota exhaustion, and cost. Make every action a converge: look up, create only
+  if absent (§1, §9).
+- **"I'll just read my own write back from the cache to confirm it."** The cache updates
+  asynchronously via the watch; a `Get` right after `Create` returns `NotFound`. Don't treat that as
+  an error and don't paper over it with an uncached read — requeue and re-observe (§2, §9).
+- **"One replica is fine, I don't need leader election."** The moment a rollout runs two replicas,
+  both reconcile and fight: double writes, races, write wars. Turn on leader election for any
+  multi-replica deployment (§8).
+- **"I'll spawn a goroutine / sleep to wait for the resource to settle."** Reconcile must be
+  synchronous and return. A background goroutine outlives the call and escapes the queue's
+  guarantees; a sleep holds a worker slot and stalls the queue. Return `RequeueAfter` (§9).
+- **"`MaxConcurrentReconciles` is high, so I can share state across keys for speed."** The queue only
+  guarantees a single key isn't reconciled concurrently; different keys run in parallel. Shared
+  mutable state across reconciles is a data race. Keep Reconcile stateless (§3).
+
+## Red flags
+
+Signals that the current approach is wrong — stop and reconsider.
+
+- **Hot-loop requeues.** Reconcile count/latency climbing on objects nobody changed, or
+  `controller_runtime_reconcile_total` ticking with no spec edits → status-write loop or missing
+  `GenerationChangedPredicate` (§7, §9).
+- **Requeue storms / saturated workqueue.** Sustained nonzero `workqueue_depth`, a map function
+  enqueuing thousands of keys per event, a resync set too short, or an error path that re-enqueues
+  immediately (§9, §10).
+- **Unbounded goroutines or sleeps in Reconcile.** Any `go func()` that outlives the call or
+  `time.Sleep` to "wait" — workers leak or stall instead of returning `RequeueAfter` (§9).
+- **Missing or wrong RBAC.** `Forbidden` errors in logs, watches that never establish, or RBAC
+  markers out of sync with the verbs used (esp. `/status`, `/finalizers`, `leases`, `events`) (§9).
+- **Cache-staleness races.** Code that `Get`s its own write back, or assumes "I just created X so X
+  exists" — reads are from a cache that lags the API server (§2, §9).
+- **Edge-triggered assumptions.** Branching on event type, reaching for the "old" object, or relying
+  on seeing every intermediate state — the request is a hint, not a payload (§1).
+- **Objects stuck `Terminating`.** A finalizer that isn't removed after cleanup (bug, permanent
+  error, panic before `RemoveFinalizer`, or controller uninstalled with finalizers live) wedges
+  deletion forever and hangs namespace deletion (§6).
+- **Controllers fighting over a field.** Two writers flip the same field back and forth (infinite
+  write war), or two `controller: true` owner refs on one object → no single managing owner (§5, §9).
+- **Full-namespace LISTs in hot paths.** `List` without a selector on every reconcile, or a mapping
+  function doing API calls / O(objects) work instead of using a field index (§10).
+- **Trusting `fake` client for API-mediated behavior.** SSA, GC, admission, defaulting, and finalizer
+  semantics are not faithfully emulated — passing fake-client tests prove nothing about those (§11).
+
+## Verification gate (definition of done)
+
+The work is not done until all of these are true and demonstrated.
+
+- [ ] **Idempotent reconcile**: running Reconcile twice on unchanged state makes **zero writes**;
+      verified by an envtest/table test asserting no diff on the second pass.
+- [ ] **Level-triggered**: re-reads current state each call; no dependency on event type/order/old value.
+- [ ] **Finalizer add/remove correct**: added before any external resource exists; cleanup idempotent
+      and tolerates "already gone"; finalizer **always** removed after success; can't wedge deletion.
+- [ ] **Owner refs**: `SetControllerReference` on every created child; exactly one `controller: true`
+      owner; no cross-namespace / namespaced→cluster-scoped ownerRefs.
+- [ ] **Status conditions**: written via the status subresource; `observedGeneration` set;
+      `metav1.Condition` managed with `meta` helpers; written **only when changed**.
+- [ ] **Requeue semantics**: error→backoff, `RequeueAfter`→poll, empty→done; no `RequeueAfter: 0`, no
+      blocking sleeps, no goroutines outliving the call.
+- [ ] **Writes→API, reads→cache**: no read-after-write trust; conflicts handled or avoided via SSA
+      with a stable unique `FieldOwner` (not mixed with client-side `Update` on the same object).
+- [ ] **RBAC** markers match actual verbs (incl. `/status`, `/finalizers`, `leases`, `events`); least
+      privilege; controller starts and watches establish without `Forbidden`.
+- [ ] **No hot loop / requeue storm**: `GenerationChangedPredicate` (or equivalent) in place; mapping
+      functions cache-only and bounded; `workqueue_depth` returns to zero at steady state.
+- [ ] **envtest passing** for API-mediated behavior (status subresource, finalizers, owner refs,
+      optimistic concurrency); fake client used only for pure logic with SSA/GC caveats respected.
+- [ ] **Race-clean**: full suite passes under `go test -race`.
+
+---
+
 ## Canonical references
 
 - Kubebuilder Book — https://book.kubebuilder.io (architecture, reconcile, finalizers, webhooks)

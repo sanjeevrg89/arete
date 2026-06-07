@@ -404,6 +404,73 @@ RAGAS metric definitions and APIs; pgvector/AlloyDB AI index feature support. Re
 
 ---
 
+## Rationalizations & rebuttals
+
+The excuses for skipping the right thing, each rebutted from the guide above:
+
+- *"Naive fixed-size chunking is fine to ship."* It cuts answers mid-sentence/mid-table and dilutes
+  vectors (one embedding averaging many topics → worse recall). It's a baseline, not a final strategy —
+  use recursive/structural and tune against eval (§2).
+- *"Skip reranking, the ANN hits are good enough."* Reranking is typically the largest precision win
+  after hybrid. Bi-encoder ANN is coarse; a cross-encoder jointly scores (query, doc) and lets you
+  over-retrieve (high k) without dumping junk into the prompt (§4).
+- *"Cosine vs dot vs L2 doesn't really matter."* It does, and it fails silently — a cosine-trained model
+  queried with L2 returns plausible-but-wrong neighbors with no error. Use the metric on the model card;
+  the index metric is often fixed at creation (§5).
+- *"No eval needed, the answers look good."* Looking good on a handful of queries is tuning by vibes;
+  you can't distinguish improvement from regression. A few hundred labeled queries (recall@k, nDCG)
+  drives most decisions and catches silent regressions (§10).
+- *"Vector search alone is enough; skip hybrid."* Dense search averages out exact terms — IDs, SKUs,
+  error codes, rare proper nouns, quotes. Hybrid (dense + BM25/SPLADE fused with RRF) beats dense-only
+  on the large majority of real corpora; it's the default, not an optimization (§4).
+- *"We'll index the corpus once and leave it."* The corpus drifts and the index goes stale; worse, an
+  embedding-model "upgrade" without a full re-embed leaves query/doc vectors incompatible — the classic
+  "everything got worse after the upgrade" bug (§3, §11).
+- *"Metadata filters are just a flag, no need to index those fields."* At scale, unindexed filter fields
+  → full scans/timeouts, and naive post-filtering underflows below k. Use integrated filtered ANN and
+  index what you filter on (§4).
+
+---
+
+## Red flags (stop and reconsider)
+
+- **No reranker** in the pipeline — coarse ANN hits go straight into the prompt; the biggest precision
+  win is unclaimed.
+- **Distance metric doesn't match the embedding model** (cosine model on an L2 index, or unnormalized
+  vectors with inner product) — degrades silently, no error.
+- **Dense-only retrieval** on a keyword/ID/code-heavy corpus — no sparse/BM25 leg, no RRF fusion.
+- **Stale index** — corpus changed but not re-indexed, or embedding model swapped without a full
+  re-embed (incompatible vectors), or two embedding-model versions mixed in one index.
+- **No retrieval eval** — no labeled query set, no recall@k/nDCG; changes are accepted by anecdote.
+- **No end-to-end / faithfulness measurement** — nobody checks whether answers are grounded in the
+  retrieved context.
+- **Metadata filter fields unindexed at scale** — full scans, timeouts, or post-filter k-underflow.
+- **Context window stuffed to the brim** — key passage buried in the dead middle ("lost in the middle"),
+  no dedup of overlapping chunks, no citations, no abstain instruction.
+
+---
+
+## Verification gate (definition of done)
+
+Before the RAG system counts as done, confirm:
+
+- [ ] **Chunking justified** — strategy chosen against the corpus (structural/recursive or better, not
+  naive fixed-size as final); size/overlap tuned against eval, not guessed.
+- [ ] **Hybrid + rerank in place** — dense + sparse (BM25/SPLADE) fused (RRF), followed by a
+  cross-encoder rerank to a small top-n. Not dense-only, not unranked.
+- [ ] **Distance metric matches the embeddings** — index metric == the metric on the model card (or
+  vectors normalized and using inner product); set at index creation. Same model+version for queries and
+  documents, with correct asymmetric prefixes.
+- [ ] **Retrieval metrics measured** — recall@k and nDCG@k (plus MRR/precision@k as relevant) on a
+  frozen labeled query set; recall@k is high enough that the right doc is reliably in top-k.
+- [ ] **End-to-end faithfulness evaluated** — groundedness/faithfulness, answer relevance, and
+  context precision/recall measured (RAGAS-style, spot-checked by humans); abstain path verified.
+- [ ] **Index freshness handled** — re-ingestion/update path for corpus changes; embedding-model version
+  pinned per index with a full-re-embed plan; consistency/read-after-write needs understood; filter
+  fields indexed; backups (native snapshots) tested via restore.
+
+---
+
 ## 14. Canonical references (real URLs only)
 
 - HNSW paper — Malkov & Yashunin, "Efficient and robust approximate nearest neighbor search using

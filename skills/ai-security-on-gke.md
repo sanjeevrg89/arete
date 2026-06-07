@@ -364,7 +364,88 @@ This is where most "AI" incidents actually land — ordinary cloud-security fail
 
 ---
 
-## 11. Version awareness
+## 11. Rationalizations & rebuttals
+
+The excuses an engineer or agent reaches for to skip a control — each is a known incident waiting to happen.
+
+- **"The model output is fine, just run it / pass it to the shell."** The model is a confused deputy that
+  echoes whatever is in its context, including injected instructions. Output is untrusted input: validate,
+  encode, parameterize, allowlist — never `exec`/`eval` it directly.
+- **"This Pod doesn't need egress controls."** Open egress is the exfiltration channel that turns one
+  successful injection into a data breach. Default-deny egress, allow only DNS + the specific destinations the
+  workload needs.
+- **"It's just a code-interpreter tool, running it in the container is fine."** Any code path the model can
+  influence is untrusted execution. Run it in gVisor/Kata, non-root, read-only rootfs, no creds, no egress,
+  resource and step/time caps — anything less is RCE on your node.
+- **"Static service-account JSON keys are simpler and they work."** A leaked or model-echoed static key is
+  long-lived lateral movement. Use Workload Identity Federation for short-lived, scoped credentials; never
+  mount static keys.
+- **"These pickle weights are from a popular hub, they're safe to load."** Pickle / `torch.load` / `joblib`
+  execute arbitrary code on deserialization — a poisoned checkpoint pops a shell the moment you load it. Prefer
+  `safetensors`; if you must load pickle, do it scanned, from a trusted source, sandboxed with no creds/egress.
+- **"We tell the model in the system prompt not to do dangerous things."** Prompt instructions are a hint, not
+  a boundary; attacker text overrides yours. Controls live around the model — gateway, sandbox, IAM, network.
+- **"Input filtering is enough; output filtering is redundant."** Input-only guardrails miss indirect injection
+  arriving via RAG/tool content and miss PII/secret leakage on the way out. Filter both directions and
+  validate every proposed tool call before it executes.
+- **"One agent identity that can do everything is easier to manage."** That is maximal excessive agency — the
+  blast radius of any injection equals the union of all those permissions. Split into per-workload
+  least-privilege identities (inference, indexer, each tool).
+
+---
+
+## 12. Red flags
+
+Stop and reconsider if you see any of these:
+
+- **No output filtering / tool-call validation.** Model or tool output flows to `exec`, SQL, HTML, or an action
+  with no validation, encoding, or allowlist.
+- **Open or unspecified egress.** Inference/agent/sandbox Pods with no default-deny NetworkPolicy — anything
+  can phone home.
+- **Unsandboxed tool or code execution.** A code interpreter or model-driven tool sharing the node's kernel,
+  network, and credentials; no `runtimeClassName: gvisor`.
+- **Untrusted model weights.** Pickle/`.bin` checkpoints loaded from a public hub, unpinned (mutable tag), with
+  no checksum/signature verification or opcode scan.
+- **No admission or policy enforcement.** No PSA `restricted`, no Gatekeeper/Kyverno, no Binary Authorization —
+  unsigned, `:latest`, privileged, or `hostPath`/`hostNetwork` Pods can land.
+- **Secrets in env vars, images, prompts, or logs.** Credentials baked into images or system prompts instead of
+  fetched at runtime from Secret Manager via a scoped identity.
+- **Auto-mounted service-account tokens on sandboxes / non-API workloads.** A cluster token sitting in the
+  model's reach is a ready lateral-movement primitive.
+- **"The model won't do that" as the only safeguard.** Reliance on prompt instructions, or input-only
+  guardrails, with no independent control behind them.
+
+---
+
+## 13. Verification gate (definition of done)
+
+The work is not done until every item below is true and evidenced.
+
+- [ ] **Input & output guardrails** active at the gateway on every path — injection/jailbreak/PII screening in,
+      toxicity/PII/secret-leak screening + tool-call validation out; high-impact actions fail closed.
+- [ ] **Untrusted content re-screened** — RAG/tool/web content is delimited and passed back through the output
+      guardrail before re-entering the model's context.
+- [ ] **Sandboxing for untrusted execution** — every model-influenced code/tool path runs with
+      `runtimeClassName: gvisor` (or Kata), `runAsNonRoot`, `readOnlyRootFilesystem`, `capabilities.drop:
+      ["ALL"]`, `seccompProfile: RuntimeDefault`, resource + step/time caps, ephemeral per session.
+- [ ] **Least-privilege Workload Identity** — per-workload Workload Identity Federation, no static SA keys;
+      `automountServiceAccountToken: false` on sandboxes and non-API workloads.
+- [ ] **Egress NetworkPolicy** — default-deny per namespace; only DNS + required destinations allowed;
+      internet-bound agent tools go through a logged egress proxy/allowlist.
+- [ ] **Signed & scanned artifacts** — images signed and verified (Binary Authorization / cosign), vuln-scanned,
+      SLSA provenance, pinned by digest; weights in `safetensors`, scanned, pinned; datasets/RAG corpora
+      versioned, integrity-checked, eval-gated.
+- [ ] **Admission policy enforced** — PSA `restricted` by default; Gatekeeper/Kyverno requiring signed images,
+      `runtimeClassName: gvisor` in the sandbox namespace, resource limits, default-deny NetworkPolicy; no
+      `:latest`/privileged/`hostPath`/`hostNetwork`.
+- [ ] **Posture & runtime detection** — GKE Security Posture / Container Threat Detection and/or Falco enabled,
+      findings routed to SIEM, audit logging on; run vulnerability scanning (e.g., `govulncheck` for Go
+      services, image scanning) and resolve findings before promotion.
+- [ ] **Secrets** in Secret Manager, fetched via scoped identity at runtime — never in env/images/prompts/logs.
+
+---
+
+## 14. Version awareness
 
 The AI-security ecosystem moves fast (it is 2026). Managed-product features (Model Armor capabilities, GKE
 Security Posture detectors, Agent Sandbox availability, Confidential GKE machine support), the OWASP LLM Top 10
@@ -373,7 +454,7 @@ current documentation** before relying on it. Never invent flags, fields, or ben
 
 ---
 
-## 12. Canonical references
+## 15. Canonical references
 
 (Verify URLs/versions — these are authoritative starting points.)
 

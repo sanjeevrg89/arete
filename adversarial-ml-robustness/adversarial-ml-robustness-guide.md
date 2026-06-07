@@ -331,6 +331,81 @@ without lineage you cannot scope a poisoning incident.
 
 ---
 
+## Rationalizations & rebuttals
+
+Excuses used to skip honest robustness work, each rebutted:
+
+- **"We evaluated it and it held up."** Against what? A non-adaptive or FGSM/low-step PGD attack proves
+  nothing — those numbers are inflated by construction. A robustness number is only a claim about the
+  *strongest attack you tried*; the attacker will tailor theirs to your defense (§4.1). No adaptive attack →
+  no claim.
+- **"The attack success rate is basically zero, so it's robust."** That is the classic gradient-masking
+  signature, not robustness. Run the §3.4 sanity checks: if black-box beats white-box, unbounded attacks
+  don't reach ~100%, or more PGD steps don't help, your number is fake and the adversarial examples still
+  exist.
+- **"Poisoning won't happen to us — our data is fine."** You almost never train from scratch; you fine-tune a
+  public checkpoint on a public/mixed corpus, and both can be poisoned *before you ever see them* (§5.3).
+  Clean-label and backdoor poisoning are designed to leave clean-input accuracy normal, so "it trains fine"
+  is exactly what a successful attack looks like.
+- **"Clean accuracy is what the product needs; robust accuracy is academic."** Report both or you are hiding
+  the robustness–accuracy tradeoff (§4.4). A model with great clean accuracy can be flipped by a sticker
+  (physical/patch attacks, §2.1) or a trigger phrase (backdoor) — that is a production failure, not an
+  academic one.
+- **"The checkpoint is from a reputable hub, so the weights are safe."** Provenance ≠ integrity. A trojaned
+  checkpoint behaves normally until the trigger fires, and `pickle`/`torch.load` executes arbitrary code on
+  load. Verify signatures, prefer `safetensors`, and backdoor-scan + trigger-probe before trusting it (§5.3).
+- **"Our input filter / detector / JPEG step stops the attack."** These fall to adaptive attacks (BPDA for
+  non-differentiable steps, EOT for randomized ones, §3.3). They raise attacker cost as defense-in-depth;
+  they are never the robustness claim.
+- **"Red-teaming found nothing, so we're good."** Absence of found failures is not robustness (§4.6). A
+  red-team result is a lower bound on vulnerability, and it ages the moment a new adaptive jailbreak or
+  transfer attack appears.
+
+## Red flags
+
+Stop and reconsider if you see any of these:
+
+- **No threat model.** "Robust" with no stated knowledge (white/black-box), goal, norm + budget `ε`, or
+  query/pipeline access. The claim is unfalsifiable (§1).
+- **No adaptive attack and no AutoAttack.** Evaluation is FGSM-only or a single low-step PGD; the defense was
+  never attacked by something that *knows* the defense (§4.1–4.2).
+- **Gradient-masking signatures present.** Black-box beats white-box, unbounded attacks don't reach ~100%
+  success, larger `ε` or more PGD steps don't increase attack success, random sampling finds examples the
+  gradient attack missed (§3.4).
+- **A known gradient-masking defense is the centerpiece.** Defensive distillation, non-differentiable
+  preprocessing, or stochastic obfuscation presented as *the* defense rather than defense-in-depth.
+- **No RobustBench-style sanity check.** A robustness number reported in isolation, especially one that beats
+  RobustBench SOTA for the same threat model by a wide margin — suspect the evaluation first (§4.3).
+- **Data/weight supply chain ignored.** Fine-tuning from an unverified checkpoint, training on an unscanned
+  scraped dataset, loading pickle weights, no signed hashes, no backdoor scan (§5.3).
+- **Only one accuracy reported.** Robust accuracy without clean (or vice versa) — the tradeoff is being
+  hidden (§4.4).
+- **No monitoring or IR plan.** No attack-signature/distribution-shift monitoring, no dataset/model lineage
+  to scope a poisoning incident or roll back (§5.2, §5.4).
+
+## Verification gate (definition of done)
+
+Robustness work is done only when all of these are true and shown:
+
+- [ ] **Threat model written in full** — attacker knowledge (white/gray/black-box), goal (targeted vs.
+  untargeted), capability/budget (norm + `ε`, or the semantic/physical constraint), and access (query rate,
+  pipeline/weight access). Mapped to NIST AI 100-2e2025 / MITRE ATLAS vocabulary.
+- [ ] **Adaptive, defense-aware attack run** — tailored to the defense (BPDA for non-differentiable steps,
+  EOT for randomized ones, transfer/query for unreliable gradients), per the §4.1 checklist.
+- [ ] **AutoAttack run** as the parameter-free baseline, in addition to the adaptive attack (§4.2).
+- [ ] **Gradient-masking sanity checks pass** — PGD robust accuracy plateaus with more steps/restarts,
+  white-box ≥ black-box, unbounded attack ≈ 100%, larger `ε` increases attack success (§3.4).
+- [ ] **Clean and robust accuracy both reported** with the exact threat model (norm, `ε`, dataset, attack +
+  steps + restarts); for certified defenses, certified radius / certified accuracy too (§4.4–4.5).
+- [ ] **Result sanity-checked against RobustBench** SOTA for the same threat model (§4.3).
+- [ ] **Poisoning/backdoor checks on third-party data and weights** — provenance + signed-hash integrity,
+  dedup, backdoor scan (spectral-signature / activation-clustering) and trigger probes on a trusted held-out
+  set; `safetensors` over pickle (§5.1, §5.3).
+- [ ] **Privacy audit where relevant** — membership-inference (LiRA-style, TPR @ low FPR) and DP where
+  required (§2.5).
+- [ ] **Monitoring + IR in place** — attack-signature and distribution-shift monitoring wired to alerting;
+  versioned datasets/models for rollback and root-cause; an incident-response path (§5.2, §5.4).
+
 ## 7. Canonical references (verify against current versions)
 
 - **NIST AI 100-2e2025** — Adversarial Machine Learning: A Taxonomy and Terminology of Attacks and

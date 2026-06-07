@@ -282,7 +282,77 @@ Don't trust hyperparameters copied from an old blog post.
 
 ---
 
-## 10. Canonical references (real URLs; verify for updates)
+## 10. Rationalizations & rebuttals
+
+The excuses that lead to a wasted training run or a model that looks good and ships broken:
+
+- *"Just fine-tune it — faster than fiddling with prompts/RAG."* No. A prompt iterates in minutes with
+  zero artifact to maintain; a fine-tune costs data + training + eval + a model you own through every base
+  upgrade. Exhaust prompt → few-shot → RAG first, and only fine-tune what those genuinely can't do.
+- *"Fine-tune so it knows our docs/data."* Fine-tuning teaches behavior, not facts. SFT'd knowledge goes
+  stale and produces confident hallucinations. Knowledge is RAG or a tool; reserve fine-tuning for output
+  shape, tone, narrow skills, or latency via a smaller model.
+- *"More data is better — just scrape more."* Quality and distribution match dominate quantity. A few
+  thousand clean, deduped, in-distribution examples beat tens of thousands of noisy ones. Dirty data
+  overfits a brittle model. Clean and dedupe before scaling up.
+- *"We'll add an eval/holdout later — let's just train first."* Then training loss is your only signal and
+  it tells you nothing about generalization. Build the holdout and base-regression suite *before* you
+  train, or you have a vibe, not a result.
+- *"Decontamination is overkill, the overlap is tiny."* Eval leakage is the most common way teams fool
+  themselves — inflated metrics, production disappointment. Decontaminate train against holdout and any
+  public benchmark you report; treat contamination as a first-class risk.
+- *"LoRA on `q_proj,v_proj` is the standard config."* It's a frequent quiet underperformer. Adapt
+  attention + MLP projections (or `all-linear`); raise rank or try DoRA before concluding LoRA can't reach
+  the bar.
+- *"Merged fine, ship it."* A merge can regress: in-place merges into a 4-bit base degrade quality, and
+  template drift between training and serving breaks behavior. Merge into a 16-bit base then re-quantize,
+  and run the eval on the *merged* artifact — not just the adapter — before shipping.
+
+---
+
+## 11. Red flags (stop and reconsider)
+
+- **Reaching for fine-tuning before prompt/few-shot/RAG have been seriously tried** — especially to inject
+  facts/knowledge.
+- **Dataset is a few hundred examples, or undeduped/garbled/mislabeled** — no decontamination step exists.
+- **No true holdout split before training**, or the holdout gets touched during tuning.
+- **Train/eval (or train/public-benchmark) overlap** — metrics look great, production behavior doesn't match.
+- **Hand-rolled role markers / no `apply_chat_template`**, or nobody has inspected tokenized samples for
+  correct special tokens / BOS / EOS.
+- **No completion-only masking** — the model is being trained to echo instructions, not produce answers.
+- **`target_modules` limited to `q_proj,v_proj`** (MLP projections omitted), or wrong modules for the
+  architecture; added tokens without `modules_to_save`.
+- **No base-model regression eval** — catastrophic forgetting (a task win that tanks general ability) goes
+  unmeasured. Bonus flags: LR/epochs copied from an old blog post; merged model never re-evaluated.
+
+---
+
+## 12. Verification gate (definition of done)
+
+The work is not done until every box is checked:
+
+- [ ] **Cheaper levers ruled out.** Prompt, few-shot, and RAG were tried and demonstrably can't meet the
+      bar for this task (and the task is behavior/skill/shape, not facts).
+- [ ] **Data quality checked.** Deduped (exact + near-dup), garbled/truncated samples removed, classes/task
+      types balanced, inputs/outputs match the inference distribution.
+- [ ] **Decontaminated.** No training example overlaps the holdout or any reported public benchmark.
+- [ ] **Chat template + masking correct.** Formatted via `apply_chat_template`; completion-only masking on
+      (prompt labels = `-100`); a few tokenized samples inspected to confirm special tokens and that some
+      labels ≠ -100.
+- [ ] **Config sane.** `target_modules` cover attention + MLP (or `all-linear`); `alpha/r` ratio
+      intentional; `modules_to_save` set if tokens were added; epochs/LR tuned, not copied blindly.
+- [ ] **Holdout eval beats base.** Real task metric on the untouched holdout shows the fine-tune wins; for
+      structured output, schema-valid rate measured directly.
+- [ ] **No regression.** Base-model general-capability eval run on both — no unacceptable catastrophic
+      forgetting.
+- [ ] **Merged artifact verified.** If merging, merged into 16-bit (then re-quantized as needed) and the
+      *merged* model re-evaluated; behavior matches the adapter.
+- [ ] **Adapter/model serves.** Loads and routes correctly in the target serving stack (single merged
+      model, or correct multi-LoRA routing against the matching base); base/template/data versions recorded.
+
+---
+
+## 13. Canonical references (real URLs; verify for updates)
 
 - **PEFT survey (2024):** "Parameter-Efficient Fine-Tuning for Large Models: A Comprehensive Survey" —
   https://arxiv.org/abs/2403.14608

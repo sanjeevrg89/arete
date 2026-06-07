@@ -484,6 +484,77 @@ gated on quality, not just unit tests (ties into [[mlops-lifecycle]]):
 
 ---
 
+## Rationalizations & rebuttals
+
+The excuses for skipping real evaluation, each rebutted:
+
+- **"The outputs look good to me — vibes are enough."** Vibes are a handful of cherry-picked prompts
+  with no dataset, no metric, and no regression protection. You can't tell if your next change helped or
+  hurt, and you can't catch the regression a user will. Build the representative eval set first.
+- **"The public benchmark says this model is SOTA, so it's good for us."** Benchmark rank is a weak
+  predictor of *your* task performance — a model that tops MMLU can be worse at your support
+  summarization. Public benchmarks are also a contamination magnet; assume any one older than the
+  model's training cutoff is partially memorized. Use them to shortlist, never to ship.
+- **"One aggregate number went up, so we're better."** An aggregate is the average of a distribution
+  you should look at directly. A model can gain 1% overall while regressing 15% on a critical slice, and
+  a single target gets Goodharted. Keep a basket of metrics + slices + guardrails.
+- **"The LLM judge scored it 8.7/10."** A judge with no bias controls and no human calibration is a
+  confident liar: position, verbosity, and self-preference bias make the score meaningless, and
+  fine-grained 1–10 scores are mostly noise. Validate judge–human agreement against the human–human
+  ceiling, control biases (dual-order pairwise, length controls, cross-family judge), and prefer
+  low-cardinality anchored rubrics or pairwise.
+- **"Offline gains are clear — skip the online test."** Offline gains routinely shrink or vanish online
+  (distribution shift, proxy divergence, feedback loops). Offline is necessary but not sufficient: it
+  gates what's *allowed* to be tested; online A/B (with an SRM check and guardrails) decides what ships.
+- **"We'll add evals later — ship now."** Eval-as-a-one-off notebook that never runs in CI means quality
+  silently rots; every prompt/model/retrieval change becomes an unguarded hypothesis. Wire the golden
+  set into CI on day one — it's infrastructure, not a launch chore.
+- **"References overlap is high, so the generation is correct."** BLEU/ROUGE/BERTScore are surface or
+  semantic overlap, blind to factuality and instruction-following — a fluent wrong answer can share many
+  n-grams. Use a faithfulness check (claims entailed by context) or a calibrated judge for correctness.
+
+## Red flags
+
+Stop and reconsider if any of these are true:
+
+- **Your quality bar is a public benchmark** (MMLU/HumanEval/GSM8K) with no contamination defense — the
+  score likely measures memorization, not capability, and not fitness for *your* task.
+- **A single aggregate metric** drives decisions, with no slices/segments and no guardrails — per-slice
+  regressions and proxy-metric divergence are invisible.
+- **An LLM judge runs without bias mitigation** — no dual-order pairwise, no length control, same model
+  family as the system under test, no anchored rubric.
+- **The judge has never been calibrated against human labels** (no agreement measured vs the human–human
+  ceiling), or the rubric/judge changed without re-validation.
+- **Fine-grained absolute scores (1–10)** are treated as precise signal rather than noise.
+- **No online validation** — shipping on offline wins alone, with no A/B/interleaving and no SRM check.
+- **The eval set doesn't look like production** — too easy, stale, wrong distribution, or missing the
+  hard/failure cases; offline numbers climb while users suffer.
+- **Train/eval leakage suspected** — duplicates across splits, row-split where a group/time split is
+  required, or a feature that encodes the label; for RAG, retrieval and generation aren't scored
+  separately.
+
+## Verification gate (definition of done)
+
+The work is not done until all of these hold:
+
+- [ ] **Representative, uncontaminated eval set** exists: sampled from the production distribution,
+  versioned/frozen as a golden set, includes hard/failure cases, deduplicated with entity/time/group
+  splits, and (for LLM tasks) defended against benchmark contamination (private/held-out data).
+- [ ] **Task-appropriate metrics with slices**: a basket (not one number) chosen for the task —
+  e.g. PR-AUC for rare positives, nDCG for graded ranking, faithfulness + answer relevance for RAG,
+  task-success + trajectory for agents — reported per meaningful segment with guardrails defined.
+- [ ] **Judge is bias-controlled and human-calibrated** (where a judge is used): decomposed anchored
+  rubric, chain-of-thought-then-verdict, cross-family judge, dual-order pairwise / length controls, and
+  measured judge–human agreement at/above the human–human ceiling, re-validated after any judge/prompt
+  change.
+- [ ] **Online / A-B validation done**: real-traffic A/B or interleaving with proper power, an SRM
+  check, guardrail metrics confirmed not regressed, and the offline-online gap inspected — online (not
+  offline alone) decided the ship.
+- [ ] **Eval wired into CI**: golden/regression set runs on every PR and fails the build on a score drop
+  or any known-fixed case regressing; non-determinism handled (pinned seed/temp or N-run mean with a
+  tolerance band); full expensive suite runs nightly; human-in-the-loop sampling feeds disagreements
+  back into judge calibration and the golden set.
+
 ## Canonical references (verify against current versions)
 
 - HelloInterview — ML system design, evaluation:

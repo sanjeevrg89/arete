@@ -479,6 +479,77 @@ it.
 
 ---
 
+## Rationalizations & rebuttals
+
+| Excuse | Rebuttal |
+|---|---|
+| "Static SA JSON keys are simpler than Workload Identity Federation." | A mounted key is a long-lived, exfiltratable credential and the #1 GKE security finding. WIF removes the key entirely — bind a KSA to an IAM principal once and every Pod gets short-lived, auto-rotated tokens. It's *less* setup, not more. |
+| "We'll skip Dataplane V2 / NEGs and use the legacy path; it works." | Without Dataplane V2 you have no eBPF NetworkPolicy, no FQDN/CIDR policy, no built-in flow observability, and worse scale. Without NEGs the LB bounces through node ports + kube-proxy — extra hop, inaccurate health checks, uneven distribution. Both are the default for a reason; retrofitting Dataplane V2 means a cluster rebuild. |
+| "One big node pool is easier to manage than many." | Mixed machine types in one pool break autoscaling, taint/label targeting, and accelerator placement. One pool per hardware/role (CPU vs GPU vs TPU, Spot vs on-demand) is what lets CA, NAP, and Spot taints work at all. |
+| "Default timeouts / maintenance windows are fine for our training jobs." | An auto node-upgrade will drain a node mid-run and kill a multi-day job. Use maintenance *exclusions* (or blue-green) to freeze upgrades during long runs, and annotate long-checkpoint Pods `safe-to-evict: "false"`. |
+| "Cluster Autoscaler will bring up the nodes for our multi-host job." | CA scales incrementally; a gang job partially schedules, holds the nodes, and deadlocks. Drive atomic scale-up with `ProvisioningRequest` + Kueue so the whole slice arrives all-or-nothing. |
+| "GPUDirect/TCPX/RDMA is an optimization we can add later." | Multi-NIC, the right node image/drivers, and the NCCL plugin are node-pool *creation* decisions — retrofitting is painful. Without them, collectives run over the default Pod network and you waste most of the FLOPs you paid for. Validate with an all-reduce benchmark before declaring done. |
+| "GCS FUSE / plain PD is fine for loading weights and datasets." | Naive FUSE on small files and cold-GCS re-downloads on every replica make autoscaling slow and expensive. Match storage to access pattern: Hyperdisk ML (read-only multi-attach for one model on a big fleet), FUSE + local-SSD cache (churny/many models), Parallelstore (parallel scratch), always with image streaming. |
+| "A public cluster is easier to reach." | Public node IPs widen the attack surface for no benefit. Use a private cluster (no public node IPs, private control-plane endpoint + authorized networks, Cloud NAT egress) — the production/regulated default. |
+
+## Red flags
+
+Stop and reconsider if you see any of these:
+
+- **SA JSON keys mounted in Pods** (or any credential file under `/var/secrets`) instead of Workload
+  Identity Federation.
+- **Public cluster / nodes with public IPs** for a production or data-sensitive workload — no private
+  endpoint, no authorized networks.
+- **No release channel** (statically pinned version) and **no maintenance window/exclusion plan** — you
+  will drift onto unsupported versions or get drained mid-training.
+- **Accelerator nodes without the interconnect configured** — H100/H200/B200 or multi-host TPU running
+  collectives over the default Pod network (no GPUDirect TCPX/TCPXO/RDMA, no NCCL plugin, or a TPU
+  topology that doesn't match the parallelism mapping). MFU/all-reduce never benchmarked.
+- **Gang/multi-host job without `ProvisioningRequest` + Kueue** — relying on plain CA for all-or-nothing
+  capacity.
+- **A Service/Ingress/Gateway stuck in `Terminating`** — suspect a stuck LB/NEG finalizer / orphaned GCP
+  backend. Do **not** force-remove the finalizer (you leak forwarding rules/backend services you keep
+  paying for); fix the GCP resource first.
+- **GPU sharing (time-sharing/MPS) on latency-critical or training workloads** instead of MIG/DRA or
+  whole devices — noisy-neighbor stalls with no memory isolation.
+- **Spot pools without taints and without checkpointing** — preemption attracts intolerant workloads and
+  destroys uncheckpointed runs.
+- **Broad IAM (`container.admin`) granted to dodge RBAC setup** — in-cluster authorization still needs
+  RBAC; map Google Groups → RBAC.
+- **No VPC-native CIDR / `max-pods-per-node` plan** on a large cluster — secondary ranges exhaust
+  silently and Pods stop scheduling.
+
+## Verification gate (definition of done)
+
+Before the cluster/workload counts as production-ready:
+
+- [ ] **Identity:** Workload Identity Federation is the *only* path to GCP APIs — confirm **no** SA JSON
+  keys are mounted. KSAs bound least-privilege per namespace/workload. Human access via Google Groups →
+  RBAC (not `container.admin`).
+- [ ] **Network & security posture:** VPC-native with a CIDR / `max-pods-per-node` plan that survives max
+  scale; Dataplane V2 enabled with NetworkPolicy; private cluster (private endpoint + authorized
+  networks, Cloud NAT egress); Shielded nodes; container-native LB via NEGs; Security Posture dashboard
+  on. Untrusted/agent code runs under a `gvisor` RuntimeClass.
+- [ ] **Node pools right-sized for accelerators:** one pool per hardware/role; correct machine family +
+  GPU/TPU SKU for the workload; GPUDirect (TCPX/TCPXO/RDMA) or correct TPU topology + multi-host
+  placement configured at creation and **validated with an all-reduce / MFU benchmark**; Spot pools
+  tainted and paired with checkpointing.
+- [ ] **Autoscaling + capacity:** CA bounds set per pool; NAP limits/defaults configured if used; gang/
+  multi-host jobs scale via `ProvisioningRequest` + Kueue (atomic); long-checkpoint Pods annotated
+  `safe-to-evict: "false"`; accelerator pools pinned to zones with the SKU/quota.
+- [ ] **Operations:** subscribed to a release channel with a maintenance window **and exclusions** for
+  long runs; node upgrade strategy chosen per pool (surge vs blue-green); Backup for GKE scheduled if
+  stateful.
+- [ ] **Observability:** Cloud Logging/Monitoring on (control-plane logs enabled for prod); Managed
+  Service for Prometheus scraping app/ML metrics via `PodMonitoring`/`ClusterPodMonitoring`; accelerator
+  metrics flowing (GPU `duty_cycle` / TPU `tensorcore_utilization`); per-team attribution clean via
+  `namespace_name`.
+- [ ] **Cost reviewed:** CUDs for steady accelerator/CPU; Spot where fault-tolerant; NAP/Autopilot to
+  eliminate idle headroom; Hyperdisk IOPS/throughput right-sized; cost-allocation/usage-metering enabled
+  by namespace/label.
+
+---
+
 ## Canonical references (verify current)
 
 - GKE docs: https://cloud.google.com/kubernetes-engine/docs

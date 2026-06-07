@@ -579,6 +579,90 @@ controller-runtime metrics endpoint, and Events via `kubectl describe <cr>`.
 
 ---
 
+## Rationalizations & rebuttals
+
+The excuses that precede a bricked cluster or an un-migratable API. Each is a stop sign.
+
+- **"I'll add the validating webhook later — CEL is too limited for this."** Most of what you'd webhook
+  is expressible in schema CEL (`x-kubernetes-validations`, including immutability via `oldSelf`) or a
+  `ValidatingAdmissionPolicy`, with zero certs/availability risk. Reach for those first; only the
+  genuinely cross-resource/external rule needs a webhook — and that webhook is its own operational
+  burden, not a freebie you defer.
+- **"It's still v1beta1-ish, breaking the GA shape is fine."** If you served it as `v1`, it's GA and
+  forever — no removed/repurposed fields, no tightened validation, no changed defaults. "Beta-ish" is
+  not a version; the apiserver and your users go by the served version string, not your intentions.
+- **"One god-CRD is simpler than five kinds."** It's simpler to *scaffold* and worse to *own*: coupled
+  reconcile paths, unsplittable RBAC, validation that can't express "these fields only apply when…".
+  Split into focused kinds composed by references/owner refs.
+- **"I'll just leak the pod names / reconcile phase into the API — it's convenient for debugging."**
+  Convenient now, a frozen contract forever. Internal detail in spec/status means renaming your
+  controller or changing your data model becomes a breaking API change. Put debug detail in
+  logs/events/metrics, not the CRD.
+- **"Two versions, both `storage: true` — saves me writing conversion."** Exactly one version stores in
+  etcd; a second storage flag (or no conversion plan for differently-shaped versions) is data loss on
+  version skew. Pick one storage version, implement hub-and-spoke conversion, migrate stored objects.
+- **"`failurePolicy: Ignore` so the webhook can't ever block writes."** Then your "validating" webhook
+  silently no-ops whenever it's down — invalid objects sail into etcd. The real fix isn't `Ignore`;
+  it's a webhook that's HA, fast, cert-rotated, and scoped to exclude the namespaces it needs to boot.
+- **"cluster-admin RBAC for now, I'll tighten it before release."** It never gets tightened, and the
+  generated `role.yaml` from copy-pasted `+kubebuilder:rbac` markers already over-grants. Scope to the
+  groups/resources/verbs you actually touch from day one; prefer `Role` over `ClusterRole`.
+- **"I'll cut a new schema this release and worry about in-flight objects later."** Existing CRs are
+  stored at the old version; without a served new version + conversion + storage migration, you can't
+  drop the old one and old/new operator pods clash during the rolling upgrade. No schema change ships
+  without a migration path.
+
+## Red flags — stop and reconsider
+
+- A webhook with `failurePolicy: Fail` whose `namespaceSelector` does **not** exclude `kube-system` and
+  the operator's own namespace — it can deadlock the control plane or itself on cold start.
+- A single webhook replica (no ≥2 replicas / PDB / anti-affinity) gating writes cluster-wide.
+- Serving-cert lifetime managed by hand (no cert-manager CA-injector or built-in rotator) — expiry
+  becomes a cluster outage with `Fail`.
+- Two CRD versions with different shapes and `conversion.strategy: None`, or more than one version
+  marked `storage: true`.
+- A new served/storage version shipped with no storage-version migration of existing objects.
+- Internal state in the API — pod names, reconcile phase bookkeeping, your data structures — in spec or
+  status; or user-writable `status` / status-in-spec.
+- No `status.conditions` (or conditions without `observedGeneration`): the resource is unobservable,
+  `kubectl wait`-incompatible, and not GitOps-able.
+- `spec.action: restart` / RPC-style verbs, an `x-kubernetes-preserve-unknown-fields` at the schema
+  root, or hand-edited generated CRD/RBAC/deepcopy.
+- `cluster-admin`-equivalent ClusterRole "to be safe," and `/scale` enabled on a kind that isn't
+  replica-scalable.
+
+## Verification gate (definition of done)
+
+Before the operator/CRD change counts as done, confirm:
+
+- [ ] **CRD schema** — structural OpenAPI v3 schema, every field typed; no root
+      `x-kubernetes-preserve-unknown-fields`; required/optional and defaults set; cross-field/immutability
+      rules in CEL (`x-kubernetes-validations`) where possible rather than a webhook.
+- [ ] **Subresources** — `/status` enabled; `/scale` enabled **only** if replica-scalable, with correct
+      spec/status/selector paths.
+- [ ] **API versioning** — exactly one `storage: true` version; for differently-shaped served versions a
+      hub-and-spoke conversion webhook with round-trip tests; existing stored objects migrated before any
+      old version is dropped; no GA-breaking change (no removed/repurposed fields, no tightened validation,
+      no changed defaults).
+- [ ] **Webhooks** — `sideEffects: None`, `admissionReviewVersions: ["v1"]`, `matchPolicy: Equivalent`,
+      short `timeoutSeconds`; `failurePolicy` chosen deliberately with selectors excluding `kube-system`
+      and the operator namespace; ≥2 replicas + PDB; certs issued and `caBundle` injected/rotated
+      automatically (cert-manager or built-in rotator) — no hand-managed certs.
+- [ ] **RBAC** — least privilege; generated from `+kubebuilder:rbac` markers and the `role.yaml` audited;
+      `Role` over `ClusterRole` where the operator is namespace-scoped; no `cluster-admin`.
+- [ ] **Operability** — standard `metav1.Condition` status conditions (incl. `Ready`) with
+      `observedGeneration`; Events on meaningful transitions; domain metrics exposed.
+- [ ] **HA** — controller `Deployment` ≥2 replicas with leader election (`Lease`); requests/limits, PDB,
+      graceful shutdown.
+- [ ] **Upgrade path** — operator can upgrade itself and migrate its CRs; old/new operator pods tolerate
+      each other's objects during the rolling upgrade.
+- [ ] **Generation in CI** — `make generate manifests` run and committed; CI fails on
+      `git diff --exit-code` for generated CRD/RBAC/deepcopy.
+- [ ] **Version claims verified** — any feature-gate / API-maturity assumption (CEL policies, OLM v1,
+      controller-gen markers) checked against the docs for the target cluster version, not assumed GA.
+
+---
+
 ## 12. Canonical references
 
 - Operator pattern (concept) — https://kubernetes.io/docs/concepts/extend-kubernetes/operator/

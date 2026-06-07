@@ -440,6 +440,49 @@ The hardest part of Go to get right. Default to *not* using goroutines until you
 
 ---
 
+## Rationalizations & rebuttals
+
+| Excuse | Rebuttal |
+| --- | --- |
+| "It's a quick fix, skip the test." | Untested fixes regress silently; a table-driven case is a few lines and locks the behavior in. |
+| "I'll handle that error later / `_ =` for now." | Swallowed errors become the outage with no breadcrumb. Handle or wrap it now, or comment why it's safe to drop. |
+| "One goroutine won't leak anything." | Every goroutine needs an owner and a guaranteed exit; "just one" per request is how you OOM under load. |
+| "An interface here makes it more flexible." | A single-impl interface is abstraction debt. Define it at the consumer when a second impl or test-double actually exists. |
+| "`any` is simpler than fighting the types." | `any` erases the compiler's help and pushes failures to runtime; use a concrete type or a constrained generic. |
+| "gofmt/lint can wait until the PR." | `gofmt` is not opinion and the gates are cheap; run them before you read the diff yourself, not after review. |
+| "I'll reuse this backing slice/buffer to save an alloc." | Without a profile that's a guess, and aliasing a shared slice is a data-corruption bug. Measure first, copy when independence matters. |
+
+## Red flags
+
+Stop and reconsider when you see:
+- A `select` or hot loop with `time.After` (leaks a timer until it fires) — use a stoppable `Timer` or context deadline.
+- `go f()` spawned per request/item with no semaphore, worker pool, or `errgroup.SetLimit`.
+- `context.Context` stored in a struct field, or `WithValue` used to pass ordinary parameters.
+- Any network/DB call with no timeout or deadline (zero-value `http.Client` hangs forever).
+- An error string built with `+`/`fmt.Sprintf` and inspected via `strings.Contains` instead of `errors.Is`/`errors.As`.
+- `defer` inside a loop expecting per-iteration release, or `resp.Body`/writer `Close` whose error is dropped.
+- A `panic`, `log.Fatal`, or `os.Exit` reachable from a reusable library (not `main`/init).
+- Naming smells: `userId`/`apiUrl` initialisms, `UserService` stutter, `util`/`common`/`helpers` packages.
+
+## Verification gate (definition of done)
+
+Go work is not done until all of the following pass and you can show the evidence:
+- [ ] `gofmt -l .` (or `goimports -l .`) prints nothing — source matches formatter output, imports grouped.
+- [ ] `go build ./...` compiles with no errors.
+- [ ] `go vet ./...` is clean (printf mismatches, copied locks, struct tags).
+- [ ] `golangci-lint run` (or `staticcheck ./...`) passes with the agreed rule set.
+- [ ] `go test -race ./...` is green — tests pass and the race detector is clean.
+- [ ] `govulncheck ./...` reports no actionable vulnerabilities against the call graph.
+- [ ] `go mod tidy` leaves `go.mod`/`go.sum` unchanged (deps are accurate and committed).
+- [ ] New/changed behavior has table-driven tests; untrusted-input parsers have a fuzz target.
+- [ ] Deviations from these defaults are justified in a comment or the PR description.
+
+> Tool/version caveat: `golangci-lint` rule sets and Go release behavior (e.g. the Go 1.22+ loop-variable
+> fix, `go vet`/`govulncheck` checks) move with the toolchain — pin versions in CI and verify against the
+> current release notes rather than assuming.
+
+---
+
 ### Canonical references
 - **Google Go Style Guide** — https://google.github.io/styleguide/go/guide *(the bar this doc targets)*
 - **Google Go Style Decisions** — https://google.github.io/styleguide/go/decisions

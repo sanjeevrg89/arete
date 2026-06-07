@@ -59,6 +59,9 @@ Claude Code (`SKILL.md`), AGENTS.md-compatible agents / agentic IDEs (`AGENTS.md
 | [`verification-and-debugging`](verification-and-debugging/) | **Verify:** prove it works (e2e, eval gates, reproducibility) + systematic root-cause debugging for distributed/GPU/ML; regression-test gate. |
 | [`code-review-discipline`](code-review-discipline/) | **Review:** correctness/blast-radius/security/simplicity lens, IaC & manifest care, feedback etiquette; approved-against-checklist gate. |
 | [`shipping-and-release`](shipping-and-release/) | **Ship:** small, reversible, watched — progressive delivery, model canary/champion-challenger, tested rollback, monitoring-before-ramp gate. |
+| [`accelerator-memory-estimator`](accelerator-memory-estimator/) | **Doer:** estimate GPU/TPU memory for training/inference (weights+grads+optimizer+activations, KV cache) and recommend a fitting strategy (FSDP/TP/quant/QLoRA). |
+| [`k8s-manifest-scaffolder`](k8s-manifest-scaffolder/) | **Doer:** generate production-grade Kubernetes manifests from a short spec — right kind + probes/limits/securityContext/PDB/HPA/NetworkPolicy baked in. |
+| [`triton-kernel-authoring`](triton-kernel-authoring/) | **Doer:** write & optimize Triton GPU kernels — tile model, masking, `tl.dot`, autotune, correctness vs PyTorch, benchmark vs roofline. |
 
 ## Cross-link graph (high-traffic edges)
 - The four `kubernetes-*` skills form the platform core; `aiml-on-kubernetes` is the umbrella that routes
@@ -93,5 +96,7 @@ Claude Code (`SKILL.md`), AGENTS.md-compatible agents / agentic IDEs (`AGENTS.md
 8. **Engineering process (Define→Plan→Build→Verify→Review→Ship):** `engineering-lifecycle` (meta),
    `spec-driven-development`, `task-planning-decomposition`, `test-driven-development`,
    `verification-and-debugging`, `code-review-discipline`, `shipping-and-release`.
+9. **Doer / tools (produce an artifact on invocation):** `accelerator-memory-estimator`,
+   `k8s-manifest-scaffolder`, `triton-kernel-authoring`.
 
 > Maintenance: add a new skill as a directory following `SKILL-AUTHORING-SPEC.md`, then add a row here.

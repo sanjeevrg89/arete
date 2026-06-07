@@ -1,0 +1,63 @@
+[
+  {
+    "skill": "accelerator-memory-estimator",
+    "prompt": "Estimate per-GPU memory to full fine-tune a 7B model in bf16 with AdamW, and say whether it fits one 80GB H100. Show the math.",
+    "must_contain": ["(?i)gi?b", "(?i)optimizer", "(?i)activation", "(?i)fsdp|zero|qlora|shard"],
+    "note": "doer: should compute ~16*P model state + activations and recommend a fitting strategy"
+  },
+  {
+    "skill": "k8s-manifest-scaffolder",
+    "prompt": "Generate Kubernetes manifests for a stateless API: 3 replicas, image example/orders:1.4.0, port 8080, autoscale on CPU.",
+    "must_contain": ["kind: Deployment", "(?i)readinessProbe", "(?i)livenessProbe", "resources:", "(?i)PodDisruptionBudget", "(?i)HorizontalPodAutoscaler", "securityContext"],
+    "must_not_contain": [":latest"],
+    "note": "doer: must emit hardened manifests with probes/limits/securityContext/PDB/HPA and no :latest tag"
+  },
+  {
+    "skill": "triton-kernel-authoring",
+    "prompt": "Write a Triton kernel for a fused vector add with boundary masking, plus a correctness check against PyTorch.",
+    "must_contain": ["@triton.jit", "(?i)program_id", "(?i)mask", "(?i)allclose"],
+    "note": "doer: must produce a masked @triton.jit kernel and validate with torch.allclose"
+  },
+  {
+    "skill": "go-best-practices",
+    "prompt": "How should I wrap and return errors in Go from a function that reads a config file?",
+    "must_contain": ["%w", "(?i)errors\\.(Is|As)"],
+    "note": "should recommend fmt.Errorf with %w and errors.Is/As"
+  },
+  {
+    "skill": "kueue-advanced",
+    "prompt": "A Kueue Workload is stuck Inadmissible. How do I diagnose and fix it?",
+    "must_contain": ["(?i)ClusterQueue", "(?i)quota|ResourceFlavor|flavor"],
+    "note": "should point at quota / flavor / ClusterQueue, not finalizer-stripping"
+  },
+  {
+    "skill": "serving-frameworks",
+    "prompt": "Which inference engine for highest-throughput LLM serving on GPUs, and why?",
+    "must_contain": ["(?i)vLLM", "(?i)batching", "(?i)kv|paged"],
+    "note": "should mention continuous batching and KV-cache (PagedAttention)"
+  },
+  {
+    "skill": "ml-evaluation-evals",
+    "prompt": "How do I use LLM-as-a-judge reliably for evaluating my chatbot?",
+    "must_contain": ["(?i)bias", "(?i)position|verbosity|self-pref", "(?i)human"],
+    "note": "should cover judge biases + human calibration"
+  },
+  {
+    "skill": "distributed-systems-fundamentals",
+    "prompt": "Should I implement leader election with heartbeats and a timeout for my service?",
+    "must_contain": ["(?i)consensus|raft|paxos", "(?i)fencing|lease"],
+    "note": "should steer to consensus + fencing tokens rather than ad-hoc heartbeats"
+  },
+  {
+    "skill": "fine-tuning-peft",
+    "prompt": "I want to adapt Llama-8B to my support tickets. Should I fine-tune, and how, on one GPU?",
+    "must_contain": ["(?i)qlora|lora", "(?i)prompt|rag", "(?i)eval"],
+    "note": "should consider prompting/RAG first, then QLoRA, with eval"
+  },
+  {
+    "skill": "shipping-and-release",
+    "prompt": "I'm about to deploy a new model version to production. What's the safe way to ship it?",
+    "must_contain": ["(?i)canary|champion|shadow|progressive", "(?i)rollback", "(?i)monitor"],
+    "note": "should require progressive rollout + tested rollback + monitoring before ramp"
+  }
+]

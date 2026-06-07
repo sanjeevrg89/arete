@@ -295,6 +295,75 @@ Before relying on a specific field, feature gate, default, or annotation key: ch
 chart/version, the Configuration in use, and the docs/CRD for that version. Prefer general statements
 over invented specifics when unsure.
 
+## Rationalizations & rebuttals
+
+- *"The Workload's wedged — just strip the finalizer to unstick it."* The finalizer is what releases
+  reserved quota back to the ClusterQueue/cohort. Hand-removing it leaks quota and silently shrinks the
+  cohort. Diagnose the terminal Workload and let Kueue reconcile; edit finalizers only as last-resort
+  recovery, then fix the root cause that orphaned it.
+- *"One giant ClusterQueue for everyone is simpler."* It removes the only thing Kueue gives you:
+  per-tenant guarantees and isolation. No nominal floor, no borrowing SLA, one noisy job starves all.
+  A CQ per tenant in a shared cohort is barely more config and is the actual design.
+- *"Skip TAS for this tightly-coupled job — it'll schedule fine."* Without topology constraints
+  kube-scheduler can spread a gang across racks/blocks and tank all-reduce/all-gather bandwidth. The job
+  "runs" but at a fraction of throughput. Use `podset-required/preferred-topology` for bandwidth-sensitive
+  gangs.
+- *"Borrowing limits don't matter, there's plenty of capacity."* Unbounded `borrowingLimit` means the
+  first tenant to burst can consume the whole cohort, and no tenant has a real floor until contention
+  hits — exactly when it's too late. Set borrowing/lending limits up front to encode the fairness SLA.
+- *"Don't bother with `waitForPodsReady` — Pods come up fine."* Until the day an image pull fails or
+  capacity vanishes mid-scale-up; then a half-scheduled accelerator gang holds quota indefinitely and
+  blocks every other Workload. Enable it so stuck gangs re-suspend and release quota.
+- *"I'll just set Pod `PriorityClass` for queue ordering."* That axis drives in-node kube-scheduler
+  preemption, not Kueue queue ordering or preemption. Use `WorkloadPriorityClass` for queueing; they are
+  separate mechanisms and conflating them silently does nothing you intended.
+- *"`manageJobsWithoutQueueName: true` is convenient — auto-manage everything."* Fleet-wide it suspends
+  operator/system jobs until they're queued, which they never will be. Keep it off, or scope it tightly
+  with `managedJobsNamespaceSelector`.
+
+## Red flags
+
+- Workloads sitting `Inadmissible` / Pending for long periods and nobody reading the condition message
+  (flavor mismatch vs quota exhausted vs pending AdmissionCheck are different fixes).
+- Anyone hand-editing `kueue.x-k8s.io/...` finalizers or labels on live Workloads/Jobs/Pods.
+- A ClusterQueue showing quota usage with no corresponding running jobs (leaked/orphaned Workloads).
+- No `preemption` policy configured on a contended ClusterQueue/cohort — large jobs silently starve and
+  nominal quota can't be reclaimed.
+- `borrowingLimit` unset (effectively unbounded) on every CQ, so no tenant has an enforceable floor.
+- Quota/cohort numbers that don't reconcile with real node capacity (nominal sums far exceed installed
+  accelerators, or a flavor's `nodeLabels` match zero nodes).
+- Accelerator gangs running without `waitForPodsReady`, or with timeouts shorter than real image-pull +
+  autoscale times (admission thrash) or far longer (slow quota recovery).
+- Fair-sharing and strict-priority preemption semantics mixed in one cohort.
+- Borrowing pinned at the limit for a tenant for sustained periods (under-provisioned floor) while another
+  cohort sits idle.
+
+## Verification gate (definition of done)
+
+Before calling a Kueue setup complete, confirm each:
+
+- **Plumbing wired:** ResourceFlavor(s) with accurate `nodeLabels`/`nodeTaints`, a ClusterQueue with
+  `resourceGroups` covering every requested resource (CPU/mem *and* `nvidia.com/gpu`/TPU), and a
+  LocalQueue in each tenant namespace pointing at it.
+  `kubectl get resourceflavor,clusterqueue,localqueue -A`.
+- **Integration enabled:** the job kind is in `integrations.frameworks` and the test Job carries
+  `kueue.x-k8s.io/queue-name`; Kueue forces `spec.suspend: true` and creates a Workload.
+- **Admission works:** submit a real job; the Workload reaches `QuotaReserved` then `Admitted`,
+  `status.admission` shows the assigned flavor/quota, and the Job unsuspends (`spec.suspend: false`) with
+  Pods scheduling. `kubectl describe workload <wl> -n <ns>`.
+- **Gang admission verified:** submit a multi-PodSet job larger than free quota; confirm it is admitted
+  all-or-nothing (no partial start) and that a fitting one admits atomically.
+- **Quota & borrowing correct:** usage on the CQ matches expectation; borrowing respects `borrowingLimit`,
+  a lender keeps its `lendingLimit` floor, and a higher-priority job reclaims nominal via preemption (if
+  configured). `kubectl get clusterqueue <cq> -o yaml` → `status.flavorsUsage`.
+- **Resilience:** with `waitForPodsReady` on, a job that can't become Ready re-suspends and requeues
+  (quota released), not wedged forever.
+- **TAS (if used):** a `required/preferred-topology` job lands within the intended domain (nodeAffinity
+  injected) — verify against current annotation keys/feature gate at https://kueue.sigs.k8s.io.
+- **Observability:** Kueue Prometheus metrics scraped; pending-by-reason and per-cohort utilization
+  visible; alerts on sustained pending + low utilization and on borrowing pinned at limit. Verify exact
+  metric names for the installed version.
+
 ## Canonical references
 
 - Project docs: https://kueue.sigs.k8s.io (Concepts, Tasks, Admission, TAS, MultiKueue, Configuration).

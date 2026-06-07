@@ -429,6 +429,71 @@ configurable tolerance** (`behavior.*.tolerance`), and **Karpenter's** non-AWS p
 doubt, check the workload's metrics with `kubectl get --raw` and the autoscaler's own conditions/logs
 rather than trusting documentation alone.
 
+## Rationalizations & rebuttals
+
+| Excuse | Rebuttal |
+|--------|----------|
+| "Just scale on CPU — it's the default and simplest." | For LLM/GPU serving CPU can sit idle while the GPU saturates and the queue grows; CPU never moves, so HPA never fires. Scale on the server's load metrics (queued/running requests, KV-cache utilization, concurrency, p95/TTFT). |
+| "HPA and VPA on the same resource is fine, they'll settle." | They oscillate: HPA adds replicas to cut per-pod CPU, VPA cuts requests to match usage, HPA's percent-of-request jumps, it scales again. One loop per dimension — HPA on RPS/queue, VPA on CPU+mem, or use MPA. |
+| "Skip the stabilization window — I want it responsive." | A 0s scale-*down* window shrinks you on every metric dip and thrashes warm-up-heavy pods. Scale up fast, scale down slow (≥300s, conservative percent). 0s belongs only on `scaleUp`. |
+| "Scale-to-zero is too risky to bother with." | For expensive/scarce GPUs/TPUs idle cost is the bigger risk. The real tax is cold start; pay it down with image streaming/preloaded images, weight caching on fast local disk, or a warm `minReplicaCount: 1` tier + KEDA burst tier — then scale the rest to zero. |
+| "I'll set requests later — get it scaling first." | Every autoscaler reasons about *requests*. Wrong/absent requests poison HPA utilization (undefined without requests), VPA recommendations, CA bin-packing, and Karpenter shape selection at once. Right-size requests first. |
+| "One HPA per metric and take whichever — more signals, safer." | HPA takes the **max** across metrics, so any one hot/noisy metric scales you up. That's only safe if every metric genuinely *should* trigger scale-up; otherwise a flaky signal pins you high. |
+| "Run both Cluster Autoscaler and Karpenter for belt-and-suspenders." | They make conflicting node decisions on the same nodes and fight over scale-down. Pick one per node set. |
+| "Let my GitOps tool keep `.spec.replicas` in sync with HPA." | Two controllers writing `.spec.replicas` is last-writer-wins — they fight every reconcile. Exclude `replicas` from GitOps sync when an HPA owns it. |
+
+## Red flags
+
+Stop and reconsider if you see any of these:
+
+- **Replica or request count oscillating** on a steady workload — HPA×VPA on the same resource, two
+  controllers writing `.spec.replicas`, or a noisy metric with no tolerance/stabilization.
+- **`kubectl describe hpa` shows `ScalingActive: false` / `AbleToScale: false` or metric `unknown`** —
+  the metric pipeline (metrics-server / Prometheus / adapter / KEDA) is down and HPA has *silently
+  stopped scaling*, often mid-incident.
+- **`ScalingLimited: true`** — min/max replicas is binding; you're pinned, not autoscaling.
+- **Nodes stuck and never draining on scale-down** — a too-strict PDB (e.g. `minAvailable: 100%`),
+  `safe-to-evict: "false"`, bare/`emptyDir` pods, or kube-system pods without a PDB deadlocking CA/Karpenter.
+- **CPU near zero on a GPU serving workload that's still queueing/missing latency SLO** — you're scaling
+  on the wrong signal entirely.
+- **Pending GPU/TPU pods that never schedule** — accelerator scarcity isn't handled (no spot+on-demand
+  fallback, no reservations, no multi-zone spread, no Kueue queueing); "scale up" silently means "wait
+  forever."
+- **CA/Karpenter removing a node whose pods an HPA is about to need** — scale-down too aggressive / no
+  stabilization, causing churn against imminent demand.
+- **Partial gangs of training pods running and burning accelerators** while waiting for the rest — HPA
+  was used where Kueue + `ProvisioningRequest` (all-or-nothing) belongs; or single pods added for a
+  multi-host replica that can't serve alone (needs LeaderWorkerSet).
+- **A Karpenter NodeClass/NodePool edit rolling the whole fleet** unexpectedly — drift replacement with
+  no `budgets` cap.
+
+## Verification gate (definition of done)
+
+Before calling autoscaling "done," confirm:
+
+- [ ] **Right scaling signal chosen** per workload — utilization only where it tracks the bottleneck;
+  for GPU/LLM serving, a load metric (queue depth / running-vs-waiting / KV-cache util / concurrency /
+  p95-TTFT), not CPU. Verify the metric is actually served:
+  `kubectl get --raw "/apis/{custom,external}.metrics.k8s.io/..."` returns a value.
+- [ ] **Requests set and right-sized** on every autoscaled pod (utilization HPA is undefined without them).
+- [ ] **`behavior` / stabilization tuned** — scale up fast, scale down slow (≥300s `scaleDown`
+  stabilization, conservative percent); tolerance/policies sized to the latency budget and warm-up time.
+- [ ] **No HPA×VPA conflict on the same resource** — distinct dimensions (HPA on RPS/queue, VPA on
+  CPU+mem) or MPA; and exactly one controller writes `.spec.replicas` (GitOps excludes it).
+- [ ] **Node provisioning verified end-to-end** — a Pending pod actually triggers CA/Karpenter/NAP and
+  schedules on a node that satisfies its requests/affinity/taints/topology; headroom (pause-pods /
+  low-priority placeholders) in place for latency-critical scale-up.
+- [ ] **Scale-down safety verified** — PDBs realistic (not `100%`), drain succeeds; only one node
+  autoscaler per node set; Karpenter `disruption.budgets` set against mass churn/drift.
+- [ ] **Scale-to-zero path validated** (if used) — activation vs scaling thresholds set deliberately,
+  cold-start time measured and within budget (or a warm tier kept).
+- [ ] **Load-tested** — drive a realistic spike and a sustained ramp; confirm capacity arrives before
+  SLOs break, the loop converges without thrash, and scale-down returns to baseline.
+- [ ] **Failure mode checked** — metric pipeline down ⇒ alerts fire (`ScalingActive: false`) and the
+  system fails safe (no runaway scale-down on missing metrics).
+- [ ] **Maturity caveats verified for your cluster** — if relying on in-place pod resize / VPA in-place
+  or GKE MPA, confirm feature-gate state / availability rather than assuming GA.
+
 ## Canonical references
 
 - HPA: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/ and the walkthrough

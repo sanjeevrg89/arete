@@ -506,6 +506,69 @@ EP). Measure MFU after every change.
 
 ---
 
+## Rationalizations & rebuttals
+
+- *"DDP is enough for a 70B."* No — Adam mixed-precision static state is ~16–18 B/param ≈ 1.1–1.3 TB,
+  and DDP replicates all of it per device. It doesn't fit on one 80GB GPU. Shard with FSDP2/ZeRO-3
+  (add TP/PP past the tens of billions).
+- *"Skip activation checkpointing, we have the memory."* Activations scale with
+  `batch×seq×hidden×layers` and dominate at long context — they're what OOMs you mid-run. Use
+  selective/granular checkpointing: most of the memory back for far less than the naive ~30% recompute.
+- *"Gather-to-rank-0 checkpoint sync is fine."* It OOMs the coordinator and serializes I/O at scale,
+  and stalls every rank while one writes. Use sharded Distributed Checkpoint (DCP), async, resharding-
+  tolerant.
+- *"Don't bother measuring MFU."* MFU is the one number that tells you whether your parallelism shape
+  and overlap are working; without it you tune blind and ship 30%-MFU runs. Measure it after every
+  shape change — and only quote numbers you've actually seen.
+- *"Comms aren't the bottleneck."* At multi-node scale they usually are — lost comm/compute overlap is
+  the most common cause of low MFU, and TP/EP on the slow fabric stalls on per-layer
+  all-reduce/all-to-all. Profile the timeline before assuming compute-bound.
+- *"Add TP everywhere, more parallelism is better."* Every axis adds comms, complexity, and a way to
+  mis-shape the mesh. Use the fewest axes that make it fit, then add only to relieve a *proven*
+  bottleneck.
+- *"We'll add fault tolerance later."* At thousands of accelerators something fails constantly; without
+  elastic restart + sharded async checkpoints + a checkpointable loader, one node loss kills the job
+  and goodput collapses. Build it in from the start.
+
+## Red flags
+
+- **Low MFU accepted without investigation** — GPUs idle in profiler gaps and nobody checks overlap,
+  bubble, or data-loader stalls.
+- **OOM "fixed" by blindly lowering batch size** — without checking the activation peak, FSDP wrap
+  granularity, or adding selective checkpointing / TP / CP. Often silently wrecks effective global
+  batch (→ LR/convergence) too.
+- **No async / no sharded checkpoint** — still gathering to rank 0, or a synchronous save that stalls
+  every step.
+- **No elastic restart** — the job dies on any single node loss; recovery is a full manual job restart.
+- **Comms not overlapped** — wrong FSDP prefetch settings, syncing every micro-batch under grad
+  accumulation, or TP/EP placed across the slow fabric.
+- **MFU never measured** (or numbers quoted that nobody has profiled) — no baseline to tune against.
+- **Mesh ↔ topology placement left to chance** — TP/EP groups span nodes because ranks landed
+  arbitrarily; no TAS / `LOCAL_RANK` ordering / NCCL topology pinning.
+- **Data loader not checkpointable** — resume re-seeds from scratch, re-seeing or skipping data, with
+  subtle quality regressions.
+
+## Verification gate (definition of done)
+
+- [ ] **Parallelism shape justified** for *this* model and cluster: it actually fits (static state +
+      activation estimate), uses the fewest axes that work, and TP/EP land inside the NVLink/one-node
+      high-bandwidth domain while PP/DP cross nodes.
+- [ ] **`tp × pp × cp × ep`** divides cleanly into per-node and per-island accelerator counts;
+      mesh→topology placement is pinned (TAS / `LOCAL_RANK` / NCCL topology), not arbitrary.
+- [ ] **MFU measured** (achieved ÷ peak FLOP/s) and re-checked after the final shape change; profiler
+      timeline confirms comms overlapped with compute and no oversized pipeline bubble.
+- [ ] **Effective global batch** = micro-batch × grad-accum × DP degree is the intended value, and the
+      LR/schedule was (re)tuned for it.
+- [ ] **Sharded + async checkpointing** in place (DCP or framework equivalent) — no gather-to-rank-0;
+      save cadence set so a crash loses minutes, not hours; the data loader is checkpointable/resumable.
+- [ ] **Fault tolerance tested** — kill a node and confirm elastic restart (torchrun elastic / torchft
+      / Pathways) re-forms the group, reloads the last shard, and fast-forwards the loader to the right
+      step.
+- [ ] **Scaling efficiency verified** — throughput scales near-expected when you add nodes/devices (no
+      cliff from all-gather crossing the fabric); goodput acceptable under the observed failure rate.
+
+---
+
 ## 13. Canonical references (verify against current versions)
 
 - PyTorch FSDP / FSDP2: pytorch.org/docs (`torch.distributed.fsdp`, `fully_shard`), FSDP paper

@@ -475,7 +475,88 @@ distillation, or spec-decode.
 
 ---
 
-## 11. Version awareness
+## 11. Rationalizations & rebuttals
+
+The excuses that precede a regression in production. Each is a real thing engineers and agents say.
+
+- *"INT4/FP8 is basically lossless, ship it without re-evaluating."* — Perplexity barely moves while
+  code, math, long-context, and multilingual quality fall off a cliff. "Lossless" is workload-specific.
+  Run task evals on **your** distribution before and after. Non-negotiable.
+- *"Speculative decoding always helps, turn it on everywhere."* — It spends *spare* compute to cut
+  latency; at throughput-saturated batch sizes it can *reduce* peak throughput, and at low acceptance
+  it's net-negative latency. Measure realized acceptance and end-to-end tokens/s at your operating point.
+- *"Let's optimize first, profile later."* — Optimizing the wrong bound is the #1 wasted-effort
+  anti-pattern. Faster kernels do nothing for a bandwidth-bound decode; weight quant does nothing when
+  the *KV cache* is what overflows. Identify the bound at your real batch/context/SLO first.
+- *"Quantize the whole model uniformly — fewer special cases."* — Softmax, layernorm, embeddings, and
+  the first/last layers are precision-sensitive; pushing them to low bit silently degrades quality. Use
+  mixed precision and keep sensitive ops higher.
+- *"Distillation just needs the training run set up."* — The student is only as good as the diversity
+  and volume of teacher-labeled data covering your real distribution. Thin or off-distribution data
+  yields a student that benchmarks fine and fails in production. Budget the data generation, not just the
+  training.
+- *"Calibration data doesn't matter much, any text will do."* — PTQ scales set from the wrong data (no
+  chat template, wrong languages/domains) are the most common cause of a "quantization hurt quality"
+  surprise. Draw the calibration set from the real serving distribution.
+- *"The paper / leaderboard says 2× faster, so we'll get 2×."* — Speedup and "lossless" claims are
+  workload-, batch-, context-, and hardware-specific. Reproduce on your traffic and hardware before
+  committing it to a config.
+- *"Unstructured pruning hit 60% sparsity, that's a big speedup."* — A dense GEMM still touches the
+  zeros; unstructured sparsity compresses storage, not GPU matmul time. Use 2:4 on supported Tensor
+  Cores if you want speed.
+
+---
+
+## 12. Red flags
+
+Stop and reconsider if any of these are true:
+
+- **No task eval (only perplexity, or nothing) after quantization.** You have no evidence the artifact
+  is shippable; perplexity hides code/math/long-context/multilingual cliffs.
+- **An optimization was applied without first identifying the bound.** Tuning kernels on a
+  bandwidth-bound decode, or weight-quantizing when the KV cache caps concurrency.
+- **Speculative decoding is on but realized acceptance rate is unmeasured or low**, or the draft is
+  nearly as expensive as the target — likely net-negative latency.
+- **The draft and target don't share tokenizer / prompt template** (or the draft wasn't aligned to the
+  *quantized* target) — verification breaks or acceptance collapses.
+- **The memory-vs-compute bound is being ignored:** the same model is treated identically for a
+  latency-sensitive single user (bandwidth-bound) and a throughput-maximizing batch (compute-bound).
+- **Calibration set doesn't match production** (missing chat template, wrong languages/domains).
+- **Multiple optimizations stacked at once with a single end-to-end eval** — you can't attribute a
+  quality regression to a lever. Add and eval one at a time.
+- **A TensorRT engine is reused across a different GPU generation or shape profile** — engines are
+  arch- and shape-specific; a stale engine silently underperforms or fails.
+- **Precision-sensitive ops (softmax, layernorm, embeddings, first/last layers) quantized to low bit**,
+  or sub-4-bit weights relied on without escalating the recovery ladder.
+
+---
+
+## 13. Verification gate (definition of done)
+
+An optimization is not "done" until all of these hold. Show the evidence, don't assert it.
+
+- [ ] **Bound identified at the real operating point.** Profiled (framework profiler / Nsight) at the
+      actual batch, context length, and SLO — not guessed. You can state: bandwidth-, compute-, memory-,
+      or cost-bound.
+- [ ] **Technique matched to the bound.** The lever attacks the bound you found (e.g. weight/KV quant
+      for bandwidth-bound decode; FP8 W+A or MoE for compute-bound throughput; quant/prune+distill for
+      memory-bound footprint; spec-decode only where there's spare compute).
+- [ ] **Quality eval before and after, on your distribution.** Task metrics (lm-eval-harness-style
+      suites), not perplexity alone, including the regression-prone slices (code, math, long-context,
+      multilingual). Calibration set drawn from real traffic.
+- [ ] **Latency, throughput, and $/token measured** at the operating point: TTFT, ITL/TPOT, tokens/s,
+      and cost per token. For speculative decoding, also realized **acceptance rate** on real traffic.
+- [ ] **Accuracy delta is acceptable** against an agreed quality bar — the cheapest token is the one
+      served by the smallest model that still passes your evals.
+- [ ] **One lever at a time.** Each addition was added and evaluated in isolation; any combined-stack
+      regression can be attributed to a specific lever.
+- [ ] **Artifact reproducibility recorded:** exact format/dtype, method (AWQ/GPTQ/SmoothQuant/FP8),
+      granularity, sensitive-layer overrides, draft/target pairing, and (if built) the TensorRT engine's
+      GPU arch and shape profile — so the result rebuilds and isn't reused out of scope.
+
+---
+
+## 14. Version awareness
 
 It is 2026 and this is one of the fastest-moving areas in ML systems. Specifically verify against
 current docs before relying on:
@@ -493,7 +574,7 @@ against current docs" and link the source.
 
 ---
 
-## 12. Canonical references
+## 15. Canonical references
 
 - LLM inference / efficiency surveys: **arXiv 2402.09748** (LLM inference survey) · **arXiv 2312.03863**
   (efficient LLMs survey) · arXiv 2312.15234 (efficient LLM inference).

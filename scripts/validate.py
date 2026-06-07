@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 # Directories that are not skills ("skills" is the generated flat bundle from build_bundle.py).
-NON_SKILL_DIRS = {"scripts", ".git", ".github", "skills"}
+NON_SKILL_DIRS = {"scripts", ".git", ".github", "skills", "tests"}
 
 # Files every skill directory must contain (a guide is checked separately).
 REQUIRED_FILES = ["SKILL.md", "AGENTS.md", "GEMINI.md"]

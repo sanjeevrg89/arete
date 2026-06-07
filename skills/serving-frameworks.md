@@ -496,7 +496,82 @@ keys or quote benchmark numbers you haven't measured.
 
 ---
 
-## 14. Canonical references
+## 14. Rationalizations & rebuttals
+
+The excuses that show up in serving design reviews and the one-line answers that kill them.
+
+- *"Static batching is fine, our prompts are similar length."* — Output length varies even when input
+  doesn't; the batch is held hostage by its longest *generation*, and the GPU idles between batches.
+  Continuous (iteration-level) batching is table stakes; use an engine that does it.
+- *"Just run one replica per request / spin up a process per user."* — You throw away the entire point
+  of batching — amortizing the weight read across concurrent sequences in one decode step. One busy
+  replica serving a continuous batch beats N starved single-stream processes on tokens/s and \$/token.
+- *"Prefill and decode are the same forward pass, treat them alike."* — They are opposite workloads:
+  prefill is compute-bound (TTFT), decode is memory-bandwidth-bound (ITL). Tuning, batching, and even
+  hardware ratios differ; conflating them is why one long prompt freezes everyone's token stream.
+- *"Round-robin LB is good enough."* — In front of a prefix/KV cache it destroys hit rate: identical
+  system prompts get recomputed on every replica. Route shared-prefix requests to the same replica
+  (KV-/prefix-aware Inference Gateway), then balance on load.
+- *"Measure throughput by mean latency."* — Mean hides the tail that breaks SLOs, and raw peak
+  throughput counts requests that already missed their deadline. Measure p95/p99 TTFT and ITL
+  separately and optimize **goodput** (throughput that meets the SLO), not the average.
+- *"GPU utilization is low, so we have headroom."* — A bandwidth-bound decode loop sits at modest
+  compute utilization while fully saturated. Util is a poor scaling/headroom signal; watch queue depth,
+  in-flight requests, KV-cache utilization, and TTFT instead.
+- *"We'll quantize to fp8/AWQ to fit it — it's lossless."* — "Near-lossless" is workload-dependent and
+  can quietly degrade *your* task. Never ship a quantized model whose accuracy you didn't re-measure on
+  your own eval set.
+- *"Disaggregate prefill/decode now, it's the modern way."* — Disaggregation (Dynamo/DistServe) pays
+  off at datacenter scale; at one replica or modest QPS it is pure overhead. Start with chunked prefill
+  in a single pool and graduate when scale demands it.
+
+## 15. Red flags — stop and reconsider
+
+- **No continuous batching.** A hand-rolled batch loop or an "engine" without iteration-level batching
+  — you're leaving most of the GPU on the floor.
+- **KV-cache OOM or constant preemption/recompute.** `gpu-memory-utilization` / `max_model_len` / batch
+  set by feel; preemption counters climbing. The KV budget doesn't match the GPU.
+- **Generic / round-robin LB in front of stateful inference.** No prefix-/KV-aware routing, so
+  prefix-cache and RadixAttention reuse are being thrown away on every request.
+- **Tuning the wrong bound.** Chasing TTFT by shrinking batches (hurts throughput), or chasing
+  throughput by growing batches (hurts ITL/TTFT), without separating the prefill (compute) and decode
+  (bandwidth) limits.
+- **No load test.** "It works" measured on a single idle request. TTFT/ITL/goodput are only meaningful
+  under concurrent load at target QPS.
+- **Autoscaling on GPU utilization, or scale-to-zero with no warm pool.** Scaling on a bad signal, plus
+  multi-minute cold starts (model load + warm-up + TRT-LLM engine load) flapping your SLO.
+- **Over-parallelized topology.** TP across a slow inter-node fabric (a collective per layer) or
+  sharding a model that fits on one GPU — decode latency tanks for no capacity gain.
+- **\$/token unknown.** No idea what a request costs; can't compare engines, quantization, or hardware,
+  and can't tell if a "fast" config is economically viable.
+
+## 16. Verification gate (definition of done)
+
+Before a serving deployment counts as done, confirm:
+
+- [ ] **Engine matched to workload.** Choice justified against the decision matrix (§9): throughput vs
+      prefix-reuse vs multi-framework vs disaggregated vs TPU vs buy-not-build — not a default reach.
+- [ ] **Continuous batching on** and batch knobs (max num seqs, max batched tokens, chunked-prefill
+      size) set deliberately for the SLO, not left at guesses.
+- [ ] **KV cache configured to the GPU budget.** `gpu-memory-utilization` / `max_model_len` sized so
+      KV-cache utilization is high *without* OOM or sustained preemption/recompute; fp8 KV considered.
+- [ ] **TTFT, ITL/TPOT, and input/output tokens/s measured under concurrent load** at target QPS
+      (p95/p99, not mean), and an explicit SLO + **goodput** target defined and met.
+- [ ] **Parallelism sane.** TP within a node, PP across nodes; multi-host replicas gang-scheduled with
+      stable identity (LWS) and adequate `/dev/shm`.
+- [ ] **Autoscaling + routing sane.** Scale on queue depth / in-flight / TTFT (not GPU util); warm
+      minimum for latency-critical paths; prefix-/KV-aware routing in front of the cache.
+- [ ] **Accuracy re-validated** on your own eval set if any quantization / speculative decoding /
+      guided-decoding backend is enabled.
+- [ ] **\$/token known** for the chosen config, and the endpoint is fronted by an auth/quota/rate-limit
+      gateway (raw engine not exposed).
+- [ ] **Fast-moving features verified against current docs** (vLLM V1 scheduler, disaggregation KV
+      connectors, Inference Gateway APIs, supported quant/spec-decode methods) — no reliance on a flag,
+      default, or "supported?" claim you didn't confirm.
+
+---
+
+## 17. Canonical references
 
 - vLLM — docs & PagedAttention paper: <https://docs.vllm.ai/> ·
   *Efficient Memory Management for LLM Serving with PagedAttention* (Kwon et al., SOSP 2023)

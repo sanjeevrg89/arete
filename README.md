@@ -71,7 +71,12 @@ repo root (skill directories).
 ## Testing skill routing
 [`tests/skill-routing-checklist.md`](tests/skill-routing-checklist.md) has one discriminating prompt
 per skill (46) with the skill it should route to — use it to confirm each skill installs and routes
-correctly in Claude Code (`/skills` should also list all 46).
+correctly in Claude Code (`/skills` should list every skill).
+
+**Functional checks** (`tests/functional/checks.json` + `scripts/functional_test.py`) go beyond routing:
+each is "given this prompt, the output must satisfy X" (regex assertions). CI lints the specs
+(`functional_test.py --lint`); to actually run them against an agent: `AGENT_CMD='claude -p' python
+scripts/functional_test.py`.
 
 ## Validation / CI
 `scripts/validate.py` (stdlib only) checks every skill: valid `SKILL.md` frontmatter, `name` matches

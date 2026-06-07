@@ -471,6 +471,88 @@ Online experiments are how ML/ranking/recsys changes are actually validated; off
 
 ---
 
+## Rationalizations & rebuttals
+
+The excuses that quietly destroy experiment trust, each with its rebuttal:
+
+- *"It's already significant, let's just stop and ship."* — Peeking at a fixed-horizon test inflates
+  the real false-positive rate (toward 1 under continuous peeking). If you want to stop early, use
+  group-sequential or always-valid inference (mSPRT / confidence sequences); otherwise wait for the
+  planned n. (§3)
+- *"The SRM is close — 50.2/49.8 — ignore it."* — On millions of users that imbalance is enormous; run
+  the chi-square on counts. p < ~0.001 means the experiment is *broken* (bucketing bug, asymmetric
+  telemetry loss, a dropped join), not slightly off — every metric is untrustworthy until it's fixed. (§4)
+- *"The mean is fine, skip percentiles."* — For latency and other skewed/heavy-tailed metrics the mean
+  is the wrong summary; a regression hides in the tail. Report p95/p99 with bootstrap or quantile
+  methods. (§3)
+- *"We don't need guardrails, the OEC went up."* — An OEC win that craters latency, crash rate,
+  revenue, or opt-outs is not a win. Pre-register guardrails (including trustworthiness guardrails like
+  SRM) so a feature that wins on OEC but harms a guardrail does not ship. (§2)
+- *"Users of X retain better, so X causes retention."* — That's selection bias: `E[Y|treated] −
+  E[Y|untreated] = ATE + bias`. Observational comparison proves correlation, not causality. Randomize,
+  or state an identification strategy (DiD/RD/IV/synthetic control) and its threats. (§1, §7)
+- *"Run it a couple of days, that's enough."* — Underpowered tests miss real effects *and* inflate the
+  magnitude (and can flip the sign) of any "significant" result (Type M/S errors). Compute MDE → power →
+  sample size, then round runtime up to whole weeks for seasonality. (§2)
+- *"PSM balances the groups, it's basically a randomized test."* — Propensity matching only balances
+  *observed* confounders; it gives zero protection against unobserved confounding. Treat PSM as
+  suggestive, report sensitivity to hidden bias, and never present it as randomization-equivalent. (§7)
+- *"It's a marketplace but A/B is fine."* — When one unit's treatment changes the pool for others
+  (cannibalization, spillover), naive A/B is biased and the control is contaminated. Use cluster /
+  switchback / budget-split designs and state the estimand. (§4, §6)
+
+## Red flags
+
+Stop and reconsider if you see any of these:
+
+- **Peeking / optional stopping** on a fixed-horizon test, or a result whose p-value method (fixed vs.
+  sequential) doesn't match how the test was monitored.
+- **HARKing** — the "hypothesis" was discovered by trawling segments/metrics after seeing the results;
+  no pre-registered OEC or directional prediction.
+- **SRM present but ignored** (or never checked) — metrics being read from an experiment with a broken
+  split, or SRM checked only in aggregate and not on key subpopulations.
+- **A gameable OEC** — raw clicks, revenue-per-session, or any metric maximizable by degrading the
+  product; no downstream-success or structural component, no guardrails.
+- **Interference unaddressed** — naive Bernoulli A/B in a marketplace, shared-budget, or social-graph
+  setting reported as if SUTVA held; no cluster/switchback/budget-split design and no stated estimand.
+- **Causality claimed without identification** — an observational comparison ("users of X…") presented
+  as a causal effect with no design, no assumptions stated, no threats listed.
+- **Means reported where percentiles matter** (latency/skewed metrics), or ratio-metric variance
+  computed as if the analysis unit were the randomization unit (no delta method / bootstrap).
+- **No A/A / platform validation** — trusting CIs and variance that have never been checked for nominal
+  coverage and uniform p-values; or comparing metrics across ramp steps (Simpson's paradox risk).
+- **Aggregate and per-segment directions disagree** and the result is pooled anyway across periods with
+  different allocation.
+
+## Verification gate (definition of done)
+
+An experiment (or quasi-experiment) is not done until:
+
+- [ ] **OEC and guardrails pre-registered** — single decision metric (sensitive, hard to game, leading
+  indicator) plus guardrails (latency, crash/error, revenue, opt-outs) and trustworthiness guardrails,
+  all declared *before* looking.
+- [ ] **Power / MDE / sample size computed up front** — practical MDE chosen as a business call, runtime
+  derived from required n and daily eligible traffic, rounded up to whole weeks.
+- [ ] **SRM checked first** — chi-square on counts overall and on key subpopulations; no metric
+  interpreted while SRM is present.
+- [ ] **Randomization unit correct** — coarsest unit that removes interference/carryover and matches the
+  experience boundary; assignment is sticky (hashed unit + salt); analysis unit contained by it (delta
+  method / bootstrap for ratio metrics).
+- [ ] **Sequential method or multiple-comparison correction applied to match how it was read** —
+  group-sequential / always-valid for early looks; Bonferroni or BH-FDR for the exploratory scorecard;
+  full α reserved for the one pre-registered OEC test.
+- [ ] **Triggering / dilution handled** — analyzed on the triggered population (counterfactual
+  triggering), then translated to all-up launch impact.
+- [ ] **Interference considered** — SUTVA assessed; for marketplace/social settings the appropriate
+  design used and the estimand stated; novelty/primacy/carryover checked via the daily effect trend.
+- [ ] **Results reported as effect + CI** (absolute and relative), with percentiles for latency-type
+  metrics and pre-declared outlier/bot handling.
+- [ ] **For quasi-experiments: identification stated** — the assumptions (parallel trends / no
+  manipulation at cutoff / exclusion + relevance / pre-period fit) and the threats each design does and
+  does *not* address are written down, with validation (event-study, density test, placebo, balance).
+
+---
+
 ## 10. Version awareness
 
 This field moves: experimentation platforms, sequential-inference libraries, modern DiD estimators
