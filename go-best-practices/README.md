@@ -28,11 +28,11 @@ Copy or symlink the whole folder into a skills directory:
 ```bash
 # Personal (all projects):
 mkdir -p ~/.claude/skills
-ln -s ~/Documents/skills/go-best-practices ~/.claude/skills/go-best-practices
+ln -s ~/Documents/arete/go-best-practices ~/.claude/skills/go-best-practices
 
 # Or per-project:
 mkdir -p .claude/skills
-cp -R ~/Documents/skills/go-best-practices .claude/skills/
+cp -R ~/Documents/arete/go-best-practices .claude/skills/
 ```
 
 Claude Code auto-discovers it via `SKILL.md` frontmatter and loads it when you work on Go.
@@ -43,8 +43,8 @@ These tools read `AGENTS.md` from the project root (and merge nested ones). Easi
 
 ```bash
 # From your repo root — symlink the guide + an AGENTS.md that points at it:
-ln -s ~/Documents/skills/go-best-practices/go-guidelines.md ./go-guidelines.md
-ln -s ~/Documents/skills/go-best-practices/AGENTS.md ./AGENTS.md
+ln -s ~/Documents/arete/go-best-practices/go-guidelines.md ./go-guidelines.md
+ln -s ~/Documents/arete/go-best-practices/AGENTS.md ./AGENTS.md
 ```
 
 If you already have an `AGENTS.md`, instead append one line to it:
@@ -60,22 +60,22 @@ Gemini CLI reads `GEMINI.md` and supports `@`-file imports.
 
 ```bash
 # Project-level:
-cp ~/Documents/skills/go-best-practices/GEMINI.md ./GEMINI.md
-cp ~/Documents/skills/go-best-practices/go-guidelines.md ./go-guidelines.md
+cp ~/Documents/arete/go-best-practices/GEMINI.md ./GEMINI.md
+cp ~/Documents/arete/go-best-practices/go-guidelines.md ./go-guidelines.md
 # (GEMINI.md imports ./go-guidelines.md)
 
 # Or global, in your home Gemini config dir:
 mkdir -p ~/.gemini
-cp ~/Documents/skills/go-best-practices/GEMINI.md ~/.gemini/GEMINI.md
-cp ~/Documents/skills/go-best-practices/go-guidelines.md ~/.gemini/go-guidelines.md
+cp ~/Documents/arete/go-best-practices/GEMINI.md ~/.gemini/GEMINI.md
+cp ~/Documents/arete/go-best-practices/go-guidelines.md ~/.gemini/go-guidelines.md
 ```
 
 ### Project quality gate (Makefile + .golangci.yml)
 Copy both into your Go module root so the agent (and humans/CI) share one definition of done:
 
 ```bash
-cp ~/Documents/skills/go-best-practices/Makefile      ./Makefile
-cp ~/Documents/skills/go-best-practices/.golangci.yml ./.golangci.yml
+cp ~/Documents/arete/go-best-practices/Makefile      ./Makefile
+cp ~/Documents/arete/go-best-practices/.golangci.yml ./.golangci.yml
 make tools   # installs golangci-lint, goimports, govulncheck
 make check   # fmt-check + vet + lint + race tests + govulncheck
 ```
