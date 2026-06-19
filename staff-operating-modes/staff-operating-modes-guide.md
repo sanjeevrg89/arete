@@ -1,14 +1,17 @@
-# Senior Operating Modes — Full Reference
+# Staff Operating Modes — Full Reference
 
-The most common way to waste a capable coding agent is to drive it like a junior intern: a stream of
-imperatives — "do this", "write that function", "now fix this bug". Every step routes back through you.
-You are the planner, the integrator, and the bottleneck, and the agent never operates above the altitude
-of your last instruction.
+A capable coding agent is wasted at two altitudes. Drive it like a **junior intern** — a stream of
+imperatives ("do this", "write that function", "now fix this bug") — and every step routes back through
+you: you are the planner, the integrator, and the bottleneck, and the agent never rises above your last
+instruction. Drive it like a **senior** — "build the feature, make the test pass" — and you get code that
+works and is quietly wrong where it counts: blast radius, simplicity, the second-order effects, the thing
+that should have been built instead.
 
-The shift is simple and it changes everything: **give the agent a goal, a standard-of-done, and a way to
-verify — then let it run to completion and report.** A senior engineer isn't told which lines to write;
-they're given an outcome and a bar and trusted to plan, build, test, and self-correct. Instruct the agent
-the same way.
+The shift that changes everything: **give the agent a goal, the standard a principal would hold in
+review, and a way to verify — then let it run to that bar and report.** A staff/distinguished engineer
+isn't told which lines to write, and isn't satisfied by "it compiles"; they own the outcome at the level
+of architecture, blast radius, leverage, and whether the work should exist at all. Instruct the agent at
+that altitude — and borrow the judgment in `[[staff-plus-engineering]]` for what that bar contains.
 
 This skill is the **how-to-instruct layer**. It does not own the engineering process — `[[engineering-
 lifecycle]]` does (Define→Plan→Build→Verify→Review→Ship and the gate between each). This skill decides the
@@ -34,13 +37,17 @@ The single highest-leverage move is to **state the standard-of-done in the goal*
 verify without you:
 
 - **Weak:** "build a feature that does X." → The agent stops at the first version that compiles.
-- **Strong:** "build X to production standard: handles the edge cases below, has tests that exercise the
-  real end-to-end path, passes review, and a real user can walk in and use it. Keep going until it meets
-  that bar, not until it runs."
+- **Senior:** "build X to production standard: handles the edge cases below, tests the real end-to-end
+  path, passes review, a real user can use it." → Works — but says nothing about blast radius, simplicity,
+  or whether X is even the right thing.
+- **Distinguished:** all of the above **plus** the smallest change that solves it, minimal blast radius on
+  shared systems, observable and **reversible**, and a one-line answer to *"is this the right thing to
+  build, or are we solving the wrong problem?"* Keep going until it meets that bar, not until it runs.
 
-"Done" is **every dimension at the bar and a real user can use it** — not "it ran once." If the agent
-can't tell whether it's done, neither can you; make the bar checkable (tests pass e2e, review clean,
-the real flow works).
+"Done" at this bar = **correct, simple, minimal blast radius, observable, reversible, and the right thing
+to build** — what a principal approves in review, not "it ran once." If the agent can't tell whether it's
+done, neither can you; make the bar checkable (tests pass e2e, review clean, the real flow works, the
+blast radius is named).
 
 ---
 
@@ -51,8 +58,8 @@ This wraps every other mode. The template (full version in `examples.md`):
 > **Goal:** {the task / spec}. Keep going until the architecture and result meet the bar, not just until
 > it runs. After every meaningful step: test the real thing end-to-end (CLI, browser, keystrokes —
 > whatever it needs), self-review, then commit, and write progress somewhere sensible in the project.
-> Finish with one dedicated review pass over everything. Done = every dimension production-grade, a real
-> user can use it.
+> Finish with one dedicated review pass over everything. Done = production-grade at a staff bar — correct,
+> simple, minimal blast radius, observable, reversible, and the right thing to build.
 
 What each clause buys you:
 
@@ -97,7 +104,7 @@ Discipline that makes it work (not just faster, but better):
 Each is a **standard**, not a magic word. State the deliverables in the goal so the agent self-checks.
 
 ### Mode 3 — Production-grade build
-> Act as a senior engineer shipping something production-ready. Don't jump to code. First analyze
+> Act as a staff engineer shipping something production-ready. Don't jump to code. First analyze
 > requirements, enumerate edge cases, design the architecture, lay out a plan. Build the
 > minimal-but-scalable version. Deliver: architecture overview, folder structure, data flow, schema/API
 > design where relevant, full implementation, edge-case + error handling, performance notes. A real
@@ -107,7 +114,7 @@ Routes through `[[spec-driven-development]]` (requirements + acceptance criteria
 lifecycle]]`. The "don't jump to code" clause is load-bearing: architecture before implementation.
 
 ### Mode 4 — Inherit an unfamiliar repo + refactor
-> Act as a senior engineer who inherited a large, unfamiliar codebase. First understand the architecture
+> Act as a staff engineer who inherited a large, unfamiliar codebase. First understand the architecture
 > and data flow. Then find structural problems, duplication, performance bottlenecks, maintainability
 > risks. Deliver: architecture overview, problem areas, refactor strategy, improved architecture + code.
 
@@ -115,10 +122,10 @@ lifecycle]]`. The "don't jump to code" clause is load-bearing: architecture befo
 invariants it never saw. Pairs with `[[verification-and-debugging]]` (build the mental model) and
 `[[code-review-discipline]]` (name the real risks).
 
-### Mode 5 — Senior debugging
-> Act as a senior engineer chasing a production bug. Read the code carefully, reason step by step, find
-> the **root cause** (not the symptom), give a robust fix accounting for edge cases and performance.
-> Deliver three things: the cause, the fix plan, and production-ready code.
+### Mode 5 — Root-cause debugging
+> Act as a staff engineer chasing a production bug. Reproduce it first. Read the code carefully, reason
+> step by step, find the **root cause** (not the symptom), give a robust fix accounting for edge cases
+> and performance. Deliver: the cause, the fix plan, production-ready code, and a regression test.
 
 **Reproduce before you fix.** A fix for a bug you can't reproduce is a guess → `[[verification-and-
 debugging]]` owns the root-cause discipline. Don't patch the symptom and call it done.
@@ -141,7 +148,7 @@ optimization]]` (quantization, batching, decode). Confirm the win with a before/
 | Parallel + e2e | `[[task-planning-decomposition]]` → `[[llm-app-agent-frameworks]]` (multi-agent) |
 | Production-grade build | `[[spec-driven-development]]` → `[[test-driven-development]]` |
 | Inherit + refactor | `[[verification-and-debugging]]` → `[[code-review-discipline]]` |
-| Senior debugging | `[[verification-and-debugging]]` |
+| Root-cause debugging | `[[verification-and-debugging]]` |
 | Performance | `[[gpu-performance-engineering]]` / `[[inference-optimization]]` |
 
 The pattern: **this skill frames the task and sets the bar; the lifecycle + stage skills enforce the
@@ -157,8 +164,11 @@ gates.** Don't let a mode skip a gate ("it's production-grade because I said so"
   feature that compiles but mishandles the edge cases, or that no real user can actually use, is not done.
 - *"Parallel agents will obviously be faster."* → Only for independent work. Parallelizing dependent
   pieces buys you merge conflicts and rework. Decompose first; parallelize the truly separable.
-- *"A 'senior engineer' persona is just prompt theater."* → The persona alone is theater; the persona
-  **plus a checkable standard-of-done plus a verification gate** is what changes the output. Keep the bar.
+- *"A persona prompt is just theater."* → The persona alone is theater; the persona **plus a checkable
+  standard-of-done plus a verification gate** is what changes the output. Keep the bar.
+- *"Senior-level — it works and the tests pass — is good enough."* → "Works" is the floor, not the bar.
+  The distinguished bar asks what senior skips: what's the blast radius, is this the simplest change, is
+  it reversible, and is it even the right thing to build? Those are part of done, not optional polish.
 - *"Skip the architecture step, go straight to code — it's faster."* → For anything non-trivial, skipping
   design is how you build the wrong thing well. Analyze → edge cases → architecture → then build.
 - *"Keep going until 100% means never stop."* → No — stop on the three legitimate conditions (missing
@@ -182,16 +192,18 @@ gates.** Don't let a mode skip a gate ("it's production-grade because I said so"
 
 ## Verification gate (definition of done)
 
-- [ ] A **mode was chosen** and a **goal + standard-of-done** written before work started.
-- [ ] The standard is **checkable** (tests pass e2e, review clean, a real user can use it) — not "it
-      compiles."
+- [ ] A **mode was chosen** and a **goal + distinguished standard-of-done** written before work started.
+- [ ] The standard is **checkable and at the staff bar** (tests pass e2e, review clean, real flow works,
+      blast radius named, change reversible) — not "it compiles."
 - [ ] The **real end-to-end path** was validated (CLI/browser/clicks/keystrokes as needed), not just unit
       tests.
-- [ ] Work ran **to the standard**, with progress tracked and meaningful checkpoints committed.
-- [ ] An **independent review pass** closed it; the relevant lifecycle gates were honored, not asserted.
+- [ ] Work ran **to the bar** (correct, simple, minimal blast radius, observable, reversible, the right
+      thing), with progress tracked and meaningful checkpoints committed.
+- [ ] An **independent, staff-level review** closed it; the relevant lifecycle gates were honored, not
+      asserted.
 - [ ] If it stopped early, it named which of the **three legitimate stop conditions** applied.
 
-If any box is unchecked, the work isn't done to a senior bar — report which.
+If any box is unchecked, the work isn't done to a distinguished bar — report which.
 
 ---
 

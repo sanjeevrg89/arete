@@ -60,7 +60,7 @@ Claude Code (`SKILL.md`), AGENTS.md-compatible agents / agentic IDEs (`AGENTS.md
 | [`code-review-discipline`](code-review-discipline/) | **Review:** correctness/blast-radius/security/simplicity lens, IaC & manifest care, feedback etiquette; approved-against-checklist gate. |
 | [`shipping-and-release`](shipping-and-release/) | **Ship:** small, reversible, watched — progressive delivery, model canary/champion-challenger, tested rollback, monitoring-before-ramp gate. |
 | [`skill-self-improvement`](skill-self-improvement/) | **Loop:** inner/outer self-improvement loops over Skills — capture a feedback signal, a scheduled reviser diffs the skill as a PR, verify gate before merge (never auto-merge), distill lessons into constraints + regression checks. |
-| [`senior-operating-modes`](senior-operating-modes/) | **Drive:** frame a task to an AI agent as a goal + standard-of-done + verification (run-to-done wrapper, parallel e2e, prod-grade build, inherit+refactor, debug, perf) — senior, not junior. |
+| [`staff-operating-modes`](staff-operating-modes/) | **Drive:** frame a task to an AI agent as a goal + standard-of-done + verification (run-to-done wrapper, parallel e2e, prod-grade build, inherit+refactor, debug, perf) — staff/distinguished, not just senior. |
 | [`research-methods`](research-methods/) | **Research:** STORM-style multi-perspective scan → contradiction map → synthesis → peer-review gate; fast, self-critiqued research/briefings for any topic. |
 | [`accelerator-memory-estimator`](accelerator-memory-estimator/) | **Doer:** estimate GPU/TPU memory for training/inference (weights+grads+optimizer+activations, KV cache) and recommend a fitting strategy (FSDP/TP/quant/QLoRA). |
 | [`k8s-manifest-scaffolder`](k8s-manifest-scaffolder/) | **Doer:** generate production-grade Kubernetes manifests from a short spec — right kind + probes/limits/securityContext/PDB/HPA/NetworkPolicy baked in. |
@@ -111,11 +111,11 @@ of re-deriving the pattern:
 
 | You want to… | Skill |
 |--------------|-------|
-| Drive the agent as a senior — goal + standard-of-done + verification, not "do this / fix this" | `senior-operating-modes` |
-| Run a task to completion (test the real thing, review, commit, track progress) | `senior-operating-modes` → `engineering-lifecycle` |
-| Parallelize a big job across independent sub-agents, then synthesize | `senior-operating-modes` + `task-planning-decomposition` + `llm-app-agent-frameworks` |
-| Production-grade build (requirements → edge cases → architecture → MVP) | `senior-operating-modes` → `spec-driven-development` |
-| Inherit an unfamiliar repo + refactor / senior debugging / perf | `senior-operating-modes` → `verification-and-debugging` / `gpu-performance-engineering` |
+| Drive the agent at a staff/distinguished bar — goal + standard-of-done + verification, not "do this / fix this" | `staff-operating-modes` |
+| Run a task to completion (test the real thing, review, commit, track progress) | `staff-operating-modes` → `engineering-lifecycle` |
+| Parallelize a big job across independent sub-agents, then synthesize | `staff-operating-modes` + `task-planning-decomposition` + `llm-app-agent-frameworks` |
+| Production-grade build (requirements → edge cases → architecture → MVP) | `staff-operating-modes` → `spec-driven-development` |
+| Inherit an unfamiliar repo + refactor / root-cause debugging / perf | `staff-operating-modes` → `verification-and-debugging` / `gpu-performance-engineering` |
 | Build a self-improving loop over your Skills (inner/outer loop, feedback → PR) | `skill-self-improvement` |
 | Durable / long-running agent orchestration (cron + decision, checkpointing, retries, Temporal/Inngest) | `llm-app-agent-frameworks` (§7) |
 | Multi-agent / swarm patterns (supervisor-worker, handoffs) and their costs | `llm-app-agent-frameworks` (§2) |

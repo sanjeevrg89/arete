@@ -1,22 +1,37 @@
-# skills
+# Arete
 
-[![validate-skills](https://github.com/sanjeevrg89/skills/actions/workflows/ci.yml/badge.svg)](https://github.com/sanjeevrg89/skills/actions/workflows/ci.yml)
+[![validate-skills](https://github.com/sanjeevrg89/arete/actions/workflows/ci.yml/badge.svg)](https://github.com/sanjeevrg89/arete/actions/workflows/ci.yml)
 
-A cross-agent skill library: distinguished-engineer reference skills for Go, Kubernetes (use/control/
-operator/internals), and the ML-infra stack (Kueue, JobSet/LWS, ML & serving & training frameworks,
-Slurm/HPC, GKE, autoscaling). Each skill is **one self-contained directory** that works across
-Claude Code, Gemini CLI, and AGENTS.md-compatible agents/IDEs from a single source of truth.
+**A self-improving skill library that works in Claude Code, Codex, and Gemini CLI — and gets sharper
+every time you use it.**
 
-See **[REGISTRY.md](REGISTRY.md)** for the full index and **[SKILL-AUTHORING-SPEC.md](SKILL-AUTHORING-SPEC.md)**
-for how to add one (see also [CONTRIBUTING.md](CONTRIBUTING.md)).
+Arete is **59 distinguished-engineer skills** — Go, Kubernetes (use/control/operator/internals), and the
+ML-infra stack (Kueue, JobSet/LWS, training & serving frameworks, Slurm/HPC, GKE, autoscaling) plus the
+engineering craft around them — shipped from **one source of truth** into every agent, and wired with a
+feedback loop so they sharpen from real use instead of going stale.
 
-## Get 10–100x from it → [USAGE.md](USAGE.md)
+**[→ Get 10–100x out of it](USAGE.md)** · **[Browse every skill](REGISTRY.md)** · **[Add one](SKILL-AUTHORING-SPEC.md)** · **[Contributing](CONTRIBUTING.md)**
 
-Installing the skills is 10% of the value. The leverage is **encoded senior judgment that ports across
-every agent (Claude Code, Gemini CLI, Codex) and gets sharper from your usage.** The operating manual —
-install everywhere, drive every agent like a senior ([`senior-operating-modes`](senior-operating-modes/)),
-and run a loop that improves the skills from feedback ([`skill-self-improvement`](skill-self-improvement/))
-— is in **[USAGE.md](USAGE.md)**.
+## Quickstart (any agent, ~2 minutes)
+
+```bash
+git clone git@github.com:sanjeevrg89/arete.git && cd arete
+
+./install.sh claude                 # Claude Code: symlink every skill into ~/.claude/skills (load on demand)
+./install.sh flat ~/.gemini/skills  # Gemini CLI / any markdown loader: the flat <name>.md bundle
+# Codex / Cursor / IDEs: drop a skill's AGENTS.md + guide into your repo (or reference it from AGENTS.md)
+```
+
+Then just work — relevant skills load by themselves. New here? Read **[USAGE.md](USAGE.md)** first.
+
+## Why Arete
+
+- **Works in any agent.** One source of truth → `SKILL.md` (Claude Code), `AGENTS.md` (Codex / IDEs),
+  `GEMINI.md` (Gemini CLI), and a flat bundle for any markdown loader. Switch tools, keep the expertise.
+- **Gets sharper from use.** A feedback loop ([`feedback/`](feedback/README.md) → reviser → PR, behind a
+  verify gate) improves the skills from real usage — the [`skill-self-improvement`](skill-self-improvement/) pattern.
+- **Held to a distinguished bar.** Every guide is written at a staff/principal practitioner's level, with
+  a verification gate and a 5-layer validation harness (green CI ≠ validated — see [`tests/VALIDATION.md`](tests/VALIDATION.md)).
 
 ## Architecture
 
@@ -69,8 +84,8 @@ markdown loaders). The loop is documented in [`skill-self-improvement`](skill-se
 ### Quick start (clone + `install.sh`)
 The repo is private — clone with your GitHub auth (SSH key or `gh auth login` / a PAT over HTTPS):
 ```bash
-git clone git@github.com:sanjeevrg89/skills.git
-cd skills
+git clone git@github.com:sanjeevrg89/arete.git
+cd arete
 
 ./install.sh list                 # list the skills
 ./install.sh claude               # symlink all skills into ~/.claude/skills (Claude Code)
@@ -83,7 +98,7 @@ scans (set `<dest>` to your tool's skills path). Manual equivalents below.
 ### Updating
 One command — pulls latest and refreshes your install:
 ```bash
-cd skills
+cd arete
 ./update.sh                 # git pull + refresh Claude Code install (~/.claude/skills)
 ./update.sh ~/.gemini/<codename>/skills   # ...also refresh a flat-bundle copy at that path
 ```
@@ -94,7 +109,7 @@ equivalent: `git pull` then re-run `./install.sh ...`).
 ### Claude Code (skills load on demand — all of them can coexist)
 ```bash
 mkdir -p ~/.claude/skills
-for d in ~/Documents/skills/*/; do
+for d in ~/Documents/arete/*/; do
   [ -f "$d/SKILL.md" ] && ln -sfn "$d" ~/.claude/skills/"$(basename "$d")"
 done
 ```
@@ -102,8 +117,8 @@ done
 ### Gemini CLI (per project or global)
 Gemini loads one `GEMINI.md` from the working dir / config dir. Copy the skill(s) relevant to a repo:
 ```bash
-cp -R ~/Documents/skills/gke-master ./            # then GEMINI.md imports the guide
-# or globally:  cp -R ~/Documents/skills/<skill> ~/.gemini/
+cp -R ~/Documents/arete/gke-master ./            # then GEMINI.md imports the guide
+# or globally:  cp -R ~/Documents/arete/<skill> ~/.gemini/
 ```
 
 ### AGENTS.md-compatible agents / agentic IDEs (e.g. Antigravity, Codex, Cursor)
