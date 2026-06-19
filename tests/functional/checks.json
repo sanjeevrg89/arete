@@ -59,5 +59,23 @@
     "prompt": "I'm about to deploy a new model version to production. What's the safe way to ship it?",
     "must_contain": ["(?i)canary|champion|shadow|progressive", "(?i)rollback", "(?i)monitor"],
     "note": "should require progressive rollout + tested rollback + monitoring before ramp"
+  },
+  {
+    "skill": "skill-self-improvement",
+    "prompt": "I want my issue-triage skill to get better over time from how humans correct its labels. How do I set up a self-improvement loop?",
+    "must_contain": ["(?i)inner.{0,20}loop|outer.{0,20}loop|self-improv", "(?i)signal|feedback", "(?i)verify|gate", "(?i)\\bPR\\b|diff|pull request", "(?i)human|auto-merge"],
+    "note": "should describe doer/signal/reviser, a scheduled reviser opening a PR diff, a verify gate, distillation, and NOT auto-merging self-edits"
+  },
+  {
+    "skill": "research-methods",
+    "prompt": "I need to research whether we should adopt technology X. How do I research it deeply and fast without just getting the majority view?",
+    "must_contain": ["(?i)perspective|lens", "(?i)contradict|disagree|conflict", "(?i)synthesi", "(?i)peer.?review|self.?critique|confidence", "(?i)source|verify"],
+    "note": "should give the multi-perspective scan, contradiction map, synthesis, a peer-review/self-critique gate, and verifying load-bearing claims against sources"
+  },
+  {
+    "skill": "senior-operating-modes",
+    "prompt": "I keep telling the agent 'do this' and 'fix that'. How should I frame a big production task to get senior-level results?",
+    "must_contain": ["(?i)goal", "(?i)standard|done|bar", "(?i)verif|test|end-to-end", "(?i)review|commit", "(?i)senior|junior"],
+    "note": "should reframe imperatives into a goal + standard-of-done + verification (run-to-done), and pair with a review/commit gate"
   }
 ]

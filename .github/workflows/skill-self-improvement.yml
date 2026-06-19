@@ -1,0 +1,73 @@
+# Outer loop (reviser) for the skill self-improvement loop — see skill-self-improvement/.
+#
+# This committed workflow runs the loop in DRY-RUN: it validates the feedback signal and prints the
+# improvement candidates. It needs NO secrets and writes NOTHING. The real reviser step (invoke a coding
+# agent to open a PR that diffs the underperforming skills) is documented at the bottom, gated, and
+# NEVER auto-merges — a self-edit always goes through a human-reviewed PR + the verify gate (ci.yml).
+name: skill-self-improvement
+
+on:
+  schedule:
+    - cron: "0 10 * * 5"   # Fridays 10:00 UTC — the outer loop's heartbeat (the inner loop runs per-task)
+  workflow_dispatch:        # and on-demand
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # --- The verify gate's mechanical layer (same as ci.yml) ---
+      - name: Validate skill library
+        run: python scripts/validate.py
+      - name: Lint functional checks
+        run: python scripts/functional_test.py --lint
+
+      # --- The signal ---
+      - name: Lint feedback records
+        run: python scripts/skill_feedback.py --lint
+      - name: Rank improvement candidates (what the reviser would consider)
+        run: python scripts/skill_feedback.py
+
+  # ---------------------------------------------------------------------------
+  # REAL REVISER (disabled by default). To enable, add an agent CLI + API key as
+  # a repo secret, set `if: ${{ false }}` -> a real condition, and grant write
+  # permissions. The agent reads the candidates, edits ONE underperforming skill
+  # as a diff, adds a regression check, and OPENS A PR. It must not auto-merge.
+  #
+  # reviser:
+  #   needs: dry-run
+  #   if: ${{ false }}                       # flip on only when you have the secret + reviewer
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write                      # to push a branch
+  #     pull-requests: write                 # to open the PR (the human merges it)
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-python@v5
+  #       with: { python-version: "3.12" }
+  #     - name: Pick the top improvement candidate
+  #       id: pick
+  #       run: echo "skill=$(python scripts/skill_feedback.py | awk '/bad/{print $4; exit}')" >> "$GITHUB_OUTPUT"
+  #     - name: Reviser proposes a diff (idempotent per skill+cycle)
+  #       env:
+  #         ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  #       run: |
+  #         BRANCH="skill-improve/${{ steps.pick.outputs.skill }}-${{ github.run_id }}"
+  #         # Invoke the coding agent with the skill-self-improvement skill in scope, e.g.:
+  #         #   claude -p "Apply skill-self-improvement: read feedback/log.jsonl for skill
+  #         #     '${{ steps.pick.outputs.skill }}', diff its *-guide.md to fix the cited failures,
+  #         #     add a regression check to tests/functional/checks.json, and explain the change."
+  #         # Then regenerate the bundle and open a PR (gh pr create) — DO NOT merge.
+  #     - name: Verify gate
+  #       run: |
+  #         python scripts/validate.py
+  #         python scripts/functional_test.py --lint
+  #         # plus an adversarial second-model review that must AFFIRM before a human merges.
+  # ---------------------------------------------------------------------------
