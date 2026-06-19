@@ -3,11 +3,11 @@
 Installing the skills is 10% of the value. The leverage comes from *how* you operate once they're
 installed — and it's the same playbook in **Claude Code, Gemini CLI, Codex,** and any agentic IDE.
 
-> **The idea in one line:** encoded senior judgment (the skills) that **ports across every agent** and
+> **The idea in one line:** encoded staff/distinguished judgment (the skills) that **ports across every agent** and
 > **gets sharper from your usage**. That combination — not any single model — is the multiplier.
 
 This is the honest version. There is no magic prompt. There is a system: install it everywhere, drive
-every agent like a senior, and run a loop that improves the skills from real feedback. Do those three and
+every agent at a staff/distinguished bar, and run a loop that improves the skills from real feedback. Do those three and
 the leverage compounds.
 
 ---
@@ -30,9 +30,9 @@ stop re-learning per tool — switch models or tools, keep the expertise.
 
 ---
 
-## 2. Operate like a senior in all of them (the 3 habits)
+## 2. Operate at a staff/distinguished bar in all of them (the 3 habits)
 
-### Habit 1 — Frame tasks as goals, not imperatives → [`senior-operating-modes`](senior-operating-modes/)
+### Habit 1 — Frame tasks as goals, not imperatives → [`staff-operating-modes`](staff-operating-modes/)
 Stop typing "do this / fix that." Open every non-trivial task with a **goal + standard-of-done +
 verification**, and let the agent run to completion. This is the biggest per-task multiplier and it's
 identical in every agent. Use the run-to-done wrapper:
@@ -57,7 +57,7 @@ gets better while you sleep — across every agent at once.
 
 1. **Install into all three agents** (Claude, Gemini CLI, Codex) — prove "works anywhere" once.
 2. **Take one real task** and drive it with the run-to-done wrapper instead of imperatives. Feel the
-   difference between an intern and a senior.
+   difference between an intern and a staff engineer.
 3. **The first mediocre answer** a skill gives you → add one `feedback/log.jsonl` line. That's the loop
    starting. Run `python scripts/skill_feedback.py` to see your improvement candidates.
 4. **Pick your highest-frequency task** (PR review, triage, manifest scaffolding) and make it a habit
@@ -69,7 +69,7 @@ gets better while you sleep — across every agent at once.
 
 It's not the model. It's three things multiplying:
 
-- **Encoded judgment** — the skills are a senior engineer's playbook, applied consistently instead of
+- **Encoded judgment** — the skills are a staff/distinguished engineer's playbook, applied consistently instead of
   from memory.
 - **Portability** — the same judgment in Claude, Gemini CLI, and Codex; you're never re-learning per
   tool. (This is "token capital" you own, independent of any one model.)
@@ -90,7 +90,7 @@ And the honest caveats, because a tool oversold is a tool distrusted:
 
 - [`REGISTRY.md`](REGISTRY.md) — every skill + an **"agent patterns & operating modes → which skill"**
   table (run-to-done, swarms, durable orchestration, STORM research all map here).
-- [`senior-operating-modes`](senior-operating-modes/) · [`research-methods`](research-methods/) ·
+- [`staff-operating-modes`](staff-operating-modes/) · [`research-methods`](research-methods/) ·
   [`skill-self-improvement`](skill-self-improvement/) — the meta-skills that make the rest of the library
   multiply.
 - [`tests/VALIDATION.md`](tests/VALIDATION.md) — how a skill earns trust (5 layers); green CI ≠ validated.

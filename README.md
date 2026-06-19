@@ -12,9 +12,9 @@ for how to add one (see also [CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ## Get 10–100x from it → [USAGE.md](USAGE.md)
 
-Installing the skills is 10% of the value. The leverage is **encoded senior judgment that ports across
+Installing the skills is 10% of the value. The leverage is **encoded staff/distinguished judgment that ports across
 every agent (Claude Code, Gemini CLI, Codex) and gets sharper from your usage.** The operating manual —
-install everywhere, drive every agent like a senior ([`senior-operating-modes`](senior-operating-modes/)),
+install everywhere, drive every agent at a staff bar ([`staff-operating-modes`](staff-operating-modes/)),
 and run a loop that improves the skills from feedback ([`skill-self-improvement`](skill-self-improvement/))
 — is in **[USAGE.md](USAGE.md)**.
 

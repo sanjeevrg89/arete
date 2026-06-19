@@ -73,9 +73,9 @@
     "note": "should give the multi-perspective scan, contradiction map, synthesis, a peer-review/self-critique gate, and verifying load-bearing claims against sources"
   },
   {
-    "skill": "senior-operating-modes",
-    "prompt": "I keep telling the agent 'do this' and 'fix that'. How should I frame a big production task to get senior-level results?",
-    "must_contain": ["(?i)goal", "(?i)standard|done|bar", "(?i)verif|test|end-to-end", "(?i)review|commit", "(?i)senior|junior"],
-    "note": "should reframe imperatives into a goal + standard-of-done + verification (run-to-done), and pair with a review/commit gate"
+    "skill": "staff-operating-modes",
+    "prompt": "I keep telling the agent 'do this' and 'fix that'. How should I frame a big production task to get staff-level, production-grade results?",
+    "must_contain": ["(?i)goal", "(?i)standard|done|bar", "(?i)verif|test|end-to-end", "(?i)review|commit", "(?i)staff|distinguished|junior"],
+    "note": "should reframe imperatives into a goal + a staff/distinguished standard-of-done + verification (run-to-done), and pair with a review/commit gate"
   }
 ]
