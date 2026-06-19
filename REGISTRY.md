@@ -59,6 +59,9 @@ Claude Code (`SKILL.md`), AGENTS.md-compatible agents / agentic IDEs (`AGENTS.md
 | [`verification-and-debugging`](verification-and-debugging/) | **Verify:** prove it works (e2e, eval gates, reproducibility) + systematic root-cause debugging for distributed/GPU/ML; regression-test gate. |
 | [`code-review-discipline`](code-review-discipline/) | **Review:** correctness/blast-radius/security/simplicity lens, IaC & manifest care, feedback etiquette; approved-against-checklist gate. |
 | [`shipping-and-release`](shipping-and-release/) | **Ship:** small, reversible, watched — progressive delivery, model canary/champion-challenger, tested rollback, monitoring-before-ramp gate. |
+| [`skill-self-improvement`](skill-self-improvement/) | **Loop:** inner/outer self-improvement loops over Skills — capture a feedback signal, a scheduled reviser diffs the skill as a PR, verify gate before merge (never auto-merge), distill lessons into constraints + regression checks. |
+| [`senior-operating-modes`](senior-operating-modes/) | **Drive:** frame a task to an AI agent as a goal + standard-of-done + verification (run-to-done wrapper, parallel e2e, prod-grade build, inherit+refactor, debug, perf) — senior, not junior. |
+| [`research-methods`](research-methods/) | **Research:** STORM-style multi-perspective scan → contradiction map → synthesis → peer-review gate; fast, self-critiqued research/briefings for any topic. |
 | [`accelerator-memory-estimator`](accelerator-memory-estimator/) | **Doer:** estimate GPU/TPU memory for training/inference (weights+grads+optimizer+activations, KV cache) and recommend a fitting strategy (FSDP/TP/quant/QLoRA). |
 | [`k8s-manifest-scaffolder`](k8s-manifest-scaffolder/) | **Doer:** generate production-grade Kubernetes manifests from a short spec — right kind + probes/limits/securityContext/PDB/HPA/NetworkPolicy baked in. |
 | [`triton-kernel-authoring`](triton-kernel-authoring/) | **Doer:** write & optimize Triton GPU kernels — tile model, masking, `tl.dot`, autotune, correctness vs PyTorch, benchmark vs roofline. |
@@ -95,8 +98,28 @@ Claude Code (`SKILL.md`), AGENTS.md-compatible agents / agentic IDEs (`AGENTS.md
    `adversarial-ml-robustness`, `privacy-preserving-ml`.
 8. **Engineering process (Define→Plan→Build→Verify→Review→Ship):** `engineering-lifecycle` (meta),
    `spec-driven-development`, `task-planning-decomposition`, `test-driven-development`,
-   `verification-and-debugging`, `code-review-discipline`, `shipping-and-release`.
+   `verification-and-debugging`, `code-review-discipline`, `shipping-and-release`,
+   `skill-self-improvement` (the loop layer that improves the skills themselves from real-world feedback).
 9. **Doer / tools (produce an artifact on invocation):** `accelerator-memory-estimator`,
    `k8s-manifest-scaffolder`, `triton-kernel-authoring`.
+
+## Agent patterns & operating modes → which skill
+
+The popular "AI engineering" patterns (run-to-done goals, multi-agent swarms, self-improving loops,
+durable orchestration, PhD-style research) map onto skills here — use this to find the right one instead
+of re-deriving the pattern:
+
+| You want to… | Skill |
+|--------------|-------|
+| Drive the agent as a senior — goal + standard-of-done + verification, not "do this / fix this" | `senior-operating-modes` |
+| Run a task to completion (test the real thing, review, commit, track progress) | `senior-operating-modes` → `engineering-lifecycle` |
+| Parallelize a big job across independent sub-agents, then synthesize | `senior-operating-modes` + `task-planning-decomposition` + `llm-app-agent-frameworks` |
+| Production-grade build (requirements → edge cases → architecture → MVP) | `senior-operating-modes` → `spec-driven-development` |
+| Inherit an unfamiliar repo + refactor / senior debugging / perf | `senior-operating-modes` → `verification-and-debugging` / `gpu-performance-engineering` |
+| Build a self-improving loop over your Skills (inner/outer loop, feedback → PR) | `skill-self-improvement` |
+| Durable / long-running agent orchestration (cron + decision, checkpointing, retries, Temporal/Inngest) | `llm-app-agent-frameworks` (§7) |
+| Multi-agent / swarm patterns (supervisor-worker, handoffs) and their costs | `llm-app-agent-frameworks` (§2) |
+| Research a topic fast from many angles, with a self-critique gate (STORM) | `research-methods` |
+| Evaluate an LLM/agent (graders, LLM-as-judge, the verify gate) | `ml-evaluation-evals` |
 
 > Maintenance: add a new skill as a directory following `SKILL-AUTHORING-SPEC.md`, then add a row here.

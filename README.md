@@ -10,6 +10,51 @@ Claude Code, Gemini CLI, and AGENTS.md-compatible agents/IDEs from a single sour
 See **[REGISTRY.md](REGISTRY.md)** for the full index and **[SKILL-AUTHORING-SPEC.md](SKILL-AUTHORING-SPEC.md)**
 for how to add one (see also [CONTRIBUTING.md](CONTRIBUTING.md)).
 
+## Get 10–100x from it → [USAGE.md](USAGE.md)
+
+Installing the skills is 10% of the value. The leverage is **encoded senior judgment that ports across
+every agent (Claude Code, Gemini CLI, Codex) and gets sharper from your usage.** The operating manual —
+install everywhere, drive every agent like a senior ([`senior-operating-modes`](senior-operating-modes/)),
+and run a loop that improves the skills from feedback ([`skill-self-improvement`](skill-self-improvement/))
+— is in **[USAGE.md](USAGE.md)**.
+
+## Architecture
+
+How the repo works: **one source of truth per skill** → consumed by many agents, gated by CI, and
+improved by a feedback loop. The diagram below renders inline on GitHub; an **editable
+[Excalidraw version is here](https://excalidraw.com/#json=GfOHF9IXI3Njzr2PbvMTF,RtD7am1R9kr-tiTLmY3vFw)**
+(open it, then *Export → PNG* into `docs/` if you want to embed the hand-drawn version inline).
+
+```mermaid
+flowchart TB
+  A([Author or agent writes a skill]) -->|writes| S
+  CI["CI gate: validate.py - functional_test.py - VALIDATION 5-layer"] -->|must pass| S
+  subgraph S["Source of truth: one directory per skill"]
+    direction TB
+    S1["SKILL.md -> Claude Code router"]
+    S2["slug-guide.md -> deep reference"]
+    S3["AGENTS.md -> Codex / Cursor"]
+    S4["GEMINI.md -> Gemini import"]
+    S5["examples.md -> worked examples"]
+  end
+  S -->|SKILL.md, on-demand| CC["Claude Code"]
+  S -->|AGENTS.md, always-on| CX["Codex / Cursor / IDEs"]
+  S -->|GEMINI.md @import| GM["Gemini CLI"]
+  S -->|build_bundle.py| FL["Flat-md loaders: skills/name.md"]
+  subgraph LOOP["Self-improvement loop: the library improves itself"]
+    direction LR
+    W["Skill applied to real work"] --> FB["feedback/log.jsonl (signal)"]
+    FB --> RANK["skill_feedback.py (rank)"]
+    RANK --> RV["Reviser cron: diff -> PR"]
+    RV --> VG["Verify gate + human merge"]
+  end
+  CC -.usage.-> W
+  VG -->|merged PR updates the skill| S
+```
+
+Install/update wires the source into each agent (`install.sh` symlinks for Claude Code; flat copies for
+markdown loaders). The loop is documented in [`skill-self-improvement`](skill-self-improvement/).
+
 ## What each skill directory contains
 | File | Consumed by | Role |
 |------|-------------|------|
@@ -101,6 +146,25 @@ the directory and is unique, a router-grade `description`, the required files (`
 `AGENTS.md` / `GEMINI.md`), resolvable `[[cross-links]]`, and no vendor-locked framing or co-author
 trailers. Run it locally with `python scripts/validate.py`; `.github/workflows/ci.yml` runs it on every
 push and PR. Errors fail the build; warnings don't.
+
+## Self-improvement loop (the library improving itself)
+
+The library doesn't just get edited by hand — it has a loop that improves skills from real-world
+feedback. The [`skill-self-improvement`](skill-self-improvement/) skill is the pattern; the repo ships
+the substrate:
+
+- **Signal** — append a record to [`feedback/log.jsonl`](feedback/README.md) when a skill underperforms
+  (what skill, what was wrong, the correct answer). Failing functional checks are signal too.
+- **Rank** — `python scripts/skill_feedback.py` lists the skills with the most negative signal (the
+  improvement candidates); `--lint` validates the records in CI.
+- **Reviser** — [`.github/workflows/skill-self-improvement.yml`](.github/workflows/skill-self-improvement.yml)
+  runs on a weekly cron. The committed job is **dry-run** (lints the signal + prints candidates, no
+  secrets, writes nothing); the real reviser step — an agent that diffs an underperforming skill's guide,
+  adds a regression check, and **opens a PR** — is documented there, gated, and **never auto-merges**.
+- **Gate & distill** — the PR passes the same `validate.py` + functional checks (`ci.yml`) plus review,
+  then the lesson is distilled into the guide's anti-patterns + a `must_*` check so it can't regress.
+
+This is `tests/VALIDATION.md` Layer 5 step 4 ("feed failures back"), automated.
 
 ## Design notes
 - **On-demand loading is what makes a large library viable.** Claude Code discovers skills by their

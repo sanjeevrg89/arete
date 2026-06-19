@@ -1,0 +1,2 @@
+{"skill":"skill-self-improvement","verdict":"bad","task":"EXAMPLE ROW — replace with real feedback; shows the format and exercises the linter","what_was_wrong":"this is a template record, not a real defect","correct_answer":"delete the example rows and append records from real skill usage","source":"example","date":"2026-06-19"}
+{"skill":"skill-self-improvement","verdict":"good","task":"EXAMPLE ROW — a 'good' verdict so the aggregator shows both buckets","source":"example","date":"2026-06-19"}
