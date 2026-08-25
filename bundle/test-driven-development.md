@@ -10,7 +10,8 @@ description: >
   contracts, properties, metric thresholds — not exact tokens), golden/snapshot tests, the race
   detector, determinism via injected seeds/clocks/fakes, and smoke tests for manifests/IaC. Covers the
   test pyramid, fakes-over-mocks, CI gates, and the checkpoint (tests written, passing, race-clean)
-  before Verify/Review.
+  before Verify/Review. Scope: AI-infra/ML work — for general application-level TDD loops prefer a
+  generic TDD skill (e.g. the vendored mattpocock `tdd`) when installed.
 ---
 
 # Test-Driven Development (the Build stage)

@@ -8,7 +8,8 @@ description: How to review code and get code reviewed effectively — the Review
   take down a cluster or waste large amounts of compute. Covers the reviewer's lens (correctness, blast
   radius/safety, security, tests, simplicity, observability/rollback), the author's pre-review
   self-check, giving and receiving feedback well, blocking-vs-nit, and the approval + CI-green gate
-  before merge.
+  before merge. Scope: AI-infra/ML platform changes; for general application diffs a generic
+  code-review skill (e.g. the vendored mattpocock `code-review`) may fit better.
 ---
 
 # Code Review Discipline

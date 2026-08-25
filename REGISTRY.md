@@ -6,65 +6,65 @@ Claude Code (`SKILL.md`), AGENTS.md-compatible agents / agentic IDEs (`AGENTS.md
 
 | Skill | Domain |
 |-------|--------|
-| [`go-best-practices`](go-best-practices/) | World-class Go aligned to the Google Go Style Guide — naming, errors, concurrency, testing, review. |
-| [`kubernetes-expert`](kubernetes-expert/) | End-to-end Kubernetes practitioner mastery: workloads, scheduling, networking, storage, security, prod ops, debugging. |
-| [`kubernetes-controller-expert`](kubernetes-controller-expert/) | Writing controllers: controller-runtime, client-go informers/workqueues, reconcile, finalizers, status, testing. |
-| [`kubernetes-operator-expert`](kubernetes-operator-expert/) | Operator pattern: CRD/API design, CEL, conversion & admission webhooks, kubebuilder/Operator SDK, OLM. |
-| [`kubernetes-internals-expert`](kubernetes-internals-expert/) | Source-level internals: apiserver/etcd/scheduler/kubelet/kube-proxy, DRA, dataplane, control-plane debugging. |
-| [`aiml-on-kubernetes`](aiml-on-kubernetes/) | Umbrella: training/inference/fine-tuning/RL/RLHF/agentic on K8s & GKE; accelerators, orchestration, observability. |
-| [`kueue-advanced`](kueue-advanced/) | Kueue: Workloads, ClusterQueue/Cohort quota, gang admission, preemption, TAS, ProvisioningRequest, MultiKueue. |
-| [`jobset-leaderworkerset`](jobset-leaderworkerset/) | JobSet (multi-host training) + LeaderWorkerSet (multi-host inference): gang restart, topology, networking. |
-| [`ml-frameworks`](ml-frameworks/) | PyTorch, JAX, XLA, and the GPU/TPU substrate: compilers, parallelism primitives, performance mental models. |
-| [`serving-frameworks`](serving-frameworks/) | LLM inference: vLLM, SGLang, Dynamo, Triton, TensorRT-LLM, Ray Serve, KServe; KV cache, batching, disaggregation. |
-| [`training-frameworks`](training-frameworks/) | Distributed training: DDP/FSDP, DeepSpeed, Megatron/NeMo, Ray Train, MaxText; ND parallelism, checkpointing. |
-| [`slurm-hpc-on-kubernetes`](slurm-hpc-on-kubernetes/) | Slurm/HPC on K8s: Slinky/SUNK, Volcano vs Kueue, MPI Operator, RDMA/InfiniBand, Slurm-vs-K8s decisions. |
-| [`gke-master`](gke-master/) | GKE specifics: Standard/Autopilot, TPU/GPU node pools, NAP, Dataplane V2, GPUDirect, Workload Identity, GCS FUSE. |
-| [`autoscaling-kubernetes`](autoscaling-kubernetes/) | HPA/VPA/Cluster Autoscaler/Karpenter/KEDA/NAP + ProvisioningRequest; ML/GPU/inference scaling and tuning. |
-| [`rl-rlhf-frameworks`](rl-rlhf-frameworks/) | RL/RLHF/RLAIF post-training: PPO/DPO/GRPO, reward models, actor/rollout/learner loop; TRL, veRL, OpenRLHF, NeMo-RL, RLlib. |
-| [`ray-on-kubernetes`](ray-on-kubernetes/) | Ray + KubeRay: RayCluster/RayJob/RayService, Train/Tune/Serve/Data/RLlib, placement groups, autoscaling, GCS fault tolerance. |
-| [`maxtext-jax-llm`](maxtext-jax-llm/) | MaxText + JAX LLM stack on TPU/GPU: Flax/Optax/Grain/Pathways, named-axis sharding, multislice, JetStream serving. |
-| [`ml-checkpointing-orbax`](ml-checkpointing-orbax/) | Checkpointing at scale: Orbax (async/sharded/emergency), torch DCP, Multi-Tier Checkpointing, resiliency & goodput. |
-| [`llm-app-agent-frameworks`](llm-app-agent-frameworks/) | LLM apps & agents: ADK, LangChain/LangGraph, LlamaIndex, MCP, tool use, multi-agent, eval, deployment on K8s. |
-| [`rag-vector-databases`](rag-vector-databases/) | RAG pipelines + vector DBs: chunking, hybrid retrieval, reranking, HNSW/IVF-PQ, Milvus/Qdrant/Weaviate/pgvector, eval. |
-| [`ai-security-on-gke`](ai-security-on-gke/) | Defensive AI security: OWASP LLM Top 10, guardrails (Model Armor), gVisor sandboxing, supply chain, Workload Identity, egress control. |
-| [`gke-inference-gateway`](gke-inference-gateway/) | LLM-aware routing: Gateway API Inference Extension, InferencePool/EPP, KV-cache/prefix/LoRA-aware load balancing, canary. |
-| [`mlops-lifecycle`](mlops-lifecycle/) | MLOps maturity 0→1→2, CI/CD/CT, pipelines (Kubeflow/Vertex/Argo), model registry, experiment tracking, deployment patterns. |
-| [`ml-observability-monitoring`](ml-observability-monitoring/) | Production ML/LLM monitoring: data/concept/prediction drift, training-serving skew, LLM tracing & online eval, alerting/retrain triggers. |
-| [`inference-optimization`](inference-optimization/) | Model-level efficiency: quantization, pruning, distillation, speculative decoding, GQA/MQA/MLA, compilation (TensorRT-LLM/torch.compile). |
-| [`data-engineering-feature-stores`](data-engineering-feature-stores/) | ML data pipelines, feature stores (Feast/Tecton/Vertex), point-in-time joins, training-serving skew, data quality/validation. |
-| [`ai-networking-collectives`](ai-networking-collectives/) | Collectives (all-reduce/all-gather/all-to-all), NCCL/RCCL, InfiniBand/RoCE/GPUDirect-RDMA, topology-aware placement, comms debugging. |
-| [`fine-tuning-peft`](fine-tuning-peft/) | Fine-tuning LLMs: full vs PEFT, LoRA/QLoRA/DoRA, SFT/instruction tuning, adapters & multi-LoRA serving, memory math, eval. |
-| [`ml-system-design`](ml-system-design/) | End-to-end ML system design (architect + interview): problem→metric→data→model→eval→serving→monitoring framework, archetypes, tradeoffs. |
-| [`ml-evaluation-evals`](ml-evaluation-evals/) | Evaluating ML/LLM systems: classical metrics, benchmarks, LLM-as-judge (+ bias controls), RAG/agent eval, A/B, eval-in-CI. |
-| [`staff-plus-engineering`](staff-plus-engineering/) | Staff/Principal/Distinguished competencies: archetypes, scope/leverage, influence, design docs/RFCs, technical strategy. |
-| [`responsible-ai-governance`](responsible-ai-governance/) | Responsible AI: NIST AI RMF, EU AI Act, model cards, fairness/bias, LLM safety & red-teaming, privacy, auditability. |
-| [`recsys-ranking`](recsys-ranking/) | Recommender & ranking systems at scale: retrieval→ranking→re-ranking funnel, two-tower, DLRM/DCN, multi-task, online eval, position bias. |
-| [`multimodal-ml`](multimodal-ml/) | Multimodal AI: CLIP/SigLIP, VLMs (encoder→projector→LLM), speech (Whisper/TTS), video, diffusion generation, multimodal RAG & serving. |
-| [`time-series-forecasting`](time-series-forecasting/) | Time-series & classical/tabular ML: forecasting/classification/anomaly/imputation, ARIMA/ETS/Theta/Prophet, GBDT (LightGBM/XGBoost) on lag features, deep (DeepAR/N-HiTS/TFT/PatchTST) & foundation models (TimesFM/Chronos), rolling-origin backtesting, leakage, intervals. |
-| [`distributed-systems-fundamentals`](distributed-systems-fundamentals/) | CAP/PACELC/FLP, consensus (Paxos/Raft), replication & consistency models, quorums, sharding, clocks, 2PC/sagas, idempotency, fencing tokens. |
-| [`ml-compilers-codegen`](ml-compilers-codegen/) | ML compilers: MLIR, XLA (HLO/StableHLO, fusion, PJRT), Triton (TTIR→TTGIR→PTX), torch.compile/Inductor, TensorRT, kernel codegen. |
-| [`gpu-performance-engineering`](gpu-performance-engineering/) | Roofline, Nsight Compute/Systems, occupancy/memory analysis, eBPF + NCCL cross-rank profiling, straggler diagnosis, MLPerf benchmarking methodology. |
-| [`experimentation-causal-inference`](experimentation-causal-inference/) | Online controlled experiments / A/B testing: OEC, guardrails, SRM, CUPED, sequential testing, interference; causal inference (DiD/RD/IV/PSM, uplift/CATE). |
-| [`pretraining-data-tokenizers`](pretraining-data-tokenizers/) | Web-scale pretraining-data curation (extraction, filtering, MinHash-LSH dedup, decontamination, mixtures) + tokenizer engineering (BPE/Unigram, vocab, fertility). |
-| [`graph-ml-gnns`](graph-ml-gnns/) | Graph ML & GNNs: message passing, GCN/GraphSAGE/GAT/GIN, scalability (neighbor/Cluster-GCN sampling), PyG/DGL, recsys/fraud/molecules, GNN4TS. |
-| [`embedding-model-training`](embedding-model-training/) | Training embedding/retrieval models: contrastive/InfoNCE, hard-negative mining (false negatives, positive-aware), cross-encoder distillation, Matryoshka, MTEB/BEIR. |
-| [`adversarial-ml-robustness`](adversarial-ml-robustness/) | Model-level adversarial ML (defense): NIST AML taxonomy & MITRE ATLAS, evasion/poisoning/backdoors/extraction/membership-inference, adversarial training, robustness eval (AutoAttack/RobustBench). |
-| [`privacy-preserving-ml`](privacy-preserving-ml/) | PETs for ML: differential privacy (DP-SGD/accounting), federated learning (FedAvg/secure aggregation), HE/MPC/TEEs, machine unlearning, privacy budgets. |
-| [`edge-on-device-ml`](edge-on-device-ml/) | Edge/mobile/embedded deployment: ExecuTorch, LiteRT/TFLite, ONNX Runtime, Core ML, llama.cpp; NPUs/TinyML, on-device quantization, conversion & parity validation. |
-| [`ai-research-science`](ai-research-science/) | Research-scientist depth across training/inference/fine-tuning/RL/RLHF: architectures, objectives, optimizers, scaling laws, reward modeling, PPO/DPO/GRPO/RLVR theory, test-time compute, open problems. |
-| [`engineering-lifecycle`](engineering-lifecycle/) | **Process meta:** Define→Plan→Build→Verify→Review→Ship for AI infra, with the gate between each stage; routes to the stage skills. |
-| [`spec-driven-development`](spec-driven-development/) | **Define:** clarify before building — interview, write an AI-infra spec with testable acceptance criteria, SLOs, cost & failure modes; review gate. |
-| [`task-planning-decomposition`](task-planning-decomposition/) | **Plan:** decompose into small verifiable steps, sequence riskiest/most-expensive first, plan for partial failure; approach-review gate. |
-| [`test-driven-development`](test-driven-development/) | **Build:** red-green-refactor for infra/ML — table tests, envtest, eval-as-test (invariants not exact tokens), determinism, race; CI gate. |
-| [`verification-and-debugging`](verification-and-debugging/) | **Verify:** prove it works (e2e, eval gates, reproducibility) + systematic root-cause debugging for distributed/GPU/ML; regression-test gate. |
-| [`code-review-discipline`](code-review-discipline/) | **Review:** correctness/blast-radius/security/simplicity lens, IaC & manifest care, feedback etiquette; approved-against-checklist gate. |
-| [`shipping-and-release`](shipping-and-release/) | **Ship:** small, reversible, watched — progressive delivery, model canary/champion-challenger, tested rollback, monitoring-before-ramp gate. |
-| [`skill-self-improvement`](skill-self-improvement/) | **Loop:** inner/outer self-improvement loops over Skills — capture a feedback signal, a scheduled reviser diffs the skill as a PR, verify gate before merge (never auto-merge), distill lessons into constraints + regression checks. |
-| [`staff-operating-modes`](staff-operating-modes/) | **Drive:** frame a task to an AI agent as a goal + standard-of-done + verification (run-to-done wrapper, parallel e2e, prod-grade build, inherit+refactor, debug, perf) — staff/distinguished, not just senior. |
-| [`research-methods`](research-methods/) | **Research:** STORM-style multi-perspective scan → contradiction map → synthesis → peer-review gate; fast, self-critiqued research/briefings for any topic. |
-| [`accelerator-memory-estimator`](accelerator-memory-estimator/) | **Doer:** estimate GPU/TPU memory for training/inference (weights+grads+optimizer+activations, KV cache) and recommend a fitting strategy (FSDP/TP/quant/QLoRA). |
-| [`k8s-manifest-scaffolder`](k8s-manifest-scaffolder/) | **Doer:** generate production-grade Kubernetes manifests from a short spec — right kind + probes/limits/securityContext/PDB/HPA/NetworkPolicy baked in. |
-| [`triton-kernel-authoring`](triton-kernel-authoring/) | **Doer:** write & optimize Triton GPU kernels — tile model, masking, `tl.dot`, autotune, correctness vs PyTorch, benchmark vs roofline. |
+| [`go-best-practices`](skills/go-best-practices/) | World-class Go aligned to the Google Go Style Guide — naming, errors, concurrency, testing, review. |
+| [`kubernetes-expert`](skills/kubernetes-expert/) | End-to-end Kubernetes practitioner mastery: workloads, scheduling, networking, storage, security, prod ops, debugging. |
+| [`kubernetes-controller-expert`](skills/kubernetes-controller-expert/) | Writing controllers: controller-runtime, client-go informers/workqueues, reconcile, finalizers, status, testing. |
+| [`kubernetes-operator-expert`](skills/kubernetes-operator-expert/) | Operator pattern: CRD/API design, CEL, conversion & admission webhooks, kubebuilder/Operator SDK, OLM. |
+| [`kubernetes-internals-expert`](skills/kubernetes-internals-expert/) | Source-level internals: apiserver/etcd/scheduler/kubelet/kube-proxy, DRA, dataplane, control-plane debugging. |
+| [`aiml-on-kubernetes`](skills/aiml-on-kubernetes/) | Umbrella: training/inference/fine-tuning/RL/RLHF/agentic on K8s & GKE; accelerators, orchestration, observability. |
+| [`kueue-advanced`](skills/kueue-advanced/) | Kueue: Workloads, ClusterQueue/Cohort quota, gang admission, preemption, TAS, ProvisioningRequest, MultiKueue. |
+| [`jobset-leaderworkerset`](skills/jobset-leaderworkerset/) | JobSet (multi-host training) + LeaderWorkerSet (multi-host inference): gang restart, topology, networking. |
+| [`ml-frameworks`](skills/ml-frameworks/) | PyTorch, JAX, XLA, and the GPU/TPU substrate: compilers, parallelism primitives, performance mental models. |
+| [`serving-frameworks`](skills/serving-frameworks/) | LLM inference: vLLM, SGLang, Dynamo, Triton, TensorRT-LLM, Ray Serve, KServe; KV cache, batching, disaggregation. |
+| [`training-frameworks`](skills/training-frameworks/) | Distributed training: DDP/FSDP, DeepSpeed, Megatron/NeMo, Ray Train, MaxText; ND parallelism, checkpointing. |
+| [`slurm-hpc-on-kubernetes`](skills/slurm-hpc-on-kubernetes/) | Slurm/HPC on K8s: Slinky/SUNK, Volcano vs Kueue, MPI Operator, RDMA/InfiniBand, Slurm-vs-K8s decisions. |
+| [`gke-master`](skills/gke-master/) | GKE specifics: Standard/Autopilot, TPU/GPU node pools, NAP, Dataplane V2, GPUDirect, Workload Identity, GCS FUSE. |
+| [`autoscaling-kubernetes`](skills/autoscaling-kubernetes/) | HPA/VPA/Cluster Autoscaler/Karpenter/KEDA/NAP + ProvisioningRequest; ML/GPU/inference scaling and tuning. |
+| [`rl-rlhf-frameworks`](skills/rl-rlhf-frameworks/) | RL/RLHF/RLAIF post-training: PPO/DPO/GRPO, reward models, actor/rollout/learner loop; TRL, veRL, OpenRLHF, NeMo-RL, RLlib. |
+| [`ray-on-kubernetes`](skills/ray-on-kubernetes/) | Ray + KubeRay: RayCluster/RayJob/RayService, Train/Tune/Serve/Data/RLlib, placement groups, autoscaling, GCS fault tolerance. |
+| [`maxtext-jax-llm`](skills/maxtext-jax-llm/) | MaxText + JAX LLM stack on TPU/GPU: Flax/Optax/Grain/Pathways, named-axis sharding, multislice, JetStream serving. |
+| [`ml-checkpointing-orbax`](skills/ml-checkpointing-orbax/) | Checkpointing at scale: Orbax (async/sharded/emergency), torch DCP, Multi-Tier Checkpointing, resiliency & goodput. |
+| [`llm-app-agent-frameworks`](skills/llm-app-agent-frameworks/) | LLM apps & agents: ADK, LangChain/LangGraph, LlamaIndex, MCP, tool use, multi-agent, eval, deployment on K8s. |
+| [`rag-vector-databases`](skills/rag-vector-databases/) | RAG pipelines + vector DBs: chunking, hybrid retrieval, reranking, HNSW/IVF-PQ, Milvus/Qdrant/Weaviate/pgvector, eval. |
+| [`ai-security-on-gke`](skills/ai-security-on-gke/) | Defensive AI security: OWASP LLM Top 10, guardrails (Model Armor), gVisor sandboxing, supply chain, Workload Identity, egress control. |
+| [`gke-inference-gateway`](skills/gke-inference-gateway/) | LLM-aware routing: Gateway API Inference Extension, InferencePool/EPP, KV-cache/prefix/LoRA-aware load balancing, canary. |
+| [`mlops-lifecycle`](skills/mlops-lifecycle/) | MLOps maturity 0→1→2, CI/CD/CT, pipelines (Kubeflow/Vertex/Argo), model registry, experiment tracking, deployment patterns. |
+| [`ml-observability-monitoring`](skills/ml-observability-monitoring/) | Production ML/LLM monitoring: data/concept/prediction drift, training-serving skew, LLM tracing & online eval, alerting/retrain triggers. |
+| [`inference-optimization`](skills/inference-optimization/) | Model-level efficiency: quantization, pruning, distillation, speculative decoding, GQA/MQA/MLA, compilation (TensorRT-LLM/torch.compile). |
+| [`data-engineering-feature-stores`](skills/data-engineering-feature-stores/) | ML data pipelines, feature stores (Feast/Tecton/Vertex), point-in-time joins, training-serving skew, data quality/validation. |
+| [`ai-networking-collectives`](skills/ai-networking-collectives/) | Collectives (all-reduce/all-gather/all-to-all), NCCL/RCCL, InfiniBand/RoCE/GPUDirect-RDMA, topology-aware placement, comms debugging. |
+| [`fine-tuning-peft`](skills/fine-tuning-peft/) | Fine-tuning LLMs: full vs PEFT, LoRA/QLoRA/DoRA, SFT/instruction tuning, adapters & multi-LoRA serving, memory math, eval. |
+| [`ml-system-design`](skills/ml-system-design/) | End-to-end ML system design (architect + interview): problem→metric→data→model→eval→serving→monitoring framework, archetypes, tradeoffs. |
+| [`ml-evaluation-evals`](skills/ml-evaluation-evals/) | Evaluating ML/LLM systems: classical metrics, benchmarks, LLM-as-judge (+ bias controls), RAG/agent eval, A/B, eval-in-CI. |
+| [`staff-plus-engineering`](skills/staff-plus-engineering/) | Staff/Principal/Distinguished competencies: archetypes, scope/leverage, influence, design docs/RFCs, technical strategy. |
+| [`responsible-ai-governance`](skills/responsible-ai-governance/) | Responsible AI: NIST AI RMF, EU AI Act, model cards, fairness/bias, LLM safety & red-teaming, privacy, auditability. |
+| [`recsys-ranking`](skills/recsys-ranking/) | Recommender & ranking systems at scale: retrieval→ranking→re-ranking funnel, two-tower, DLRM/DCN, multi-task, online eval, position bias. |
+| [`multimodal-ml`](skills/multimodal-ml/) | Multimodal AI: CLIP/SigLIP, VLMs (encoder→projector→LLM), speech (Whisper/TTS), video, diffusion generation, multimodal RAG & serving. |
+| [`time-series-forecasting`](skills/time-series-forecasting/) | Time-series & classical/tabular ML: forecasting/classification/anomaly/imputation, ARIMA/ETS/Theta/Prophet, GBDT (LightGBM/XGBoost) on lag features, deep (DeepAR/N-HiTS/TFT/PatchTST) & foundation models (TimesFM/Chronos), rolling-origin backtesting, leakage, intervals. |
+| [`distributed-systems-fundamentals`](skills/distributed-systems-fundamentals/) | CAP/PACELC/FLP, consensus (Paxos/Raft), replication & consistency models, quorums, sharding, clocks, 2PC/sagas, idempotency, fencing tokens. |
+| [`ml-compilers-codegen`](skills/ml-compilers-codegen/) | ML compilers: MLIR, XLA (HLO/StableHLO, fusion, PJRT), Triton (TTIR→TTGIR→PTX), torch.compile/Inductor, TensorRT, kernel codegen. |
+| [`gpu-performance-engineering`](skills/gpu-performance-engineering/) | Roofline, Nsight Compute/Systems, occupancy/memory analysis, eBPF + NCCL cross-rank profiling, straggler diagnosis, MLPerf benchmarking methodology. |
+| [`experimentation-causal-inference`](skills/experimentation-causal-inference/) | Online controlled experiments / A/B testing: OEC, guardrails, SRM, CUPED, sequential testing, interference; causal inference (DiD/RD/IV/PSM, uplift/CATE). |
+| [`pretraining-data-tokenizers`](skills/pretraining-data-tokenizers/) | Web-scale pretraining-data curation (extraction, filtering, MinHash-LSH dedup, decontamination, mixtures) + tokenizer engineering (BPE/Unigram, vocab, fertility). |
+| [`graph-ml-gnns`](skills/graph-ml-gnns/) | Graph ML & GNNs: message passing, GCN/GraphSAGE/GAT/GIN, scalability (neighbor/Cluster-GCN sampling), PyG/DGL, recsys/fraud/molecules, GNN4TS. |
+| [`embedding-model-training`](skills/embedding-model-training/) | Training embedding/retrieval models: contrastive/InfoNCE, hard-negative mining (false negatives, positive-aware), cross-encoder distillation, Matryoshka, MTEB/BEIR. |
+| [`adversarial-ml-robustness`](skills/adversarial-ml-robustness/) | Model-level adversarial ML (defense): NIST AML taxonomy & MITRE ATLAS, evasion/poisoning/backdoors/extraction/membership-inference, adversarial training, robustness eval (AutoAttack/RobustBench). |
+| [`privacy-preserving-ml`](skills/privacy-preserving-ml/) | PETs for ML: differential privacy (DP-SGD/accounting), federated learning (FedAvg/secure aggregation), HE/MPC/TEEs, machine unlearning, privacy budgets. |
+| [`edge-on-device-ml`](skills/edge-on-device-ml/) | Edge/mobile/embedded deployment: ExecuTorch, LiteRT/TFLite, ONNX Runtime, Core ML, llama.cpp; NPUs/TinyML, on-device quantization, conversion & parity validation. |
+| [`ai-research-science`](skills/ai-research-science/) | Research-scientist depth across training/inference/fine-tuning/RL/RLHF: architectures, objectives, optimizers, scaling laws, reward modeling, PPO/DPO/GRPO/RLVR theory, test-time compute, open problems. |
+| [`engineering-lifecycle`](skills/engineering-lifecycle/) | **Process meta:** Define→Plan→Build→Verify→Review→Ship for AI infra, with the gate between each stage; routes to the stage skills. |
+| [`spec-driven-development`](skills/spec-driven-development/) | **Define:** clarify before building — interview, write an AI-infra spec with testable acceptance criteria, SLOs, cost & failure modes; review gate. |
+| [`task-planning-decomposition`](skills/task-planning-decomposition/) | **Plan:** decompose into small verifiable steps, sequence riskiest/most-expensive first, plan for partial failure; approach-review gate. |
+| [`test-driven-development`](skills/test-driven-development/) | **Build:** red-green-refactor for infra/ML — table tests, envtest, eval-as-test (invariants not exact tokens), determinism, race; CI gate. |
+| [`verification-and-debugging`](skills/verification-and-debugging/) | **Verify:** prove it works (e2e, eval gates, reproducibility) + systematic root-cause debugging for distributed/GPU/ML; regression-test gate. |
+| [`code-review-discipline`](skills/code-review-discipline/) | **Review:** correctness/blast-radius/security/simplicity lens, IaC & manifest care, feedback etiquette; approved-against-checklist gate. |
+| [`shipping-and-release`](skills/shipping-and-release/) | **Ship:** small, reversible, watched — progressive delivery, model canary/champion-challenger, tested rollback, monitoring-before-ramp gate. |
+| [`skill-self-improvement`](skills/skill-self-improvement/) | **Loop:** inner/outer self-improvement loops over Skills — capture a feedback signal, a scheduled reviser diffs the skill as a PR, verify gate before merge (never auto-merge), distill lessons into constraints + regression checks. |
+| [`staff-operating-modes`](skills/staff-operating-modes/) | **Drive:** frame a task to an AI agent as a goal + standard-of-done + verification (run-to-done wrapper, parallel e2e, prod-grade build, inherit+refactor, debug, perf) — staff/distinguished, not just senior. |
+| [`research-methods`](skills/research-methods/) | **Research:** STORM-style multi-perspective scan → contradiction map → synthesis → peer-review gate; fast, self-critiqued research/briefings for any topic. |
+| [`accelerator-memory-estimator`](skills/accelerator-memory-estimator/) | **Doer:** estimate GPU/TPU memory for training/inference (weights+grads+optimizer+activations, KV cache) and recommend a fitting strategy (FSDP/TP/quant/QLoRA). |
+| [`k8s-manifest-scaffolder`](skills/k8s-manifest-scaffolder/) | **Doer:** generate production-grade Kubernetes manifests from a short spec — right kind + probes/limits/securityContext/PDB/HPA/NetworkPolicy baked in. |
+| [`triton-kernel-authoring`](skills/triton-kernel-authoring/) | **Doer:** write & optimize Triton GPU kernels — tile model, masking, `tl.dot`, autotune, correctness vs PyTorch, benchmark vs roofline. |
 
 ## Cross-link graph (high-traffic edges)
 - The four `kubernetes-*` skills form the platform core; `aiml-on-kubernetes` is the umbrella that routes
@@ -123,3 +123,39 @@ of re-deriving the pattern:
 | Evaluate an LLM/agent (graders, LLM-as-judge, the verify gate) | `ml-evaluation-evals` |
 
 > Maintenance: add a new skill as a directory following `SKILL-AUTHORING-SPEC.md`, then add a row here.
+
+## Vendored process skills (mattpocock/skills, MIT)
+
+25 workflow/process skills vendored verbatim from [mattpocock/skills](https://github.com/mattpocock/skills)
+(upstream commit `6654f6b6`) under `skills/vendored/mattpocock/` — see
+[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md). They cover the *process* layer and pair naturally
+with the first-party domain depth above.
+
+| Skill | What it does |
+|---|---|
+| [`ask-matt`](skills/vendored/mattpocock/ask-matt/) | Router over the vendored process skills — ask which flow fits your situation. |
+| [`code-review`](skills/vendored/mattpocock/code-review/) | Two-axis review of a diff (standards + spec) run as parallel sub-agents. |
+| [`codebase-design`](skills/vendored/mattpocock/codebase-design/) | Deep modules: lots of behaviour behind a small interface, at clean seams. |
+| [`diagnosing-bugs`](skills/vendored/mattpocock/diagnosing-bugs/) | Disciplined bug-diagnosis loop: red feedback loop, minimise, hypothesise, instrument, fix, regression-test. |
+| [`domain-modeling`](skills/vendored/mattpocock/domain-modeling/) | Build and sharpen the project's domain vocabulary; updates CONTEXT.md and ADRs. |
+| [`grill-me`](skills/vendored/mattpocock/grill-me/) | Get relentlessly interviewed about a plan until every branch is resolved. |
+| [`grill-with-docs`](skills/vendored/mattpocock/grill-with-docs/) | Grilling session that also builds CONTEXT.md and ADRs inline. |
+| [`grilling`](skills/vendored/mattpocock/grilling/) | The reusable interview primitive behind grill-me/triage/wayfinder (design-tree rounds). |
+| [`handoff`](skills/vendored/mattpocock/handoff/) | Compact the current conversation into a handoff document for another agent. |
+| [`implement`](skills/vendored/mattpocock/implement/) | Build from a spec/tickets, driving TDD at agreed seams, closing with code review. |
+| [`improve-codebase-architecture`](skills/vendored/mattpocock/improve-codebase-architecture/) | Survey a codebase for deepening opportunities; visual HTML report. |
+| [`prototype`](skills/vendored/mattpocock/prototype/) | Throwaway prototype to answer a design question (single-file HTML or UI variations). |
+| [`research`](skills/vendored/mattpocock/research/) | Investigate against high-trust sources; capture cited findings in the repo. |
+| [`resolving-merge-conflicts`](skills/vendored/mattpocock/resolving-merge-conflicts/) | Resolve merge/rebase conflicts hunk-by-hunk by intent; never --abort. |
+| [`setup-matt-pocock-skills`](skills/vendored/mattpocock/setup-matt-pocock-skills/) | One-time setup for the vendored engineering skills (tracker, labels, docs). |
+| [`tdd`](skills/vendored/mattpocock/tdd/) | Red-green-refactor TDD loop with guidance on what makes tests worth keeping. |
+| [`teach`](skills/vendored/mattpocock/teach/) | Multi-session teaching workspace in the current directory. |
+| [`to-questionnaire`](skills/vendored/mattpocock/to-questionnaire/) | Turn an unanswerable decision into a questionnaire for the one person who can answer. |
+| [`to-spec`](skills/vendored/mattpocock/to-spec/) | Synthesize the current conversation into a spec and publish it to your tracker. |
+| [`to-tickets`](skills/vendored/mattpocock/to-tickets/) | Break a plan/spec into tracer-bullet tickets with blocking edges. |
+| [`triage`](skills/vendored/mattpocock/triage/) | Move issues through a state machine of triage roles. |
+| [`wait-what`](skills/vendored/mattpocock/wait-what/) | Re-pitch a message that didn't land, using your CONTEXT.md vocabulary. |
+| [`wayfinder`](skills/vendored/mattpocock/wayfinder/) | Plan work larger than one agent session as a map of decision tickets. |
+| [`wizard`](skills/vendored/mattpocock/wizard/) | Generate interactive bash wizards for human-only steps (credentials, dashboards, cutover). |
+| [`writing-for-agents`](skills/vendored/mattpocock/writing-for-agents/) | How to write docs agents consume: skills, AGENTS.md/CLAUDE.md, pointer docs. |
+

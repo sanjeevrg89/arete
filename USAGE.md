@@ -32,7 +32,7 @@ stop re-learning per tool — switch models or tools, keep the expertise.
 
 ## 2. Operate at a staff/distinguished bar in all of them (the 3 habits)
 
-### Habit 1 — Frame tasks as goals, not imperatives → [`staff-operating-modes`](staff-operating-modes/)
+### Habit 1 — Frame tasks as goals, not imperatives → [`staff-operating-modes`](skills/staff-operating-modes/)
 Stop typing "do this / fix that." Open every non-trivial task with a **goal + standard-of-done +
 verification**, and let the agent run to completion. This is the biggest per-task multiplier and it's
 identical in every agent. Use the run-to-done wrapper:
@@ -41,11 +41,11 @@ identical in every agent. Use the run-to-done wrapper:
 > every meaningful step, test the real thing end-to-end, self-review, then commit, and write progress
 > somewhere sensible. Done = production-grade, a real user can use it.
 
-### Habit 2 — Use the lifecycle on anything with blast radius → [`engineering-lifecycle`](engineering-lifecycle/)
+### Habit 2 — Use the lifecycle on anything with blast radius → [`engineering-lifecycle`](skills/engineering-lifecycle/)
 For a real change (a cluster edit, a rollout, a pipeline), run Define→Plan→Build→Verify→Review→Ship with
 the gate between each. "Production-grade" becomes *enforced*, not asserted.
 
-### Habit 3 — Make it compound → [`skill-self-improvement`](skill-self-improvement/)
+### Habit 3 — Make it compound → [`skill-self-improvement`](skills/skill-self-improvement/)
 When a skill underperforms, don't just fix the output — append a line to
 [`feedback/log.jsonl`](feedback/README.md) (what was wrong, the correct answer). The reviser loop turns
 accumulated feedback into PRs that improve the skill, gated by CI + review. Your judgment, encoded once,
@@ -90,7 +90,7 @@ And the honest caveats, because a tool oversold is a tool distrusted:
 
 - [`REGISTRY.md`](REGISTRY.md) — every skill + an **"agent patterns & operating modes → which skill"**
   table (run-to-done, swarms, durable orchestration, STORM research all map here).
-- [`staff-operating-modes`](staff-operating-modes/) · [`research-methods`](research-methods/) ·
-  [`skill-self-improvement`](skill-self-improvement/) — the meta-skills that make the rest of the library
+- [`staff-operating-modes`](skills/staff-operating-modes/) · [`research-methods`](skills/research-methods/) ·
+  [`skill-self-improvement`](skills/skill-self-improvement/) — the meta-skills that make the rest of the library
   multiply.
 - [`tests/VALIDATION.md`](tests/VALIDATION.md) — how a skill earns trust (5 layers); green CI ≠ validated.

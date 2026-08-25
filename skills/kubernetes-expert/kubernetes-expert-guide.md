@@ -96,7 +96,8 @@ Three distinct jobs; conflating them is a top-3 outage cause.
 
 - **`initContainers`** run to completion, in order, before app containers start. Use for setup that must
   finish first (schema migration gate, fetching config, waiting on a dependency).
-- **Native sidecars** (GA in 1.29): a sidecar is an `initContainer` with `restartPolicy: Always`. It
+- **Native sidecars** (beta, enabled by default since 1.29 — verify for your version): a sidecar is an
+  `initContainer` with `restartPolicy: Always`. It
   **starts before** the main containers, **stays running** alongside them, and importantly **does not
   block Job completion** and is terminated after the main containers on shutdown. This fixes the old
   "sidecar keeps the Job pod alive forever" and "proxy dies before app drains" problems. Prefer native
@@ -360,8 +361,10 @@ Debugging is always **desired vs. actual**. Work top-down:
 ## 10. kubectl mastery & manifest hygiene
 
 - **Declarative over imperative.** `kubectl apply -f` / `kustomize` / Helm / Argo CD / Flux. Reserve
-  `create`/`edit`/`patch`/`scale` on live objects for break-glass — they drift from Git. `apply` uses
-  server-side apply / managed fields to merge safely.
+  `create`/`edit`/`patch`/`scale` on live objects for break-glass — they drift from Git. `apply` merges
+  via the client-side three-way merge on the `last-applied-configuration` annotation; pass
+  `--server-side` to opt into server-side apply (managedFields-based, no size limit, better for large
+  objects and multi-writer ownership).
 - **Dry-run before you ship:** `kubectl apply --dry-run=server -f` validates against admission/the API
   (catches PSA, webhook, schema, quota issues) — far stronger than `--dry-run=client`.
 - **`kubectl diff -f`** shows exactly what an apply would change vs. live — run it before every apply.
@@ -393,7 +396,8 @@ Debugging is always **desired vs. actual**. Work top-down:
   store, enable encryption at rest.
 - **Liveness probe that checks downstream dependencies** — turns a dependency blip into a restart storm.
 - **`cluster-admin` (or wide ClusterRoles) for apps; using the `default` SA with token automount on.**
-- **`privileged: true`, `hostNetwork`, host mounts** on app pods; running as root with all caps.
+- **`privileged: true`, `hostNetwork`/`hostPID`/`hostIPC`, or running as root with all caps** on app
+  pods — outside infra DaemonSets this is almost always wrong. Same for raw `hostPath` mounts.
 - **Single replica "HA," or all replicas on one node/zone** — no PDB, no spread, no anti-affinity.
 - **`Recreate` strategy or no readiness probe** on a service expected to be zero-downtime.
 - **No PodDisruptionBudget** on a multi-replica service (node drains take it down).
@@ -404,25 +408,47 @@ Debugging is always **desired vs. actual**. Work top-down:
 
 ---
 
-## 12. Production-readiness checklist (paste into PRs)
+## 12. Production-readiness checklist & verification gate (definition of done)
 
-- [ ] Managed by a controller (Deployment/StatefulSet/DaemonSet/Job) — no naked Pods.
-- [ ] **Resource `requests` set; memory `limit == request`;** CPU limit chosen deliberately. QoS is
-      Burstable or Guaranteed, never BestEffort for real workloads.
-- [ ] **`readinessProbe`** present; `liveness`/`startup` added only where justified and cheap.
-- [ ] Image pinned to an immutable tag/digest; `imagePullPolicy` correct; image scanned; non-root.
-- [ ] `securityContext`: `runAsNonRoot`, drop ALL caps, `readOnlyRootFilesystem`,
-      `allowPrivilegeEscalation: false`, `seccompProfile: RuntimeDefault`. Namespace PSA `restricted`.
-- [ ] Dedicated ServiceAccount with least-privilege RBAC; `automountServiceAccountToken: false` unless
-      the pod calls the API. No `cluster-admin`.
-- [ ] Secrets mounted as files (not env), from a secret store / sealed, with encryption at rest.
-- [ ] **≥2 replicas**, `topologySpreadConstraints` across zone **and** node, plus a **PodDisruptionBudget**.
-- [ ] Zero-downtime: RollingUpdate with sane `maxUnavailable`/`maxSurge`, `preStop` drain hook, SIGTERM
-      handling, `terminationGracePeriodSeconds` ≥ longest request + preStop.
-- [ ] Namespace has `ResourceQuota` + `LimitRange`; default-deny `NetworkPolicy` + explicit allows.
-- [ ] Labels (`app.kubernetes.io/*`) on every object; immutable selector; GitOps-managed (no live drift).
-- [ ] Logs to stdout/stderr (structured); metrics + tracing exposed; alerts on the failure signatures.
-- [ ] Rollback tested (`kubectl rollout undo`); `revisionHistoryLimit` and Job `ttlSecondsAfterFinished` set.
+One gate, two halves: check every box, then confirm the second half by actually running the commands
+against the target cluster — don't assume. Paste this into PRs.
+
+- [ ] **Controller, not a naked Pod** — Deployment/StatefulSet/DaemonSet/Job owns the pods.
+- [ ] **Resources:** `requests` set on every container; **memory `limit == request`**; CPU limit chosen
+      deliberately. QoS is Burstable or Guaranteed (never BestEffort).
+- [ ] **Probes:** `readinessProbe` present; `liveness`/`startup` only where justified, cheap, and not
+      checking downstream dependencies.
+- [ ] **`securityContext`:** `runAsNonRoot`, `allowPrivilegeEscalation: false`,
+      `readOnlyRootFilesystem`, `capabilities.drop: ["ALL"]`, `seccompProfile: RuntimeDefault`;
+      namespace labeled PSA `restricted`.
+- [ ] **RBAC/identity:** dedicated least-privilege ServiceAccount; `automountServiceAccountToken: false`
+      unless the pod calls the API; no `cluster-admin`.
+- [ ] **Secrets** mounted as files from a secret store / sealed, with encryption at rest — not env vars.
+- [ ] **Availability:** ≥2 replicas, `topologySpreadConstraints` across zone **and** node, and a
+      **PodDisruptionBudget**.
+- [ ] **Zero-downtime:** RollingUpdate with sane `maxUnavailable`/`maxSurge`, `preStop` drain hook,
+      SIGTERM handling, `terminationGracePeriodSeconds` ≥ longest request + preStop sleep.
+- [ ] **Namespace guardrails:** `ResourceQuota` + `LimitRange`; default-deny `NetworkPolicy` + explicit
+      allows.
+- [ ] **Image pinned** to an immutable tag/digest, scanned, non-root.
+- [ ] **Labels & GitOps:** recommended `app.kubernetes.io/*` labels on every object; immutable selector;
+      GitOps-managed (no live drift).
+- [ ] **Observability:** logs to stdout/stderr (structured); metrics + tracing exposed; alerts on the
+      failure signatures.
+- [ ] **Rollback path exists:** `kubectl rollout undo` tested; `revisionHistoryLimit` and Job
+      `ttlSecondsAfterFinished` set.
+
+**Commands to run before calling it done:**
+```bash
+kubectl apply --dry-run=server -f .          # validates against admission/PSA/quota/schema
+kubectl diff -f .                            # exactly what will change vs. live
+kubectl rollout status deploy/<x>            # rollout actually converged (probes gated it)
+kubectl get pdb,hpa,networkpolicy -n <ns>    # PDB + autoscaling + default-deny exist
+kubectl auth can-i --list \
+  --as=system:serviceaccount:<ns>:<sa>       # SA grants are narrow as intended
+kubectl get pod <p> -o jsonpath='{.status.qosClass}'   # Burstable/Guaranteed, not BestEffort
+kubectl rollout undo deploy/<x> --dry-run=client       # a rollback path exists
+```
 
 ---
 
@@ -443,65 +469,7 @@ The excuses that precede a 2 a.m. page. When you catch yourself (or an agent) sa
 
 ---
 
-## 14. Red flags
-
-Stop and reconsider the moment you see any of these — they almost always signal a wrong approach:
-
-- **Naked Pods or bare ReplicaSets** in source — no self-healing; the controller is missing.
-- **`image: *:latest`** or any mutable tag — no rollback, no reproducibility.
-- **No `requests` (BestEffort), or memory `limit != request`** — eviction/OOM roulette.
-- **No `readinessProbe` on a serving workload** — rollout doesn't gate; traffic hits unready pods.
-- **`privileged: true`, `hostNetwork`/`hostPID`/`hostIPC`, or running as root with all caps** on an app
-  pod — outside infra DaemonSets this is almost always wrong.
-- **`cluster-admin` / wide ClusterRoles bound to apps, or `default` SA with token automount on.**
-- **Secrets in env vars, or committed to Git in plaintext** — leak-prone and unrotatable.
-- **Multi-replica service with no PodDisruptionBudget**, or all replicas on one node/zone — a node
-  drain or zone loss takes the whole service down.
-- **No default-deny NetworkPolicy in a shared/multi-tenant namespace** — everything can reach everything.
-- **Imperative `kubectl edit`/`patch` as the normal prod workflow** — config silently drifts from Git.
-
----
-
-## 15. Verification gate (definition of done)
-
-A workload is not production-ready until every box is true. Confirm the last group by running the
-commands against the target cluster — don't assume.
-
-- [ ] **Controller, not a naked Pod** — Deployment/StatefulSet/DaemonSet/Job owns the pods.
-- [ ] **Resources:** `requests` set on every container; **memory `limit == request`**; CPU limit chosen
-      deliberately. QoS is Burstable or Guaranteed (never BestEffort).
-- [ ] **Probes:** `readinessProbe` present; `liveness`/`startup` only where justified, cheap, and not
-      checking downstream dependencies.
-- [ ] **`securityContext`:** `runAsNonRoot`, `allowPrivilegeEscalation: false`,
-      `readOnlyRootFilesystem`, `capabilities.drop: ["ALL"]`, `seccompProfile: RuntimeDefault`;
-      namespace labeled PSA `restricted`.
-- [ ] **RBAC/identity:** dedicated least-privilege ServiceAccount; `automountServiceAccountToken: false`
-      unless the pod calls the API; no `cluster-admin`.
-- [ ] **Secrets** mounted as files from a secret store / sealed, with encryption at rest — not env vars.
-- [ ] **Availability:** ≥2 replicas, `topologySpreadConstraints` across zone **and** node, and a
-      **PodDisruptionBudget**.
-- [ ] **Zero-downtime:** RollingUpdate with sane `maxUnavailable`/`maxSurge`, `preStop` drain hook,
-      SIGTERM handling, `terminationGracePeriodSeconds` ≥ longest request + preStop sleep.
-- [ ] **Namespace guardrails:** `ResourceQuota` + `LimitRange`; default-deny `NetworkPolicy` + explicit
-      allows.
-- [ ] **Image pinned** to an immutable tag/digest, scanned, non-root; recommended `app.kubernetes.io/*`
-      labels on every object; GitOps-managed (no live drift).
-
-**Commands to confirm before calling it done:**
-```bash
-kubectl apply --dry-run=server -f .          # validates against admission/PSA/quota/schema
-kubectl diff -f .                            # exactly what will change vs. live
-kubectl rollout status deploy/<x>            # rollout actually converged (probes gated it)
-kubectl get pdb,hpa,networkpolicy -n <ns>    # PDB + autoscaling + default-deny exist
-kubectl auth can-i --list \
-  --as=system:serviceaccount:<ns>:<sa>       # SA grants are narrow as intended
-kubectl get pod <p> -o jsonpath='{.status.qosClass}'   # Burstable/Guaranteed, not BestEffort
-kubectl rollout undo deploy/<x> --dry-run=client       # a rollback path exists
-```
-
----
-
-## 16. Version awareness
+## 14. Version awareness
 
 Kubernetes ships ~3 minor releases/year and supports ~the last 3; betas get enabled/disabled and
 defaults flip between them. Before relying on a specific field, default, or API:
@@ -514,7 +482,7 @@ defaults flip between them. Before relying on a specific field, default, or API:
 
 ---
 
-## 17. Canonical references
+## 15. Canonical references
 
 - Kubernetes documentation — https://kubernetes.io/docs/
 - Concepts (workloads, services, storage, config, security) — https://kubernetes.io/docs/concepts/

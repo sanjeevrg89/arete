@@ -9,7 +9,8 @@ description: The Define stage of the engineering lifecycle — clarify and speci
   modes & blast radius, security/quota/multi-tenancy, rollback/exit plan, open questions), the review
   checkpoint before Plan/Build, and the verification gate. Spec-first beats code-first because building
   the wrong thing is the most expensive failure — doubly so when "building" is a multi-thousand-GPU-hour
-  run or a production cluster change.
+  run or a production cluster change. Scope: AI-infra/ML systems; for lightweight app feature specs,
+  prefer a general spec/grilling skill (e.g. the vendored mattpocock `to-spec`) when installed.
 ---
 
 # Spec-Driven Development (the Define stage)

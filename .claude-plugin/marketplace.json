@@ -1,0 +1,23 @@
+{
+  "name": "arete",
+  "owner": {
+    "name": "sanjeevrg89",
+    "url": "https://github.com/sanjeevrg89"
+  },
+  "description": "Distinguished-engineer skills for K8s/GKE/ML-infra + curated engineering-process skills, as an installable Claude Code plugin.",
+  "plugins": [
+    {
+      "name": "arete",
+      "source": "./",
+      "description": "Arete \u2014 59 distinguished-engineer skills for Kubernetes, GKE, and the ML-infrastructure stack, plus 25 vendored process skills from mattpocock/skills. One source of truth, every agent.",
+      "category": "engineering",
+      "keywords": [
+        "kubernetes",
+        "gke",
+        "ml-infra",
+        "llm-inference",
+        "agent-skills"
+      ]
+    }
+  ]
+}
