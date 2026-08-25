@@ -4,6 +4,11 @@ All notable changes to arete are documented here. Format: [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### Changed
+- **README rewritten** around the problems the library fixes (docs-knowledge vs production scar
+  tissue), with real excerpts from `kubernetes-expert` and `gpu-performance-engineering` as evidence.
+- GitHub repo description replaced with a single clear hook.
+
 ## [1.0.0] — 2026-08-24
 
 The "world-class packaging" release: same distinguished-bar content, now installable everywhere.
