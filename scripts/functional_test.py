@@ -46,6 +46,19 @@ def load_checks() -> list[dict]:
     return data
 
 
+def find_skill(name: str) -> Path | None:
+    """Resolve a skill name to its directory: skills/<name>/ or skills/vendored/<upstream>/<name>/."""
+    direct = ROOT / "skills" / name
+    if (direct / "SKILL.md").exists():
+        return direct
+    vendored = ROOT / "skills" / "vendored"
+    if vendored.is_dir():
+        for upstream in sorted(vendored.iterdir()):
+            if (upstream / name / "SKILL.md").exists():
+                return upstream / name
+    return None
+
+
 def lint(checks: list[dict]) -> int:
     errors = []
     for i, c in enumerate(checks):
@@ -54,7 +67,7 @@ def lint(checks: list[dict]) -> int:
             if key not in c:
                 errors.append(f"{where}: missing '{key}'")
         skill = c.get("skill", "")
-        if skill and not (ROOT / skill / "SKILL.md").exists():
+        if skill and find_skill(skill) is None:
             errors.append(f"{where}: skill '{skill}' has no SKILL.md")
         if "must_contain" in c and not isinstance(c["must_contain"], list):
             errors.append(f"{where}: must_contain must be a list")

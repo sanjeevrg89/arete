@@ -12,9 +12,11 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+SKILLS = ROOT / "skills"
+VENDORED = SKILLS / "vendored"
 
-# Directories that are not skills ("skills" is the generated flat bundle from build_bundle.py).
-NON_SKILL_DIRS = {"scripts", ".git", ".github", "skills", "tests"}
+# Vendored third-party skills (skills/vendored/<upstream>/<name>/) follow their upstream's layout;
+# they are validated loosely (frontmatter name+description only), not against arete's house spec.
 
 # Files every skill directory must contain (a guide is checked separately).
 REQUIRED_FILES = ["SKILL.md", "AGENTS.md", "GEMINI.md"]
@@ -69,23 +71,41 @@ def parse_frontmatter(text: str) -> dict[str, str] | None:
 
 
 def skill_dirs() -> list[Path]:
+    """First-party skills: directories directly under skills/ containing a SKILL.md."""
     out = []
-    for p in sorted(ROOT.iterdir()):
-        if not p.is_dir() or p.name in NON_SKILL_DIRS or p.name.startswith("."):
+    if not SKILLS.is_dir():
+        return out
+    for p in sorted(SKILLS.iterdir()):
+        if not p.is_dir() or p.name.startswith("."):
             continue
         if (p / "SKILL.md").exists():
             out.append(p)
     return out
 
 
+def vendored_dirs() -> list[Path]:
+    """Vendored third-party skills: skills/vendored/<upstream>/<name>/ with a SKILL.md."""
+    out = []
+    if not VENDORED.is_dir():
+        return out
+    for upstream in sorted(VENDORED.iterdir()):
+        if not upstream.is_dir() or upstream.name.startswith("."):
+            continue
+        for p in sorted(upstream.iterdir()):
+            if p.is_dir() and (p / "SKILL.md").exists():
+                out.append(p)
+    return out
+
+
 def main() -> int:
     dirs = skill_dirs()
-    if not dirs:
-        err("no skill directories found")
+    vdirs = vendored_dirs()
+    if not dirs and not vdirs:
+        err("no skill directories found under skills/")
         return finish()
 
     names: dict[str, Path] = {}
-    all_slugs: set[str] = {d.name for d in dirs}
+    all_slugs: set[str] = {d.name for d in dirs} | {d.name for d in vdirs}
 
     for d in dirs:
         name = d.name
@@ -137,7 +157,25 @@ def main() -> int:
                 if slug not in all_slugs:
                     warn(f"{name}/{md.name}: cross-link [[{slug}]] has no matching skill directory")
 
-    print(f"Validated {len(dirs)} skills.")
+    # Vendored skills: loose checks only (valid frontmatter, name == dir, unique, description).
+    for d in vdirs:
+        rel = f"vendored/{d.parent.name}/{d.name}"
+        fm = parse_frontmatter((d / "SKILL.md").read_text(encoding="utf-8"))
+        if fm is None:
+            err(f"{rel}: SKILL.md has no valid `---` frontmatter block")
+            continue
+        if "name" not in fm or not fm["name"]:
+            err(f"{rel}: SKILL.md frontmatter missing `name`")
+        elif fm["name"] != d.name:
+            err(f"{rel}: frontmatter name '{fm['name']}' != directory name '{d.name}'")
+        elif fm["name"] in names:
+            err(f"{rel}: duplicate skill name '{fm['name']}' (also {names[fm['name']].name})")
+        else:
+            names[fm["name"]] = d
+        if not (fm.get("description") or "").strip():
+            err(f"{rel}: SKILL.md frontmatter missing `description` (the router)")
+
+    print(f"Validated {len(dirs)} first-party + {len(vdirs)} vendored skills.")
     return finish()
 
 

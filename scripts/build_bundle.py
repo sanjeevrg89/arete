@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Build a flat, self-contained markdown bundle from the directory-per-skill source.
 
-Each source skill (`<name>/SKILL.md` + `<name>/<name>-guide.md` + `<name>/examples.md`) is flattened
-into a single file `skills/<name>.md` (frontmatter preserved, full guide + examples inlined). This is
-the loader-agnostic form for tools that load skills as flat markdown files from a `skills/` directory.
-Adapter files (AGENTS.md / GEMINI.md) are intentionally excluded — they're redundant once inlined.
+Each first-party skill (`skills/<name>/SKILL.md` + guide + `examples.md`) is flattened into a single
+file `bundle/<name>.md` (frontmatter preserved, full guide + examples inlined). This is the
+loader-agnostic form for tools that load skills as flat markdown files. Vendored third-party skills
+(`skills/vendored/<upstream>/<name>/`) are NOT flattened — their extra reference files wouldn't
+inline correctly; install them directory-style instead. Adapter files (AGENTS.md / GEMINI.md) are
+intentionally excluded — they're redundant once inlined.
 
 Run: `python scripts/build_bundle.py`  (regenerate after adding/editing skills).
 Stdlib only.
@@ -16,8 +18,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "skills"
-NON_SKILL = {"scripts", ".git", ".github", "skills"}
+SRC = ROOT / "skills"
+OUT = ROOT / "bundle"
 SEP = "\n\n---\n\n"
 
 
@@ -34,8 +36,8 @@ def main() -> int:
     OUT.mkdir(exist_ok=True)
     built = 0
     skipped = []
-    for d in sorted(ROOT.iterdir()):
-        if not d.is_dir() or d.name in NON_SKILL or d.name.startswith("."):
+    for d in sorted(SRC.iterdir()):
+        if not d.is_dir() or d.name.startswith("."):
             continue
         skill = d / "SKILL.md"
         if not skill.exists():
