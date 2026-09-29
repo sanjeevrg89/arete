@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Validate the skill library: SKILL.md frontmatter, unique names, required files, cross-links.
 
-Stdlib only (no pyyaml) so it runs anywhere. Exits non-zero if any ERROR is found; WARNINGs do not
-fail the build. Run from anywhere: `python scripts/validate.py`.
+Frontmatter is parsed with a strict YAML parser when PyYAML is installed (CI installs it): agents
+parse strictly too, and a SKILL.md they can't parse loses its description (Claude Code) or is skipped
+outright (`npx skills`). Without PyYAML a heuristic check catches the common failure (an unquoted
+`: ` in a plain scalar). Exits non-zero if any ERROR is found; WARNINGs do not fail the build. Run
+from anywhere: `python scripts/validate.py`.
 """
 
 from __future__ import annotations
@@ -11,15 +14,32 @@ import re
 import sys
 from pathlib import Path
 
+try:
+    import yaml  # type: ignore
+except ImportError:  # stdlib-only fallback: heuristic YAML check
+    yaml = None
+
 ROOT = Path(__file__).resolve().parent.parent
 SKILLS = ROOT / "skills"
 VENDORED = SKILLS / "vendored"
 
 # Vendored third-party skills (skills/vendored/<upstream>/<name>/) follow their upstream's layout;
-# they are validated loosely (frontmatter name+description only), not against arete's house spec.
+# they are validated loosely (valid frontmatter, spec-legal name + description), not against arete's
+# house spec.
 
 # Files every skill directory must contain (a guide is checked separately).
 REQUIRED_FILES = ["SKILL.md", "AGENTS.md", "GEMINI.md"]
+
+# The description is the router, and every installed skill's description shares one listing budget
+# (Claude Code truncates the skill listing at a fixed character budget; Codex caps its list at 2% of
+# context). Keep first-party routers short so the whole library stays visible next to other skills.
+DESC_MAX = 250  # house limit, first-party
+SPEC_DESC_MAX = 1024  # Agent Skills spec limit, applies to vendored skills too
+DESC_BUDGET = 15000  # warn when all first-party routers together exceed this
+NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")  # spec: lowercase, digits, single hyphens
+NAME_MAX = 64
+# Finder/iCloud conflict copies ("SKILL 2.md", "validate 2.py") must never be committed.
+DUPLICATE_RE = re.compile(r" \d+(\.[^.]+)?$")
 
 # Framing we never want published (open, vendor-neutral content).
 FORBIDDEN_PHRASES = [
@@ -70,6 +90,64 @@ def parse_frontmatter(text: str) -> dict[str, str] | None:
     return data
 
 
+def frontmatter_block(text: str) -> str | None:
+    m = re.match(r"^---\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|$)", text, re.S)
+    return m.group(1) if m else None
+
+
+def check_yaml(label: str, text: str) -> dict | None:
+    """Parse frontmatter the way agents do. Returns the strict mapping (None without PyYAML or on
+    error); every problem is reported as an ERROR."""
+    block = frontmatter_block(text)
+    if block is None:
+        return None  # reported by the caller
+    why = "agents drop its description or skip the skill; quote the value or reword the ': '"
+    if yaml is None:
+        # Heuristic: an unquoted plain scalar may not contain ": " or " #" (YAML reads those as a
+        # nested mapping / a comment). Continuation lines are folded into their key's value first.
+        values: dict[str, str] = {}
+        key = None
+        for line in block.splitlines():
+            m = re.match(r"^([A-Za-z][\w-]*):(?:\s+(.*))?$", line)
+            if m:
+                key = m.group(1)
+                values[key] = (m.group(2) or "").strip()
+            elif key is not None and line.strip():
+                values[key] += " " + line.strip()
+        for k, v in values.items():
+            if v[:1] in ("'", '"', "|", ">", "[", "{") or not v:
+                continue
+            if ": " in v or " #" in v:
+                err(f"{label}: frontmatter `{k}` is an unquoted value containing ': ' or ' #' — {why}")
+        return None
+    try:
+        data = yaml.safe_load(block)
+    except yaml.YAMLError as e:
+        problem = getattr(e, "problem", None) or str(e).splitlines()[0]
+        err(f"{label}: frontmatter is not valid YAML ({problem}) — {why}")
+        return None
+    if not isinstance(data, dict):
+        err(f"{label}: frontmatter is not a YAML mapping")
+        return None
+    return data
+
+
+def check_name(label: str, name: str) -> None:
+    if len(name) > NAME_MAX or not NAME_RE.match(name):
+        err(f"{label}: name '{name}' must be lowercase letters/digits/single hyphens, <= {NAME_MAX} chars")
+
+
+def duplicate_files() -> list[Path]:
+    """Finder/iCloud conflict copies anywhere in the repo ('SKILL 2.md', 'validate 2.py')."""
+    out = []
+    for p in ROOT.rglob("*"):
+        parts = p.relative_to(ROOT).parts
+        if parts[0] in (".git", "node_modules") or not DUPLICATE_RE.search(p.name):
+            continue
+        out.append(p)
+    return out
+
+
 def skill_dirs() -> list[Path]:
     """First-party skills: directories directly under skills/ containing a SKILL.md."""
     out = []
@@ -106,11 +184,17 @@ def main() -> int:
 
     names: dict[str, Path] = {}
     all_slugs: set[str] = {d.name for d in dirs} | {d.name for d in vdirs}
+    budget = 0
+
+    for p in duplicate_files():
+        err(f"{p.relative_to(ROOT)}: Finder/iCloud duplicate copy — delete it")
 
     for d in dirs:
         name = d.name
         sm = d / "SKILL.md"
-        fm = parse_frontmatter(sm.read_text(encoding="utf-8"))
+        text = sm.read_text(encoding="utf-8")
+        fm = parse_frontmatter(text)
+        strict = check_yaml(name, text)
 
         # Frontmatter + name/description.
         if fm is None:
@@ -121,14 +205,21 @@ def main() -> int:
             elif fm["name"] != name:
                 err(f"{name}: frontmatter name '{fm['name']}' != directory name '{name}'")
             else:
+                check_name(name, fm["name"])
                 if fm["name"] in names:
                     err(f"{name}: duplicate skill name '{fm['name']}' (also {names[fm['name']].name})")
                 names[fm["name"]] = d
-            desc = fm.get("description", "")
+            desc = str(strict.get("description") or "") if strict else fm.get("description", "")
+            budget += len(desc)
             if not desc:
                 err(f"{name}: SKILL.md frontmatter missing `description` (the router)")
             elif len(desc) < 40:
                 warn(f"{name}: description is short ({len(desc)} chars) — make it a stronger router")
+            elif len(desc) > DESC_MAX:
+                err(f"{name}: description is {len(desc)} chars (max {DESC_MAX}) — lead with the "
+                    "trigger terms; move detail to the `## Scope and triggers` section")
+        if "\n## Scope and triggers\n" not in text:
+            warn(f"{name}: SKILL.md has no `## Scope and triggers` section")
 
         # Required files.
         for f in REQUIRED_FILES:
@@ -160,7 +251,9 @@ def main() -> int:
     # Vendored skills: loose checks only (valid frontmatter, name == dir, unique, description).
     for d in vdirs:
         rel = f"vendored/{d.parent.name}/{d.name}"
-        fm = parse_frontmatter((d / "SKILL.md").read_text(encoding="utf-8"))
+        text = (d / "SKILL.md").read_text(encoding="utf-8")
+        fm = parse_frontmatter(text)
+        strict = check_yaml(rel, text)
         if fm is None:
             err(f"{rel}: SKILL.md has no valid `---` frontmatter block")
             continue
@@ -171,11 +264,21 @@ def main() -> int:
         elif fm["name"] in names:
             err(f"{rel}: duplicate skill name '{fm['name']}' (also {names[fm['name']].name})")
         else:
+            check_name(rel, fm["name"])
             names[fm["name"]] = d
-        if not (fm.get("description") or "").strip():
+        desc = str(strict.get("description") or "") if strict else (fm.get("description") or "")
+        if not desc.strip():
             err(f"{rel}: SKILL.md frontmatter missing `description` (the router)")
+        elif len(desc) > SPEC_DESC_MAX:
+            err(f"{rel}: description is {len(desc)} chars (Agent Skills spec max {SPEC_DESC_MAX})")
 
     print(f"Validated {len(dirs)} first-party + {len(vdirs)} vendored skills.")
+    parser = "strict YAML (PyYAML)" if yaml else "heuristic YAML check (pip install pyyaml for strict)"
+    print(f"Frontmatter: {parser}. Router budget: {budget} chars across {len(dirs)} first-party "
+          f"descriptions (warn above {DESC_BUDGET}).")
+    if budget > DESC_BUDGET:
+        warn(f"first-party descriptions total {budget} chars (> {DESC_BUDGET}); every installed "
+             "skill shares one listing budget — tighten the longest routers")
     return finish()
 
 
