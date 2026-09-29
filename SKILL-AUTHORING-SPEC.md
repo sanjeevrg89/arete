@@ -4,8 +4,8 @@ This is a cross-agent skill library, open for anyone to use. Each skill is a sel
 coding assistants (Claude Code via `SKILL.md`, Codex/Cursor/etc. via `AGENTS.md`, Gemini via imports).
 Author every skill to this exact standard so the library is consistent.
 
-The reference exemplar is `go-best-practices/` (see its `SKILL.md`, `AGENTS.md`, `go-guidelines.md`).
-Mirror its structure and voice.
+The reference exemplar is `skills/go-best-practices/` (see its `SKILL.md`, `AGENTS.md`,
+`go-guidelines.md`). Mirror its structure and voice.
 
 ## Files every skill directory MUST contain
 
@@ -13,15 +13,17 @@ Mirror its structure and voice.
    ```
    ---
    name: <exact-kebab-slug-matching-the-directory-name>
-   description: <2–4 dense sentences. THIS IS THE ROUTER — it decides when the skill loads.
-     Lead with WHEN to use it, pack in concrete trigger terms (tool names, API kinds, file types,
-     error symptoms, tasks), and what it covers. Mention the specific technologies by name.>
+   description: <THE ROUTER, one line, <= 250 chars — see "The router" below.>
    ---
 
    # <Skill Title>
 
    <1–2 line statement of the expertise and the bar (e.g. "Apply the judgment of an engineer who has
    run this in production at scale for years.")>
+
+   ## Scope and triggers
+   <The long form the router can't hold: everything the skill covers, every trigger term and symptom,
+   and where the boundary with sibling skills sits (`[[other-slug]]`). Agents read it after loading.>
 
    ## How to use this skill
    1. Read `<slug>-guide.md` in this directory — the full reference. Apply it to the task.
@@ -70,6 +72,31 @@ Mirror its structure and voice.
 4. **`examples.md`** (optional but encouraged where patterns help) — before/after or canonical
    worked examples (YAML/code) the agent can imitate.
 
+## The router (`description`)
+
+The description is the only thing an agent sees before deciding whether to load a skill, and every
+installed skill's description shares one listing budget. Claude Code cuts the skill listing off at a
+fixed character budget (30,000 in the session this rule was measured in) and lists the rest by name
+only; Codex caps its list at 2% of the context window (8,000 characters when unknown) and shortens
+descriptions to fit. A 1,000-character router doesn't make a skill easier to find — it pushes other
+skills, including your own, out of view. And a description that isn't valid YAML is worse than
+short: Claude Code loads the skill with no description, and `npx skills add` skips it entirely.
+
+Rules (enforced by `scripts/validate.py` and CI):
+
+- **One line, <= 250 characters.** What it is, then the 5–10 most distinctive trigger terms (tools,
+  APIs, file types, error symptoms), then "Use when/for …". Trigger terms first: truncation eats the
+  end.
+- **Plain YAML that every parser accepts.** No `: ` or ` #` inside an unquoted value; if you need
+  one, double-quote the whole value. `name` and `description` only — first-party skills stay
+  spec-pure ([Agent Skills spec](https://agentskills.io/specification)) so every agent can load them.
+- **Name the sibling only when routing is genuinely ambiguous** ("…; profiling is
+  gpu-performance-engineering"). Full boundaries belong in `## Scope and triggers`.
+- **Every skill has a routing case** in [`tests/skill-routing-checklist.md`](tests/skill-routing-checklist.md):
+  one discriminating prompt a user would actually type, plus acceptable neighbors. After editing a
+  description, re-run it: `python scripts/routing_eval.py --only <slug>` (needs `AGENT_CMD`; see
+  [`tests/VALIDATION.md`](tests/VALIDATION.md)).
+
 ## Quality bar
 
 - Write as a **top-5-in-the-world practitioner with ~10 years of production experience** in the topic.
@@ -80,22 +107,10 @@ Mirror its structure and voice.
 - Real commands and manifests must be runnable-in-spirit and correct (right apiVersion/kind/fields).
 - Cross-link related skills by slug using `[[slug]]` so the library forms a graph.
 
-## The 14 skills in this library (use these exact slugs for cross-links)
+## Slugs for cross-links
 
-- `go-best-practices`
-- `kubernetes-expert` — end-to-end practitioner mastery (using K8s)
-- `kubernetes-controller-expert` — writing controllers (controller-runtime, client-go, reconcile)
-- `kubernetes-operator-expert` — operator pattern, CRDs, webhooks, kubebuilder/OLM
-- `kubernetes-internals-expert` — apiserver/etcd/scheduler/kubelet/kube-proxy internals
-- `aiml-on-kubernetes` — training/inference/fine-tuning/RL/RLHF/agentic on K8s & GKE (umbrella)
-- `kueue-advanced` — Kueue batch/quota/gang/MultiKueue/TAS
-- `jobset-leaderworkerset` — JobSet + LeaderWorkerSet for multi-host training/inference
-- `ml-frameworks` — PyTorch, JAX, XLA, GPU & TPU
-- `serving-frameworks` — vLLM, SGLang, Dynamo, Triton, TensorRT-LLM, Ray Serve, KServe
-- `training-frameworks` — DDP/FSDP, DeepSpeed, Megatron, NeMo, Ray Train, Kubeflow Trainer, MaxText
-- `slurm-hpc-on-kubernetes` — Slurm/HPC, Slinky, Volcano, MPI, RDMA, Slurm-vs-K8s
-- `gke-master` — GKE Standard/Autopilot, TPU/GPU node pools, networking, security, autoscaling
-- `autoscaling-kubernetes` — HPA/VPA/Cluster Autoscaler/Karpenter/KEDA/NAP
+Use the exact directory names listed in [`REGISTRY.md`](REGISTRY.md). `scripts/validate.py` warns on
+any `[[slug]]` that doesn't resolve to a skill directory.
 
 ## Voice / formatting
 

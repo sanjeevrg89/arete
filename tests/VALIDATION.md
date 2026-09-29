@@ -12,9 +12,13 @@ need an agent and human judgment, and are where real confidence comes from.
 ---
 
 ## Layer 1 — Structural (automated, in CI)
-Metadata, frontmatter, unique names, required files, resolvable `[[cross-links]]`, no banned framing.
+Frontmatter parsed strictly (as agents parse it), router limits, unique spec-legal names, required
+files, resolvable `[[cross-links]]`, no banned framing, no Finder/iCloud duplicate files — plus the
+official Agent Skills validator on every first-party skill.
 ```bash
-python scripts/validate.py        # must be 0 errors
+pip install pyyaml skills-ref
+python scripts/validate.py                                  # must be 0 errors
+for d in skills/*/; do [ "$(basename $d)" = vendored ] || agentskills validate "$d"; done
 ```
 
 ## Layer 2 — Functional spec lint (automated, in CI)
@@ -23,12 +27,23 @@ The functional check specs are well-formed and reference real skills.
 python scripts/functional_test.py --lint
 ```
 
-## Layer 3 — Routing (semi-automated)
-Confirm the agent picks the **right** skill for a task. In Claude Code (skills installed):
-- `/skills` lists every skill.
-- Work through [`skill-routing-checklist.md`](skill-routing-checklist.md): paste each prompt prefixed
-  with *"Pick the right skill(s), name them and why, then answer:"* and confirm the expected skill is named.
-- A miss → sharpen that skill's `SKILL.md` `description` (the router) with the missing trigger terms, re-test.
+## Layer 3 — Routing (automated; the eval needs an agent)
+Confirm the agent picks the **right** skill from descriptions alone. Every first-party skill has one
+discriminating prompt in [`skill-routing-checklist.md`](skill-routing-checklist.md) (CI lints that).
+`routing_eval.py` shows the agent the catalog it would see (`- name: description`) plus one prompt at a
+time, and scores top-1 accuracy:
+```bash
+python scripts/routing_eval.py --lint     # CI: every skill has a case, every name resolves
+AGENT_CMD='claude -p --model haiku --disable-slash-commands --tools "" --no-session-persistence' \
+  python scripts/routing_eval.py --jobs 8   # full eval; --only <slug> after editing one router
+```
+- `--disable-slash-commands` keeps the judge's own installed skills out of the experiment.
+- `--listing FILE` routes against a listing captured from a real session instead — that's how you
+  measure what the agent actually saw after its listing budget truncated descriptions.
+- A miss → sharpen that skill's `description` (the router) with the missing trigger terms, or move a
+  term that belongs to a sibling out of it; re-run with `--only`.
+- Manual spot-check in Claude Code: `/skills` lists every skill; paste a checklist prompt prefixed with
+  *"Pick the right skill(s), name them and why, then answer:"*.
 
 ## Layer 4 — Functional behavior (agent-in-the-loop)
 Does the output satisfy concrete assertions?
