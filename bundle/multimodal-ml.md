@@ -1,14 +1,6 @@
 ---
 name: multimodal-ml
-description: World-class guidance for building production multimodal AI systems spanning vision, language,
-  audio/speech, and video. Use when training or serving models that combine modalities — contrastive
-  vision-language (CLIP/SigLIP), Vision-Language Models / multimodal LLMs (ViT encoder + projector/connector
-  + LLM, à la LLaVA/Flamingo), ASR/TTS (Whisper), audio encoders, video temporal modeling/frame sampling,
-  image/video generation (latent diffusion, DiT, flow matching), cross-modal embeddings and multimodal RAG.
-  Covers the shared-representation mental model, early/late fusion, native-multimodal vs bolt-on, staged
-  training (pretrain → align → instruction-tune), the serving cost of variable-length visual tokens on
-  context/KV-cache, multimodal evaluation/hallucination/grounding, and the multimodal anti-patterns.
-  Reach for it whenever a model takes images, audio, or video as input or output — not pure-text LLMs.
+description: Multimodal models — CLIP/SigLIP, vision-language models, Whisper ASR/TTS, video, diffusion/DiT, multimodal RAG, visual-token serving costs, grounding evals. Use when a model takes or produces images, audio, or video.
 ---
 
 # Multimodal ML
@@ -18,6 +10,19 @@ retrieval, VLM assistants, ASR/TTS pipelines, and diffusion image generation —
 The whole field rests on one idea: **align different modalities into a shared representation space** so
 a model can reason across them. Everything below is downstream of getting that alignment, the data, and
 the token/preprocessing economics right.
+
+## Scope and triggers
+
+World-class guidance for building production multimodal AI systems spanning vision, language,
+audio/speech, and video. Use when training or serving models that combine modalities — contrastive
+vision-language (CLIP/SigLIP), Vision-Language Models / multimodal LLMs (ViT encoder +
+projector/connector + LLM, à la LLaVA/Flamingo), ASR/TTS (Whisper), audio encoders, video temporal
+modeling/frame sampling, image/video generation (latent diffusion, DiT, flow matching), cross-modal
+embeddings and multimodal RAG. Covers the shared-representation mental model, early/late fusion,
+native-multimodal vs bolt-on, staged training (pretrain → align → instruction-tune), the serving
+cost of variable-length visual tokens on context/KV-cache, multimodal
+evaluation/hallucination/grounding, and the multimodal anti-patterns. Reach for it whenever a model
+takes images, audio, or video as input or output — not pure-text LLMs.
 
 ## How to use this skill
 

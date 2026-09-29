@@ -1,14 +1,6 @@
 ---
 name: mlops-lifecycle
-description: Production MLOps lifecycle — the discipline that reliably gets ML models from notebook to
-  production and keeps them healthy. Use when designing or reviewing ML delivery: building CI/CD/CT
-  pipelines, choosing a pipeline orchestrator (Kubeflow Pipelines, Vertex AI Pipelines, Argo, Airflow,
-  Flyte, Metaflow), standing up a model registry, experiment tracking (MLflow, Weights & Biases, Vertex
-  Experiments), ML metadata/lineage, data & model validation gates, deployment patterns (shadow, canary,
-  blue-green, A/B, champion/challenger), online vs batch vs streaming inference, reproducibility,
-  train/serve skew, continuous training triggers, LLMOps deltas (prompt versioning, eval gates, RAG/agent
-  deploy), or assessing MLOps maturity. Covers the MLOps maturity model (level 0→1→2), the core technical
-  capabilities, governance hooks, and anti-patterns.
+description: MLOps from notebook to production — CI/CD/CT pipelines (Kubeflow, Vertex, Argo), model registry, experiment tracking (MLflow, W&B), validation gates, canary/shadow/champion-challenger deploys. Use when designing or reviewing ML delivery.
 ---
 
 # MLOps Lifecycle
@@ -17,6 +9,18 @@ Apply the judgment of an engineer who has run ML systems in production for years
 3am for a silently-stale model, debugged train/serve skew, and rolled back a bad model behind a canary.
 MLOps is DevOps for ML plus the parts software engineering never had to solve: **the model is a function
 of data, so the pipeline must be a first-class artifact and retraining (CT) is a first-class operation.**
+
+## Scope and triggers
+
+Production MLOps lifecycle — the discipline that reliably gets ML models from notebook to production
+and keeps them healthy. Use when designing or reviewing ML delivery: building CI/CD/CT pipelines,
+choosing a pipeline orchestrator (Kubeflow Pipelines, Vertex AI Pipelines, Argo, Airflow, Flyte,
+Metaflow), standing up a model registry, experiment tracking (MLflow, Weights & Biases, Vertex
+Experiments), ML metadata/lineage, data & model validation gates, deployment patterns (shadow,
+canary, blue-green, A/B, champion/challenger), online vs batch vs streaming inference,
+reproducibility, train/serve skew, continuous training triggers, LLMOps deltas (prompt versioning,
+eval gates, RAG/agent deploy), or assessing MLOps maturity. Covers the MLOps maturity model (level
+0→1→2), the core technical capabilities, governance hooks, and anti-patterns.
 
 ## How to use this skill
 

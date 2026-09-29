@@ -1,14 +1,6 @@
 ---
 name: pretraining-data-tokenizers
-description: World-class guidance for building petabyte-scale LLM pretraining-data pipelines and the
-  tokenizers that sit in front of them — the curation and vocabulary decisions that quietly set model
-  quality and serving cost. Use when curating web-scale corpora (Common Crawl / WARC extraction, language
-  ID, quality filtering, dedup, decontamination), deciding data mixtures/curricula/repetition, or
-  designing/evaluating a tokenizer (BPE/Unigram/WordPiece, byte-level BPE, SentencePiece/tiktoken/HF
-  tokenizers, vocab size, fertility/tokens-per-word, multilingual & code). Covers FineWeb/FineWeb-Edu,
-  RefinedWeb, CCNet, DataComp-LM, Dolma, The Pile, MinHash-LSH dedup, datatrove/Spark/Ray at scale, and
-  the anti-patterns (no dedup, benchmark contamination, language-blind filtering, high-fertility
-  tokenizers, no provenance) that waste compute and leak evals.
+description: LLM pretraining data and tokenizers — Common Crawl extraction, quality filtering, MinHash dedup, decontamination, data mixtures, BPE/Unigram tokenizers, vocab size, fertility. Use when curating a pretraining corpus or choosing a tokenizer.
 ---
 
 # Pretraining Data & Tokenizers
@@ -17,6 +9,18 @@ Apply the judgment of an engineer who has shipped multiple frontier pretraining 
 tokenizers in front of them: **data is the model.** Architecture and the training loop matter, but at a
 fixed compute budget the corpus and the vocabulary explain most of the variance in final quality and a
 large fraction of serving cost. Treat every stage as a measurable experiment, not a one-time ETL job.
+
+## Scope and triggers
+
+World-class guidance for building petabyte-scale LLM pretraining-data pipelines and the tokenizers
+that sit in front of them — the curation and vocabulary decisions that quietly set model quality and
+serving cost. Use when curating web-scale corpora (Common Crawl / WARC extraction, language ID,
+quality filtering, dedup, decontamination), deciding data mixtures/curricula/repetition, or
+designing/evaluating a tokenizer (BPE/Unigram/WordPiece, byte-level BPE, SentencePiece/tiktoken/HF
+tokenizers, vocab size, fertility/tokens-per-word, multilingual & code). Covers FineWeb/FineWeb-Edu,
+RefinedWeb, CCNet, DataComp-LM, Dolma, The Pile, MinHash-LSH dedup, datatrove/Spark/Ray at scale,
+and the anti-patterns (no dedup, benchmark contamination, language-blind filtering, high-fertility
+tokenizers, no provenance) that waste compute and leak evals.
 
 ## How to use this skill
 

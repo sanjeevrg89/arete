@@ -1,20 +1,6 @@
 ---
 name: staff-operating-modes
-description: How to FRAME and DRIVE a non-trivial task to a capable AI coding agent (Claude Code, Codex,
-  Gemini CLI, and any agentic IDE or CLI) so it works at a STAFF / DISTINGUISHED engineer's bar — not the
-  "senior" default of "it compiles and a happy-path test passes," and not the junior anti-pattern of
-  feeding it imperatives ("do this", "write code", "fix this bug"). Use at the START of a task to choose
-  the operating mode and set the completion bar: the run-to-done goal wrapper (keep going until the
-  architecture and result meet the bar, not until it runs; real end-to-end validation after each step;
-  review; commit; track progress), the parallel end-to-end goal for large jobs (decompose into
-  independent pieces, dispatch concurrent sub-agents each with its own goal/deliverable/verification),
-  production-grade build (requirements -> edge cases -> architecture -> minimal-but-scalable MVP),
-  inherit-an-unfamiliar-repo + refactor, root-cause debugging, and performance optimization. The
-  distinguished bar adds what "senior" skips: blast radius, simplicity, leverage, second-order effects,
-  reversibility, observability, and whether the thing should be built at all. Covers defining "done" so
-  the agent can self-check it, validating the real end-to-end path (CLI/browser/clicks/keystrokes),
-  pairing every mode with a verification + review gate, and when to keep going vs stop. The "how to
-  instruct" layer above engineering-lifecycle; vendor-neutral, works in any agent.
+description: How to drive a coding agent (Claude Code, Codex, Gemini CLI) at a staff-engineer bar — pick an operating mode, define done, validate end to end, parallelize with sub-agents. Use at the start of a non-trivial agent task.
 ---
 
 # Staff Operating Modes (drive the agent at a distinguished bar)
@@ -26,6 +12,25 @@ what should have been built instead. Drive it at the **staff / distinguished** b
 *standard a principal engineer would hold in review*, and a way to verify — then let it run to that bar
 and report. This is the *how-to-instruct* layer; it routes the work into `[[engineering-lifecycle]]` and
 the stage skills, which own the gates, and applies the judgment in `[[staff-plus-engineering]]`.
+
+## Scope and triggers
+
+How to FRAME and DRIVE a non-trivial task to a capable AI coding agent (Claude Code, Codex, Gemini
+CLI, and any agentic IDE or CLI) so it works at a STAFF / DISTINGUISHED engineer's bar — not the
+"senior" default of "it compiles and a happy-path test passes," and not the junior anti-pattern of
+feeding it imperatives ("do this", "write code", "fix this bug"). Use at the START of a task to
+choose the operating mode and set the completion bar: the run-to-done goal wrapper (keep going until
+the architecture and result meet the bar, not until it runs; real end-to-end validation after each
+step; review; commit; track progress), the parallel end-to-end goal for large jobs (decompose into
+independent pieces, dispatch concurrent sub-agents each with its own goal/deliverable/verification),
+production-grade build (requirements -> edge cases -> architecture -> minimal-but-scalable MVP),
+inherit-an-unfamiliar-repo + refactor, root-cause debugging, and performance optimization. The
+distinguished bar adds what "senior" skips: blast radius, simplicity, leverage, second-order
+effects, reversibility, observability, and whether the thing should be built at all. Covers defining
+"done" so the agent can self-check it, validating the real end-to-end path
+(CLI/browser/clicks/keystrokes), pairing every mode with a verification + review gate, and when to
+keep going vs stop. The "how to instruct" layer above engineering-lifecycle; vendor-neutral, works
+in any agent.
 
 ## How to use this skill
 

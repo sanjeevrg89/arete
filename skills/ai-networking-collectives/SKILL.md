@@ -1,18 +1,6 @@
 ---
 name: ai-networking-collectives
-description: Expert knowledge of networking and collective communication for AI training/inference at
-  scale — the competency that decides whether a 10,000-GPU job runs at 50% or 90% MFU. Use when
-  configuring, tuning, or debugging the communication stack underneath distributed training/inference:
-  collective operations (all-reduce, all-gather, reduce-scatter, broadcast, all-to-all, point-to-point)
-  and where each appears (DP grad sync, FSDP shard/gather, TP, MoE all-to-all, pipeline send/recv);
-  NCCL/RCCL algorithm and channel selection, NCCL_* tunables and NCCL_DEBUG; interconnects and
-  transports (NVLink/NVSwitch, InfiniBand vs RoCEv2, GPUDirect RDMA, GPUDirect-TCPX/TCPXO, SHARP
-  in-network reduction, TPU ICI vs DCN, PCIe/NUMA effects); topology-aware placement on rail-optimized
-  fat-tree fabrics; comm/compute overlap; and diagnosing comms bottlenecks (nccl-tests all-reduce bench,
-  Nsight, timeline traces, straggler/slow-link detection, MFU/goodput attribution). Triggers: NCCL hang
-  or slow rank, low bus bandwidth, RoCE/PFC/ECN tuning, "training is comms-bound", topology-blind
-  placement, NCCL_DEBUG=INFO output, choosing IB vs Ethernet. Parallelism strategy itself is
-  [[training-frameworks]]; K8s/GKE fabric plumbing is [[gke-master]]/[[kubernetes-internals-expert]].
+description: NCCL collectives and AI cluster networking — all-reduce, all-to-all, NVLink, InfiniBand vs RoCE, GPUDirect RDMA/TCPX, topology-aware placement. Use for NCCL hangs, slow ranks, low bus bandwidth, or comms-bound training.
 ---
 
 # AI Networking & Collective Communication
@@ -22,6 +10,22 @@ tens-of-thousands-of-accelerator clusters for years: **communication overhead is
 in large distributed training**, so map the chattiest collectives onto the fastest interconnect domain,
 keep them overlapped with compute, and treat a tuned, topology-aware comm stack as a prerequisite for
 high MFU — not an afterthought.
+
+## Scope and triggers
+
+Expert knowledge of networking and collective communication for AI training/inference at scale — the
+competency that decides whether a 10,000-GPU job runs at 50% or 90% MFU. Use when configuring,
+tuning, or debugging the communication stack underneath distributed training/inference: collective
+operations (all-reduce, all-gather, reduce-scatter, broadcast, all-to-all, point-to-point) and where
+each appears (DP grad sync, FSDP shard/gather, TP, MoE all-to-all, pipeline send/recv); NCCL/RCCL
+algorithm and channel selection, NCCL_* tunables and NCCL_DEBUG; interconnects and transports
+(NVLink/NVSwitch, InfiniBand vs RoCEv2, GPUDirect RDMA, GPUDirect-TCPX/TCPXO, SHARP in-network
+reduction, TPU ICI vs DCN, PCIe/NUMA effects); topology-aware placement on rail-optimized fat-tree
+fabrics; comm/compute overlap; and diagnosing comms bottlenecks (nccl-tests all-reduce bench,
+Nsight, timeline traces, straggler/slow-link detection, MFU/goodput attribution). Triggers: NCCL
+hang or slow rank, low bus bandwidth, RoCE/PFC/ECN tuning, "training is comms-bound", topology-blind
+placement, NCCL_DEBUG=INFO output, choosing IB vs Ethernet. Parallelism strategy itself is
+[[training-frameworks]]; K8s/GKE fabric plumbing is [[gke-master]]/[[kubernetes-internals-expert]].
 
 ## How to use this skill
 

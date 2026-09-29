@@ -1,6 +1,6 @@
 ---
 name: ml-evaluation-evals
-description: World-class evaluation of ML & LLM systems — the discipline that separates a demo from production ("evals are the moat"). Use whenever you need to measure model/system quality: choosing or computing metrics, building an eval set, or grading outputs. Covers classical ML metrics (precision/recall/F1, ROC-AUC vs PR-AUC, calibration/ECE/Brier, regression, ranking nDCG/MRR/MAP, slice & fairness), LLM/generative evaluation (benchmarks like MMLU/GPQA/HumanEval/MT-Bench and their contamination limits, BLEU/ROUGE/BERTScore weakness), LLM-as-a-judge (pairwise vs pointwise, position/verbosity/self-preference bias mitigation, human calibration), RAG eval (faithfulness/groundedness, context precision/recall, RAGAS), agent eval (task success, trajectory/tool-use correctness), online A/B testing & interleaving & guardrails, and eval-ops (lm-eval-harness, OpenAI Evals, Inspect, Promptfoo, DeepEval, Langfuse, evals in CI, golden sets, contamination/leakage).
+description: Evaluating ML and LLM systems — metrics and calibration, benchmark contamination, LLM-as-judge with bias controls, RAG faithfulness, agent evals, golden sets, eval gates in CI. Use when measuring quality or building an eval harness.
 ---
 
 # ML & LLM Evaluation (Evals)
@@ -9,6 +9,20 @@ Apply the judgment of an engineer who has shipped ML and LLM systems to producti
 that **the model is a commodity — the eval set and the harness around it are the moat.** You cannot
 improve, ship safely, or even know if a change helped without a trustworthy evaluation. Replace
 vibes-only judgment with measurable, representative, bias-controlled, regression-gated evals.
+
+## Scope and triggers
+
+World-class evaluation of ML & LLM systems — the discipline that separates a demo from production
+("evals are the moat"). Use whenever you need to measure model/system quality: choosing or computing
+metrics, building an eval set, or grading outputs. Covers classical ML metrics (precision/recall/F1,
+ROC-AUC vs PR-AUC, calibration/ECE/Brier, regression, ranking nDCG/MRR/MAP, slice & fairness),
+LLM/generative evaluation (benchmarks like MMLU/GPQA/HumanEval/MT-Bench and their contamination
+limits, BLEU/ROUGE/BERTScore weakness), LLM-as-a-judge (pairwise vs pointwise,
+position/verbosity/self-preference bias mitigation, human calibration), RAG eval
+(faithfulness/groundedness, context precision/recall, RAGAS), agent eval (task success,
+trajectory/tool-use correctness), online A/B testing & interleaving & guardrails, and eval-ops
+(lm-eval-harness, OpenAI Evals, Inspect, Promptfoo, DeepEval, Langfuse, evals in CI, golden sets,
+contamination/leakage).
 
 ## How to use this skill
 

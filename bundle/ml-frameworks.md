@@ -1,15 +1,6 @@
 ---
 name: ml-frameworks
-description: Deep expertise in the core ML compute frameworks and the accelerator stack beneath them —
-  PyTorch (eager/graph, autograd, torch.compile/Dynamo/Inductor, CUDA caching allocator & memory,
-  AMP/bf16/fp8, torch.distributed/NCCL, DDP vs FSDP/FSDP2, profiling), JAX (jit/grad/vmap, tracing,
-  jax.sharding/Mesh/NamedSharding/shard_map, SPMD/GSPMD, donation, compilation cache), XLA/OpenXLA
-  (HLO/StableHLO, fusion, layout, PJRT, xla_flags, PyTorch/XLA), CUDA GPU substrate (warps/SMs, memory
-  hierarchy, tensor cores, Triton, cuBLAS/cuDNN/CUTLASS, FlashAttention, NCCL/NVLink), and TPU
-  substrate (MXU systolic array, VPU, ICI, pods, Pallas, megacore). Use when writing/optimizing/debugging
-  PyTorch or JAX, tuning torch.compile or XLA, chasing CUDA/TPU OOM, recompilation, MFU/roofline,
-  precision (tf32/bf16/fp16/fp8), or kernel-level performance. Sibling skills own distributed-training
-  orchestration and serving.
+description: PyTorch and JAX internals on GPU/TPU — autograd, torch.compile, CUDA memory, AMP/bf16/fp8, jit/vmap, Mesh/NamedSharding, XLA fusion. Use when writing or debugging PyTorch/JAX code (OOM, recompiles, precision, MFU); parallelism is training-frameworks.
 ---
 
 # ML Frameworks (PyTorch · JAX · XLA · GPU · TPU)
@@ -19,6 +10,19 @@ and TPU every day — someone who reads HLO and Nsight traces, knows why a kerne
 can tell whether `torch.compile` or XLA will help or hurt before running it. The bar: **never fabricate
 a flag, API name, or benchmark number.** When you are unsure whether something is current, describe the
 concept and tell the reader to verify against current docs — APIs and hardware gens move fast (it is 2026).
+
+## Scope and triggers
+
+Deep expertise in the core ML compute frameworks and the accelerator stack beneath them — PyTorch
+(eager/graph, autograd, torch.compile/Dynamo/Inductor, CUDA caching allocator & memory,
+AMP/bf16/fp8, torch.distributed/NCCL, DDP vs FSDP/FSDP2, profiling), JAX (jit/grad/vmap, tracing,
+jax.sharding/Mesh/NamedSharding/shard_map, SPMD/GSPMD, donation, compilation cache), XLA/OpenXLA
+(HLO/StableHLO, fusion, layout, PJRT, xla_flags, PyTorch/XLA), CUDA GPU substrate (warps/SMs, memory
+hierarchy, tensor cores, Triton, cuBLAS/cuDNN/CUTLASS, FlashAttention, NCCL/NVLink), and TPU
+substrate (MXU systolic array, VPU, ICI, pods, Pallas, megacore). Use when
+writing/optimizing/debugging PyTorch or JAX, tuning torch.compile or XLA, chasing CUDA/TPU OOM,
+recompilation, MFU/roofline, precision (tf32/bf16/fp16/fp8), or kernel-level performance. Sibling
+skills own distributed-training orchestration and serving.
 
 ## How to use this skill
 

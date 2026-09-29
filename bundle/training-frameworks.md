@@ -1,17 +1,6 @@
 ---
 name: training-frameworks
-description: Expert distributed-training knowledge for training large models on hundreds-to-thousands of
-  accelerators — the parallelism strategies and the frameworks that implement them. Use when choosing,
-  configuring, or debugging multi-GPU/TPU training: data parallel (DDP), ZeRO/FSDP/FSDP2 sharding,
-  tensor parallel (Megatron), pipeline parallel (GPipe/1F1B/interleaved, bubble), sequence/context
-  parallel, expert parallel (MoE all-to-all), 3D/ND parallelism, activation checkpointing, gradient
-  accumulation, bf16/fp8 mixed precision, NCCL/RCCL collectives & comm overlap, distributed/async
-  checkpointing, elastic/fault-tolerant training, MFU/goodput. Covers PyTorch DDP/FSDP/TorchTitan/
-  torchrun, DeepSpeed (ZeRO/Offload/Infinity/MoE), Megatron-LM/Megatron-Core, NVIDIA NeMo, HF
-  Accelerate/Trainer/TRL, PyTorch Lightning, Ray Train, JAX MaxText/Levanter/Paxml/Pathways, and how
-  these map onto Kubeflow Trainer/PyTorchJob/MPIJob/JobSet. Triggers: torchrun/deepspeed launch args,
-  FSDP/ZeRO config, "model won't fit", low MFU, OOM at scale, checkpoint sharding, MoE training, 3D
-  parallelism, picking tp/pp/dp degrees.
+description: Distributed training — DDP, FSDP/ZeRO, tensor/pipeline/sequence/expert parallelism, activation checkpointing, mixed precision; DeepSpeed, Megatron, NeMo, TorchTitan. Use when picking tp/pp/dp degrees or fixing OOM or low MFU at scale.
 ---
 
 # Distributed Training Frameworks & Parallelism
@@ -20,6 +9,21 @@ Apply the judgment of an engineer who has trained frontier-scale dense and MoE m
 accelerators for years: pick the **fewest parallelism axes that make the model fit**, map the chattiest
 comms onto the fastest interconnect, keep every device doing math (high MFU), and survive failures
 without losing the run.
+
+## Scope and triggers
+
+Expert distributed-training knowledge for training large models on hundreds-to-thousands of
+accelerators — the parallelism strategies and the frameworks that implement them. Use when choosing,
+configuring, or debugging multi-GPU/TPU training: data parallel (DDP), ZeRO/FSDP/FSDP2 sharding,
+tensor parallel (Megatron), pipeline parallel (GPipe/1F1B/interleaved, bubble), sequence/context
+parallel, expert parallel (MoE all-to-all), 3D/ND parallelism, activation checkpointing, gradient
+accumulation, bf16/fp8 mixed precision, NCCL/RCCL collectives & comm overlap, distributed/async
+checkpointing, elastic/fault-tolerant training, MFU/goodput. Covers PyTorch DDP/FSDP/TorchTitan/
+torchrun, DeepSpeed (ZeRO/Offload/Infinity/MoE), Megatron-LM/Megatron-Core, NVIDIA NeMo, HF
+Accelerate/Trainer/TRL, PyTorch Lightning, Ray Train, JAX MaxText/Levanter/Paxml/Pathways, and how
+these map onto Kubeflow Trainer/PyTorchJob/MPIJob/JobSet. Triggers: torchrun/deepspeed launch args,
+FSDP/ZeRO config, "model won't fit", low MFU, OOM at scale, checkpoint sharding, MoE training, 3D
+parallelism, picking tp/pp/dp degrees.
 
 ## How to use this skill
 

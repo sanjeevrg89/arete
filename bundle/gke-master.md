@@ -1,16 +1,6 @@
 ---
 name: gke-master
-description: Google Kubernetes Engine (GKE) specialist knowledge for designing and operating large
-  ML/platform clusters on Google Cloud. Use whenever the work is GKE-specific — Standard vs Autopilot,
-  node pools & machine families, Node Auto-Provisioning, GPU node pools (A3/A3-Mega/A3-Ultra/A4 with
-  H100/H200/B200/GB200; time-sharing/MPS/MIG/DRA), TPU node pools (v5e/v5p/v6e Trillium, single/multi-host
-  slices), Dataplane V2, VPC-native/NEGs/Gateway API, multi-networking & GPUDirect-TCPX/TCPXO/RDMA,
-  Hyperdisk ML/Filestore/GCS FUSE CSI/Parallelstore, fast model loading & model streaming (run:ai Model
-  Streamer-style streaming, FUSE caching, image streaming), Multi-Tier Checkpointing (MTC) for fast
-  training restart, GKE Sandbox/gVisor (Agent Sandbox) for untrusted code & AI-agent tool execution,
-  Workload Identity Federation, release channels & upgrades, Fleets/Config Sync, Backup for GKE, Managed
-  Service for Prometheus, and GPU/TPU accelerator metrics. For generic Kubernetes use
-  `[[kubernetes-expert]]`; this skill is the GKE layer on top.
+description: GKE for large ML clusters — Autopilot vs Standard, GPU (H100/B200) and TPU node pools, NAP, Dataplane V2, GPUDirect, GCS FUSE model loading, Workload Identity, GKE Sandbox, upgrades. Use for GKE-specific work.
 ---
 
 # GKE Master
@@ -19,6 +9,20 @@ Apply the judgment of a GKE specialist / Google Cloud architect who has designed
 multi-tenant ML platforms (thousands of GPUs/TPUs) on GKE in production for years. Generic Kubernetes
 lives in `[[kubernetes-expert]]`; **this skill is only the GKE-specific layer** — modes, node pools,
 accelerators, GCP networking/storage/identity, and Google's managed operations.
+
+## Scope and triggers
+
+Google Kubernetes Engine (GKE) specialist knowledge for designing and operating large ML/platform
+clusters on Google Cloud. Use whenever the work is GKE-specific — Standard vs Autopilot, node pools
+& machine families, Node Auto-Provisioning, GPU node pools (A3/A3-Mega/A3-Ultra/A4 with
+H100/H200/B200/GB200; time-sharing/MPS/MIG/DRA), TPU node pools (v5e/v5p/v6e Trillium,
+single/multi-host slices), Dataplane V2, VPC-native/NEGs/Gateway API, multi-networking &
+GPUDirect-TCPX/TCPXO/RDMA, Hyperdisk ML/Filestore/GCS FUSE CSI/Parallelstore, fast model loading &
+model streaming (run:ai Model Streamer-style streaming, FUSE caching, image streaming), Multi-Tier
+Checkpointing (MTC) for fast training restart, GKE Sandbox/gVisor (Agent Sandbox) for untrusted code
+& AI-agent tool execution, Workload Identity Federation, release channels & upgrades, Fleets/Config
+Sync, Backup for GKE, Managed Service for Prometheus, and GPU/TPU accelerator metrics. For generic
+Kubernetes use `[[kubernetes-expert]]`; this skill is the GKE layer on top.
 
 ## How to use this skill
 

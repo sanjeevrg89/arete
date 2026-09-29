@@ -1,15 +1,6 @@
 ---
 name: graph-ml-gnns
-description: World-class graph machine learning and Graph Neural Network (GNN) judgment for production —
-  node classification, link prediction, graph classification/regression, community detection, and
-  heterogeneous/knowledge-graph learning. Use when working with graph-structured data, relational data
-  modeled as nodes/edges, or any GNN task; when choosing or implementing GCN, GraphSAGE, GAT, GIN, R-GCN,
-  or graph transformers; when scaling GNNs (neighbor sampling, Cluster-GCN, GraphSAINT, distributed/
-  partitioned training, serving); when using PyTorch Geometric (PyG) or DGL; or for graph-based
-  recommendation, fraud/anomaly detection on transaction graphs, molecular property prediction/drug
-  discovery, knowledge-graph completion, and GNNs for time series (GNN4TS). Covers message passing,
-  over-smoothing/over-squashing, expressivity (1-WL), transductive vs inductive splits, edge leakage,
-  and OGB benchmarks.
+description: Graph ML and GNNs — GraphSAGE, GAT, graph transformers, neighbor sampling at billion-edge scale, PyG/DGL, link prediction, edge leakage. Use for graph data such as fraud rings, recommendations, molecules, or knowledge graphs.
 ---
 
 # Graph ML & GNNs
@@ -18,6 +9,19 @@ Apply the judgment of an engineer who has shipped GNNs on billion-edge graphs in
 recommendations, fraud, molecules, knowledge graphs. The first decision is always **whether you even
 need a graph model**; the second is **whether it will scale**. Most failed GNN projects die on one of
 those two, not on architecture choice.
+
+## Scope and triggers
+
+World-class graph machine learning and Graph Neural Network (GNN) judgment for production — node
+classification, link prediction, graph classification/regression, community detection, and
+heterogeneous/knowledge-graph learning. Use when working with graph-structured data, relational data
+modeled as nodes/edges, or any GNN task; when choosing or implementing GCN, GraphSAGE, GAT, GIN,
+R-GCN, or graph transformers; when scaling GNNs (neighbor sampling, Cluster-GCN, GraphSAINT,
+distributed/ partitioned training, serving); when using PyTorch Geometric (PyG) or DGL; or for
+graph-based recommendation, fraud/anomaly detection on transaction graphs, molecular property
+prediction/drug discovery, knowledge-graph completion, and GNNs for time series (GNN4TS). Covers
+message passing, over-smoothing/over-squashing, expressivity (1-WL), transductive vs inductive
+splits, edge leakage, and OGB benchmarks.
 
 ## How to use this skill
 

@@ -1,15 +1,6 @@
 ---
 name: k8s-manifest-scaffolder
-description: Use this to GENERATE production-grade Kubernetes manifests from a short spec — turn a one-line
-  ask like "stateless API, 3 replicas, needs a config + secret, autoscale on CPU" or "Postgres
-  StatefulSet with 50Gi per pod" or "nightly batch job" or "multi-host vLLM inference" into correct,
-  ready-to-apply YAML. Picks the right workload kind (Deployment, StatefulSet + volumeClaimTemplates,
-  Job/CronJob, DaemonSet, JobSet, LeaderWorkerSet) and bakes in safe defaults: resource requests+limits,
-  liveness/readiness/startup probes, hardened securityContext (non-root, drop ALL caps,
-  readOnlyRootFilesystem), PodDisruptionBudget, recommended labels, topologySpreadConstraints, a Service,
-  an HPA when scaling is requested, and an optional default-deny NetworkPolicy. Emits manifests plus a
-  `kubectl apply --dry-run=server` validation note. Use when scaffolding/bootstrapping new K8s YAML,
-  Helm/Kustomize bases, or example manifests. For deep K8s judgment/debugging see [[kubernetes-expert]].
+description: Generates production-ready Kubernetes YAML from a one-line spec — right workload kind with requests/limits, probes, hardened securityContext, PDB, spread, HPA, NetworkPolicy. Use when bootstrapping manifests or Helm/Kustomize bases.
 ---
 
 # K8s Manifest Scaffolder (spec → production manifests)
@@ -18,6 +9,20 @@ Generate manifests with the judgment of an engineer who has shipped these to pro
 This is a **doer**: given a short spec, you EMIT correct, hardened, ready-to-apply Kubernetes YAML —
 not advice about Kubernetes. Safe defaults are baked into every artifact so the generated output is
 production-grade by construction, never a bare skeleton the user must harden afterward.
+
+## Scope and triggers
+
+Use this to GENERATE production-grade Kubernetes manifests from a short spec — turn a one-line ask
+like "stateless API, 3 replicas, needs a config + secret, autoscale on CPU" or "Postgres StatefulSet
+with 50Gi per pod" or "nightly batch job" or "multi-host vLLM inference" into correct,
+ready-to-apply YAML. Picks the right workload kind (Deployment, StatefulSet + volumeClaimTemplates,
+Job/CronJob, DaemonSet, JobSet, LeaderWorkerSet) and bakes in safe defaults: resource
+requests+limits, liveness/readiness/startup probes, hardened securityContext (non-root, drop ALL
+caps, readOnlyRootFilesystem), PodDisruptionBudget, recommended labels, topologySpreadConstraints, a
+Service, an HPA when scaling is requested, and an optional default-deny NetworkPolicy. Emits
+manifests plus a `kubectl apply --dry-run=server` validation note. Use when
+scaffolding/bootstrapping new K8s YAML, Helm/Kustomize bases, or example manifests. For deep K8s
+judgment/debugging see [[kubernetes-expert]].
 
 ## How to use this skill
 

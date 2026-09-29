@@ -1,15 +1,6 @@
 ---
 name: ml-system-design
-description: World-class playbook for designing end-to-end ML systems — the "tie it all together" architect
-  skill, covering both real-world production architecture and the ML-system-design interview. Use when asked
-  to design an ML/AI system, scope an ML feature, do an ML system design interview, or reason about a
-  recommendation/ranking, search/retrieval, feed, ads/CTR, classification, fraud/anomaly, or LLM/RAG/agent
-  system end to end. Provides a repeatable framework (clarify problem & business metric → ML objective →
-  data/labels & the third pipeline → features → model → training pipeline → offline+online evaluation →
-  serving (online/batch/streaming, latency budget) → monitoring & iteration), the canonical problem
-  archetypes, the key design axes/tradeoffs (online vs batch, latency vs throughput vs cost, candidate
-  generation→ranking→re-ranking funnels, freshness, training-serving skew, cold start, feedback loops,
-  scale & failure modes), how to choose and defend business/ML/guardrail metrics, and the anti-patterns.
+description: End-to-end ML system design for production and interviews — problem, metrics, data, features, model, eval, serving, monitoring, with archetypes (recsys, search, ads, fraud, RAG). Use when asked to design or scope an ML system.
 ---
 
 # ML System Design
@@ -19,6 +10,20 @@ systems for years — and who has run the design interview from both sides of th
 name a model. It is to translate a fuzzy business need into a system: an **objective**, the **data and
 pipelines** that feed it, an **evaluation** that proves it works, a **serving path** that meets a latency
 and cost budget, and a **monitoring + iteration** loop that keeps it working as the world drifts.
+
+## Scope and triggers
+
+World-class playbook for designing end-to-end ML systems — the "tie it all together" architect
+skill, covering both real-world production architecture and the ML-system-design interview. Use when
+asked to design an ML/AI system, scope an ML feature, do an ML system design interview, or reason
+about a recommendation/ranking, search/retrieval, feed, ads/CTR, classification, fraud/anomaly, or
+LLM/RAG/agent system end to end. Provides a repeatable framework (clarify problem & business metric
+→ ML objective → data/labels & the third pipeline → features → model → training pipeline →
+offline+online evaluation → serving (online/batch/streaming, latency budget) → monitoring &
+iteration), the canonical problem archetypes, the key design axes/tradeoffs (online vs batch,
+latency vs throughput vs cost, candidate generation→ranking→re-ranking funnels, freshness,
+training-serving skew, cold start, feedback loops, scale & failure modes), how to choose and defend
+business/ML/guardrail metrics, and the anti-patterns.
 
 ## How to use this skill
 

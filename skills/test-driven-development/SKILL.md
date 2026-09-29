@@ -1,17 +1,6 @@
 ---
 name: test-driven-development
-description: >
-  The Build stage of the engineering lifecycle done right — implement features and fixes test-first
-  using red → green → refactor, keeping the build green with small commits. Use whenever you are about
-  to write or change behavior: a new function, a bug fix, a controller/reconciler, a data transform,
-  a training/serving config, or an ML behavior change. Tailored to AI infra / ML where people claim
-  "you can't TDD this": shows what testing actually looks like — table-driven unit tests, controller
-  tests with envtest, pipeline/integration tests, eval-as-test for stochastic ML behavior (invariants,
-  contracts, properties, metric thresholds — not exact tokens), golden/snapshot tests, the race
-  detector, determinism via injected seeds/clocks/fakes, and smoke tests for manifests/IaC. Covers the
-  test pyramid, fakes-over-mocks, CI gates, and the checkpoint (tests written, passing, race-clean)
-  before Verify/Review. Scope: AI-infra/ML work — for general application-level TDD loops prefer a
-  generic TDD skill (e.g. the vendored mattpocock `tdd`) when installed.
+description: Test-first for AI-infra/ML code — red-green-refactor, table-driven tests, envtest for controllers, manifest tests, eval-as-test for stochastic model behavior. Use before changing infra/ML behavior; general app TDD fits tdd.
 ---
 
 # Test-Driven Development (the Build stage)
@@ -26,6 +15,20 @@ The reflex this skill kills: "TDD doesn't apply to ML/infra because outputs are 
 controller / it's just YAML." It does apply. You test the **deterministic surface** (data transforms,
 configs, control logic, contracts) directly, and you gate the **stochastic surface** (model behavior)
 with **eval thresholds**. Reproducibility is a feature you build in, not an accident you hope for.
+
+## Scope and triggers
+
+The Build stage of the engineering lifecycle done right — implement features and fixes test-first
+using red → green → refactor, keeping the build green with small commits. Use whenever you are about
+to write or change behavior: a new function, a bug fix, a controller/reconciler, a data transform, a
+training/serving config, or an ML behavior change. Tailored to AI infra / ML where people claim "you
+can't TDD this": shows what testing actually looks like — table-driven unit tests, controller tests
+with envtest, pipeline/integration tests, eval-as-test for stochastic ML behavior (invariants,
+contracts, properties, metric thresholds — not exact tokens), golden/snapshot tests, the race
+detector, determinism via injected seeds/clocks/fakes, and smoke tests for manifests/IaC. Covers the
+test pyramid, fakes-over-mocks, CI gates, and the checkpoint (tests written, passing, race-clean)
+before Verify/Review. Scope: AI-infra/ML work — for general application-level TDD loops prefer a
+generic TDD skill (e.g. the vendored mattpocock `tdd`) when installed.
 
 ## How to use this skill
 

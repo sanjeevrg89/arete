@@ -1,13 +1,6 @@
 ---
 name: ray-on-kubernetes
-description: Expert guidance for running Ray on Kubernetes via the KubeRay operator — RayCluster, RayJob,
-  and RayService CRDs for distributed training (Ray Train), HPO (Ray Tune), model serving (Ray Serve),
-  streaming batch inference and data (Ray Data), and RL/RLHF (RLlib). Use when authoring or debugging
-  KubeRay manifests, sizing head nodes, configuring the Ray autoscaler, placement groups for gang
-  scheduling, GCS fault tolerance with external Redis, object-store/plasma spilling, GPU/TPU pools on
-  GKE, or queueing RayJobs with Kueue. Covers the Ray core mental model (tasks, actors, object store,
-  GCS, raylets, ownership), zero-downtime RayService upgrades, and KubeRay troubleshooting (pending
-  actors/tasks, autoscaler not scaling, GCS restart, OOM).
+description: Ray on Kubernetes with KubeRay — RayCluster, RayJob, RayService for Train, Tune, Serve, Data, RLlib; autoscaler, placement groups, GCS fault tolerance. Use for KubeRay manifests or Ray jobs that hang, OOM, or won't scale.
 ---
 
 # Ray on Kubernetes (KubeRay)
@@ -17,6 +10,17 @@ production for years — for large-scale training, RLHF, batch inference, and HA
 distributed runtime and Kubernetes' scheduling model are two different control planes; the whole job
 is making them cooperate cleanly. Get the head node, the object store, placement groups, and the
 autoscaler right and almost everything else follows.
+
+## Scope and triggers
+
+Expert guidance for running Ray on Kubernetes via the KubeRay operator — RayCluster, RayJob, and
+RayService CRDs for distributed training (Ray Train), HPO (Ray Tune), model serving (Ray Serve),
+streaming batch inference and data (Ray Data), and RL/RLHF (RLlib). Use when authoring or debugging
+KubeRay manifests, sizing head nodes, configuring the Ray autoscaler, placement groups for gang
+scheduling, GCS fault tolerance with external Redis, object-store/plasma spilling, GPU/TPU pools on
+GKE, or queueing RayJobs with Kueue. Covers the Ray core mental model (tasks, actors, object store,
+GCS, raylets, ownership), zero-downtime RayService upgrades, and KubeRay troubleshooting (pending
+actors/tasks, autoscaler not scaling, GCS restart, OOM).
 
 ## How to use this skill
 

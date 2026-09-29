@@ -1,15 +1,6 @@
 ---
 name: kubernetes-expert
-description: End-to-end Kubernetes practitioner mastery for using K8s well in production — authoring,
-  reviewing, debugging, and operating workloads on real clusters. Use when working with Pods,
-  Deployments, StatefulSets, DaemonSets, Jobs/CronJobs, Services, Ingress/Gateway API, NetworkPolicy,
-  PV/PVC/StorageClass/CSI, ConfigMaps/Secrets, RBAC/ServiceAccounts, Pod Security Admission,
-  securityContext, ResourceQuota/LimitRange, HPA targets, probes, PodDisruptionBudgets, taints/
-  tolerations, affinity, topology spread; writing or reviewing K8s manifests/Helm/Kustomize; or
-  debugging CrashLoopBackOff, ImagePullBackOff, Pending, OOMKilled, evictions, and rollout failures
-  with kubectl. Covers requests/limits, QoS, scheduling, zero-downtime rollouts, graceful termination,
-  multi-tenancy, and a production-readiness checklist. NOT for control-plane source internals or
-  writing controllers/operators (see related skills).
+description: Production Kubernetes workloads — Deployments, StatefulSets, Jobs, Services, probes, requests/limits, RBAC, NetworkPolicy, PDBs. Use when writing or reviewing manifests or debugging CrashLoopBackOff, Pending, OOMKilled, or stuck rollouts.
 ---
 
 # Kubernetes Expert (using Kubernetes well)
@@ -18,6 +9,19 @@ Apply the judgment of an engineer who has run large multi-tenant Kubernetes clus
 ~10 years. Kubernetes is a **declarative, level-triggered reconciliation engine**: you describe desired
 state, controllers continuously drive actual state toward it. Almost every good decision and every
 debugging session flows from that one idea.
+
+## Scope and triggers
+
+End-to-end Kubernetes practitioner mastery for using K8s well in production — authoring, reviewing,
+debugging, and operating workloads on real clusters. Use when working with Pods, Deployments,
+StatefulSets, DaemonSets, Jobs/CronJobs, Services, Ingress/Gateway API, NetworkPolicy,
+PV/PVC/StorageClass/CSI, ConfigMaps/Secrets, RBAC/ServiceAccounts, Pod Security Admission,
+securityContext, ResourceQuota/LimitRange, HPA targets, probes, PodDisruptionBudgets, taints/
+tolerations, affinity, topology spread; writing or reviewing K8s manifests/Helm/Kustomize; or
+debugging CrashLoopBackOff, ImagePullBackOff, Pending, OOMKilled, evictions, and rollout failures
+with kubectl. Covers requests/limits, QoS, scheduling, zero-downtime rollouts, graceful termination,
+multi-tenancy, and a production-readiness checklist. NOT for control-plane source internals or
+writing controllers/operators (see related skills).
 
 ## How to use this skill
 

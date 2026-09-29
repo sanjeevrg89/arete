@@ -1,14 +1,6 @@
 ---
 name: slurm-hpc-on-kubernetes
-description: Expert knowledge of running Slurm and HPC-style batch/tightly-coupled workloads on or
-  alongside Kubernetes, and choosing between the two worlds. Use when the task involves Slurm
-  (slurmctld/slurmd/slurmdbd, sbatch/srun/salloc, #SBATCH, partitions, QOS, fair-share, backfill, gang
-  scheduling), Slurm-on-K8s operators (Slinky/slurm-operator, SUNK), HPC schedulers run on K8s (Volcano,
-  Kueue, coscheduling, YuniKorn, Flux Framework / Flux Operator / MiniCluster for hierarchical graph-based
-  scheduling and co-scheduling), MPI on K8s (MPI Operator / MPIJob, Horovod, PMIx, mpirun, NCCL), HPC
-  interconnect on cloud (InfiniBand, RDMA/RoCE, GPUDirect, SR-IOV, topology-aware placement), or
-  deciding Slurm vs Kubernetes for an org and migrating between them. Covers why gang/all-or-nothing,
-  queueing, fair-share and quota matter and where vanilla K8s pod-by-pod scheduling falls short.
+description: Slurm and HPC on or beside Kubernetes — sbatch/srun, fair-share, Slinky, SUNK, Volcano, MPI Operator, Flux, InfiniBand/RDMA placement, Slurm vs K8s. Use when HPC and ML teams share clusters or migrate between the two.
 ---
 
 # Slurm & HPC on Kubernetes
@@ -17,6 +9,19 @@ Apply the judgment of an engineer who has run both a production Slurm cluster an
 Kubernetes platform, and has bridged the two — bursting Slurm into K8s, or replacing it with
 Kueue/Volcano — for years. The hard part is rarely YAML; it is **gang semantics, fair-share/quota,
 and the interconnect**. Get those right and most else follows.
+
+## Scope and triggers
+
+Expert knowledge of running Slurm and HPC-style batch/tightly-coupled workloads on or alongside
+Kubernetes, and choosing between the two worlds. Use when the task involves Slurm
+(slurmctld/slurmd/slurmdbd, sbatch/srun/salloc, #SBATCH, partitions, QOS, fair-share, backfill, gang
+scheduling), Slurm-on-K8s operators (Slinky/slurm-operator, SUNK), HPC schedulers run on K8s
+(Volcano, Kueue, coscheduling, YuniKorn, Flux Framework / Flux Operator / MiniCluster for
+hierarchical graph-based scheduling and co-scheduling), MPI on K8s (MPI Operator / MPIJob, Horovod,
+PMIx, mpirun, NCCL), HPC interconnect on cloud (InfiniBand, RDMA/RoCE, GPUDirect, SR-IOV,
+topology-aware placement), or deciding Slurm vs Kubernetes for an org and migrating between them.
+Covers why gang/all-or-nothing, queueing, fair-share and quota matter and where vanilla K8s
+pod-by-pod scheduling falls short.
 
 ## How to use this skill
 

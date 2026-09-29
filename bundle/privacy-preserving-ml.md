@@ -1,17 +1,6 @@
 ---
 name: privacy-preserving-ml
-description: Privacy-enhancing technologies (PETs) for machine learning — the engineering techniques to
-  train and serve models without leaking private training data. Use when you must train/fine-tune/serve
-  on sensitive data (PII, PHI, financial, on-device), when facing membership-inference / model-inversion
-  / training-data-extraction (memorization) attacks, or when a requirement says "private", "anonymized",
-  "GDPR/CCPA", "right-to-be-forgotten", "data can't leave the device/silo", or "no raw data sharing".
-  Covers differential privacy (the (ε,δ) definition, DP-SGD gradient clipping + noise, privacy accounting
-  via RDP/moments accountant/PRV, DP-FTRL, DP fine-tuning & synthetic data), federated learning (FedAvg,
-  cross-device vs cross-silo, non-IID, secure aggregation, FL+DP composition, TFF/Flower/FedML/PySyft),
-  cryptographic PETs (homomorphic encryption, secure multiparty computation, private set intersection,
-  trusted execution environments / confidential computing), and machine unlearning (SISA, exact vs
-  approximate, verification). The engineering layer — distinct from policy ([[responsible-ai-governance]])
-  and infra ([[ai-security-on-gke]]).
+description: Privacy-preserving ML — differential privacy (DP-SGD), federated learning, secure aggregation, homomorphic encryption, MPC, TEEs, machine unlearning. Use when training on sensitive data (PII/PHI, GDPR, right to be forgotten).
 ---
 
 # Privacy-Preserving Machine Learning
@@ -30,6 +19,21 @@ a guarantee.
 This is the **engineering** skill: the PET mechanisms themselves. The policy/fairness/model-card layer is
 [[responsible-ai-governance]]; the runtime/infra hardening (TEEs on a cluster, model-theft defense) is
 [[ai-security-on-gke]]; the attacks as adversarial robustness live in [[adversarial-ml-robustness]].
+
+## Scope and triggers
+
+Privacy-enhancing technologies (PETs) for machine learning — the engineering techniques to train and
+serve models without leaking private training data. Use when you must train/fine-tune/serve on
+sensitive data (PII, PHI, financial, on-device), when facing membership-inference / model-inversion
+/ training-data-extraction (memorization) attacks, or when a requirement says "private",
+"anonymized", "GDPR/CCPA", "right-to-be-forgotten", "data can't leave the device/silo", or "no raw
+data sharing". Covers differential privacy (the (ε,δ) definition, DP-SGD gradient clipping + noise,
+privacy accounting via RDP/moments accountant/PRV, DP-FTRL, DP fine-tuning & synthetic data),
+federated learning (FedAvg, cross-device vs cross-silo, non-IID, secure aggregation, FL+DP
+composition, TFF/Flower/FedML/PySyft), cryptographic PETs (homomorphic encryption, secure multiparty
+computation, private set intersection, trusted execution environments / confidential computing), and
+machine unlearning (SISA, exact vs approximate, verification). The engineering layer — distinct from
+policy ([[responsible-ai-governance]]) and infra ([[ai-security-on-gke]]).
 
 ## How to use this skill
 

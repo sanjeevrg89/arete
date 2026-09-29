@@ -1,14 +1,6 @@
 ---
 name: gke-inference-gateway
-description: Expert LLM-aware inference routing on Kubernetes with the Gateway API Inference Extension
-  (the OSS project) and the GKE Inference Gateway as a managed implementation. Use when fronting large
-  fleets of model servers (vLLM, JetStream/MaxText, Triton, SGLang) and you need model/queue/KV-cache/
-  prefix-cache/LoRA-aware request routing instead of round-robin L7 load balancing. Covers InferencePool,
-  InferenceModel/InferenceObjective, the Endpoint Picker (EPP) extension, Gateway + HTTPRoute wiring,
-  criticality/fairness, traffic splitting and canary across model versions, OpenAI-compatible routing,
-  per-model observability (TTFT, queue depth, KV-cache utilization), and when to use it vs a plain
-  Service / KServe / generic gateway. Triggers: InferencePool, InferenceModel, Endpoint Picker, EPP,
-  inference.networking.k8s.io, body-based routing, smart/inference routing for LLMs on GKE.
+description: LLM-aware load balancing with the Gateway API Inference Extension and GKE Inference Gateway — InferencePool, Endpoint Picker, KV-cache/prefix/LoRA-aware routing, model canaries. Use when round-robin wastes a vLLM fleet.
 ---
 
 # GKE Inference Gateway / Gateway API Inference Extension
@@ -21,6 +13,19 @@ The standard here is the **Gateway API Inference Extension** (`gateway-api-infer
 OSS Kubernetes SIG-Network project). The **GKE Inference Gateway** is one managed implementation of it.
 This API is **evolving fast** — always verify the exact API group/version and field names against the
 current project/docs before authoring manifests.
+
+## Scope and triggers
+
+Expert LLM-aware inference routing on Kubernetes with the Gateway API Inference Extension (the OSS
+project) and the GKE Inference Gateway as a managed implementation. Use when fronting large fleets
+of model servers (vLLM, JetStream/MaxText, Triton, SGLang) and you need model/queue/KV-cache/
+prefix-cache/LoRA-aware request routing instead of round-robin L7 load balancing. Covers
+InferencePool, InferenceModel/InferenceObjective, the Endpoint Picker (EPP) extension, Gateway +
+HTTPRoute wiring, criticality/fairness, traffic splitting and canary across model versions,
+OpenAI-compatible routing, per-model observability (TTFT, queue depth, KV-cache utilization), and
+when to use it vs a plain Service / KServe / generic gateway. Triggers: InferencePool,
+InferenceModel, Endpoint Picker, EPP, inference.networking.k8s.io, body-based routing,
+smart/inference routing for LLMs on GKE.
 
 ## How to use this skill
 

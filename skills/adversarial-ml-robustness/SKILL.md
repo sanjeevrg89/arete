@@ -1,14 +1,6 @@
 ---
 name: adversarial-ml-robustness
-description: Model-level adversarial machine learning and robustness — at the bar of a researcher who breaks
-  and defends models for a living. Use when threat-modeling an ML/LLM model, evaluating or claiming
-  robustness, or defending against evasion / adversarial examples (FGSM, PGD, C&W, transferable & patch/
-  physical attacks), data poisoning, backdoors/trojans (clean-label, trigger-based), model extraction/
-  stealing, model inversion, membership inference, or LLM jailbreaks / training-data extraction. Covers the
-  NIST Adversarial ML taxonomy (AI 100-2e2025) and MITRE ATLAS; threat models (white/black/gray-box, Lp
-  budgets); defenses and their limits (adversarial training, certified/randomized smoothing, why defensive
-  distillation & gradient masking are false security); and the core skill — honest robustness evaluation
-  with adaptive attacks, AutoAttack, and RobustBench. Defensive, not an attack playbook.
+description: Defensive adversarial ML — evasion attacks (PGD, AutoAttack), data poisoning, backdoors, model extraction, membership inference, jailbreaks. Use when threat-modeling a model, evaluating robustness, or vetting third-party weights.
 ---
 
 # Adversarial ML & Robustness
@@ -24,6 +16,19 @@ Boundary: this is **model-level adversarial ML** (perturbations, poisoning, extr
 inference, jailbreaks-as-evasion, robustness evaluation). Cloud/runtime/infra security, guardrails,
 sandboxing, and supply-chain *enforcement* live in `[[ai-security-on-gke]]`. They compose: this skill says
 *what* to defend against; that one says *where in the platform* to enforce it.
+
+## Scope and triggers
+
+Model-level adversarial machine learning and robustness — at the bar of a researcher who breaks and
+defends models for a living. Use when threat-modeling an ML/LLM model, evaluating or claiming
+robustness, or defending against evasion / adversarial examples (FGSM, PGD, C&W, transferable &
+patch/ physical attacks), data poisoning, backdoors/trojans (clean-label, trigger-based), model
+extraction/ stealing, model inversion, membership inference, or LLM jailbreaks / training-data
+extraction. Covers the NIST Adversarial ML taxonomy (AI 100-2e2025) and MITRE ATLAS; threat models
+(white/black/gray-box, Lp budgets); defenses and their limits (adversarial training,
+certified/randomized smoothing, why defensive distillation & gradient masking are false security);
+and the core skill — honest robustness evaluation with adaptive attacks, AutoAttack, and
+RobustBench. Defensive, not an attack playbook.
 
 ## How to use this skill
 

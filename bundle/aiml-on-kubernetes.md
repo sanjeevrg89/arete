@@ -1,16 +1,6 @@
 ---
 name: aiml-on-kubernetes
-description: Umbrella/strategy skill for running the full ML lifecycle on Kubernetes and GKE at frontier
-  scale — training, inference/serving, fine-tuning, RL/RLHF, and agentic workloads. Use when the task
-  involves GPUs (H100/H200/B200/GB200, device plugin, MIG, time-slicing, DRA) or TPUs (v5e/v5p/v6e
-  Trillium, single/multi-host slices, topology) on K8s/GKE; gang/queued batch jobs; multi-host distributed
-  training (FSDP/ZeRO, tensor/pipeline/sequence parallel); checkpointing to GCS/Parallelstore; multi-host
-  vLLM/SGLang serving with LWS; GPUDirect-TCPX/RDMA/NCCL networking; accelerator observability (DCGM,
-  Managed Prometheus), MFU/goodput, quota and multi-tenancy. Also covers AI FinOps — accelerator cost and
-  capacity planning: MFU/goodput and $/token unit economics, right-sizing, Spot + checkpointing,
-  reservations vs on-demand vs committed-use, scale-to-zero, GPU/TPU-hour estimation, and cost attribution/
-  showback by team/namespace. Routes to deeper sibling skills for framework internals; owns the end-to-end
-  picture and the K8s-specific orchestration.
+description: Umbrella for ML platforms on Kubernetes/GKE — GPUs/TPUs, gang-scheduled training, multi-host serving, checkpoint storage, accelerator observability, quota, AI FinOps ($/token, Spot, reservations). Use to design one end to end.
 ---
 
 # AI/ML on Kubernetes & GKE
@@ -20,6 +10,20 @@ GKE: you size accelerators, schedule gang jobs that either run whole or not at a
 NCCL hits line rate, keep MFU and goodput high across thousands of chips, and serve trillion-parameter
 models across hosts. This is the **map of the territory** — it gives the end-to-end lifecycle and the
 K8s/GKE orchestration, and routes to the deeper sibling skills for framework internals.
+
+## Scope and triggers
+
+Umbrella/strategy skill for running the full ML lifecycle on Kubernetes and GKE at frontier scale —
+training, inference/serving, fine-tuning, RL/RLHF, and agentic workloads. Use when the task involves
+GPUs (H100/H200/B200/GB200, device plugin, MIG, time-slicing, DRA) or TPUs (v5e/v5p/v6e Trillium,
+single/multi-host slices, topology) on K8s/GKE; gang/queued batch jobs; multi-host distributed
+training (FSDP/ZeRO, tensor/pipeline/sequence parallel); checkpointing to GCS/Parallelstore;
+multi-host vLLM/SGLang serving with LWS; GPUDirect-TCPX/RDMA/NCCL networking; accelerator
+observability (DCGM, Managed Prometheus), MFU/goodput, quota and multi-tenancy. Also covers AI
+FinOps — accelerator cost and capacity planning: MFU/goodput and $/token unit economics,
+right-sizing, Spot + checkpointing, reservations vs on-demand vs committed-use, scale-to-zero,
+GPU/TPU-hour estimation, and cost attribution/ showback by team/namespace. Routes to deeper sibling
+skills for framework internals; owns the end-to-end picture and the K8s-specific orchestration.
 
 ## How to use this skill
 

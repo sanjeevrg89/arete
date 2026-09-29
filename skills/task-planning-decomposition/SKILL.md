@@ -1,14 +1,6 @@
 ---
 name: task-planning-decomposition
-description: The Plan stage of the engineering lifecycle — turn a reviewed spec into a sequenced set of
-  small, independently verifiable steps before writing code or burning compute. Use when starting any
-  non-trivial AI-infra / ML task (stand up multi-node training, build a data/eval pipeline, migrate a
-  serving stack, run an expensive experiment) and you are tempted to "just start coding". Covers
-  decomposition into vertical slices with per-step done-signals, riskiest/most-expensive-first
-  sequencing to de-risk before committing GPU-hours, spikes/prototypes for unknowns, planning for
-  partial failure (checkpointing, idempotent steps), the plan as a living reviewed checklist, and the
-  approach-review gate before Build. Triggers: "make a plan", "how should I break this down", "where do
-  I start", task estimation, sequencing dependencies, scoping a spike.
+description: Plan-stage discipline for AI-infra/ML work — split a spec into small verifiable slices, run the riskiest and most GPU-expensive first, spike unknowns. Use for "make a plan", "where do I start", or before committing compute.
 ---
 
 # Task Planning & Decomposition
@@ -21,6 +13,18 @@ work (expensive). De-risk before you commit GPU-hours.**
 This is the **Plan** stage of `[[engineering-lifecycle]]`: it sits after the spec is reviewed
 (`[[spec-driven-development]]`) and before you Build. The output is a written, reviewed plan — an
 ordered list of small steps, each with a clear "done" signal — not code.
+
+## Scope and triggers
+
+The Plan stage of the engineering lifecycle — turn a reviewed spec into a sequenced set of small,
+independently verifiable steps before writing code or burning compute. Use when starting any
+non-trivial AI-infra / ML task (stand up multi-node training, build a data/eval pipeline, migrate a
+serving stack, run an expensive experiment) and you are tempted to "just start coding". Covers
+decomposition into vertical slices with per-step done-signals, riskiest/most-expensive-first
+sequencing to de-risk before committing GPU-hours, spikes/prototypes for unknowns, planning for
+partial failure (checkpointing, idempotent steps), the plan as a living reviewed checklist, and the
+approach-review gate before Build. Triggers: "make a plan", "how should I break this down", "where
+do I start", task estimation, sequencing dependencies, scoping a spike.
 
 ## How to use this skill
 

@@ -1,6 +1,6 @@
 ---
 name: responsible-ai-governance
-description: Responsible AI governance, safety, fairness, and compliance — the discipline of building AI that is fair, safe, accountable, transparent, and auditable. Use when setting up AI governance (NIST AI RMF Govern/Map/Measure/Manage, EU AI Act risk tiers, ISO/IEC 42001, AI inventory, risk register, review board); writing transparency artifacts (model cards, datasheets for datasets, system cards, data statements, lineage); doing fairness/bias work (data/label/feedback bias, demographic parity vs equalized odds vs calibration and their impossibility, slice-based eval, pre/in/post-processing mitigation); LLM safety (harms taxonomy, red-teaming, jailbreak/misuse resistance, guardrails, hallucination/groundedness, safety evals, refusal/over-refusal, RLHF/Constitutional AI); privacy & data governance (PII, consent, data minimization, differential privacy, federated learning, machine unlearning / right-to-be-forgotten, training-data provenance & copyright); or accountability/ops (human oversight, AI incident response, audit logging, SHAP/LIME explainability and its limits, fairness-drift monitoring). The governance/ethics layer; adversarial/runtime security is the sibling [[ai-security-on-gke]].
+description: Responsible AI governance — NIST AI RMF, EU AI Act, ISO 42001, model cards, fairness metrics, LLM red-teaming and safety evals, explainability, audits. Use when setting up AI governance or compliance; runtime security is ai-security-on-gke.
 ---
 
 # Responsible AI Governance
@@ -13,6 +13,22 @@ compliance layer; adversarial and runtime security is the sibling concern [[ai-s
 > **The law and the standards move fast (it is 2026).** Never quote an EU AI Act date, threshold, tier,
 > or penalty — or any other regulatory number — from memory. Flag it "verify current" and check the
 > primary source. Engineers are not lawyers; loop in counsel for anything with regulatory teeth.
+
+## Scope and triggers
+
+Responsible AI governance, safety, fairness, and compliance — the discipline of building AI that is
+fair, safe, accountable, transparent, and auditable. Use when setting up AI governance (NIST AI RMF
+Govern/Map/Measure/Manage, EU AI Act risk tiers, ISO/IEC 42001, AI inventory, risk register, review
+board); writing transparency artifacts (model cards, datasheets for datasets, system cards, data
+statements, lineage); doing fairness/bias work (data/label/feedback bias, demographic parity vs
+equalized odds vs calibration and their impossibility, slice-based eval, pre/in/post-processing
+mitigation); LLM safety (harms taxonomy, red-teaming, jailbreak/misuse resistance, guardrails,
+hallucination/groundedness, safety evals, refusal/over-refusal, RLHF/Constitutional AI); privacy &
+data governance (PII, consent, data minimization, differential privacy, federated learning, machine
+unlearning / right-to-be-forgotten, training-data provenance & copyright); or accountability/ops
+(human oversight, AI incident response, audit logging, SHAP/LIME explainability and its limits,
+fairness-drift monitoring). The governance/ethics layer; adversarial/runtime security is the sibling
+[[ai-security-on-gke]].
 
 ## How to use this skill
 

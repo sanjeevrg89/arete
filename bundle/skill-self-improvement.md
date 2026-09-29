@@ -1,17 +1,6 @@
 ---
 name: skill-self-improvement
-description: How to build a self-improvement loop that makes an agent's own Skills (or any file-based
-  capability — prompts, runbooks, rubrics) get better over time from real-world feedback, instead of
-  doing the same thing on run #50 as on run #1. Use when you want an inner loop (apply a Skill to real
-  work and record every run) plus an outer loop (a scheduled/cloud agent that reads the run feedback and
-  opens a PR diffing the Skill file), with a verify gate so garbage never gets saved. Covers the
-  doer→signal→reviser shape, capturing the feedback signal (human edits, accepted/rejected, graders,
-  failing tests, GitHub issue relabels), the scheduled reviser that edits the Skill as a diff, the
-  adversarial verify gate before merge (never auto-merge a self-edit), distilling lessons into
-  anti-patterns/constraints so they can't regress, and running the loop durably (cron + checkpointing +
-  idempotency) on GitHub Actions, Warp/Oz, Inngest/Temporal, or Claude Code scheduled agents. The loop
-  layer above the static skill library; for the agent design patterns underneath it see
-  llm-app-agent-frameworks.
+description: A self-improvement loop for agent skills and prompts — log real runs, let a scheduled reviser propose diffs as PRs, gate them with adversarial checks, never auto-merge. Use when you want skills that improve from use.
 ---
 
 # Skill Self-Improvement Loops
@@ -20,6 +9,21 @@ Apply the judgment of an engineer who runs self-improving agents in production �
 isn't a crash, it's a loop that quietly optimizes toward the wrong thing because the verifier was weak.
 A Skill is a file. A self-improvement loop is the machinery that edits that file from real feedback,
 behind a gate, on a schedule — so your judgment is encoded once and compounds while you sleep.
+
+## Scope and triggers
+
+How to build a self-improvement loop that makes an agent's own Skills (or any file-based
+capability — prompts, runbooks, rubrics) get better over time from real-world feedback, instead of
+doing the same thing on run #50 as on run #1. Use when you want an inner loop (apply a Skill to
+real work and record every run) plus an outer loop (a scheduled/cloud agent that reads the run
+feedback and opens a PR diffing the Skill file), with a verify gate so garbage never gets saved.
+Covers the doer→signal→reviser shape, capturing the feedback signal (human edits,
+accepted/rejected, graders, failing tests, GitHub issue relabels), the scheduled reviser that
+edits the Skill as a diff, the adversarial verify gate before merge (never auto-merge a
+self-edit), distilling lessons into anti-patterns/constraints so they can't regress, and running
+the loop durably (cron + checkpointing + idempotency) on GitHub Actions, Warp/Oz,
+Inngest/Temporal, or Claude Code scheduled agents. The loop layer above the static skill library;
+for the agent design patterns underneath it see llm-app-agent-frameworks.
 
 ## How to use this skill
 

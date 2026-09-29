@@ -1,16 +1,6 @@
 ---
 name: edge-on-device-ml
-description: Deploying ML models on edge / mobile / embedded devices — the runtimes, hardware, and
-  conversion craft for running models off the datacenter. Use when targeting phones, laptops, wearables,
-  cameras, vehicles, or microcontrollers; when you see ExecuTorch, TensorFlow Lite / LiteRT, ONNX Runtime
-  Mobile/Web, Core ML / coremltools, MediaPipe, llama.cpp / ggml / GGUF, MLC-LLM, MNN, NCNN, TFLite
-  Micro; when targeting Apple Neural Engine, Qualcomm Hexagon, Google Tensor, Edge TPU / Coral, or
-  GPU/NPU delegates; or when the task is exporting/converting a model (torch.export, .pte, .tflite,
-  .mlpackage, .onnx), picking and tuning a delegate, debugging unsupported ops or numerical parity vs the
-  source model, INT8/INT4 on-device quantization and the quality cliff, on-device LLM KV-cache/memory
-  budgeting, OTA model updates and rollback, or on-device profiling. The general compression theory lives
-  in `[[inference-optimization]]`; THIS skill is the edge *deployment target* — runtimes, hardware,
-  conversion pipeline, and on-device validation.
+description: On-device ML for phones, laptops, and embedded — ExecuTorch, LiteRT/TFLite, Core ML, ONNX Runtime Mobile, llama.cpp/GGUF, NPU delegates. Use when exporting a model to a device, fixing unsupported ops or parity, or INT4 on device.
 ---
 
 # Edge / On-Device ML
@@ -20,6 +10,20 @@ microcontrollers in production: who knows that **the model that passed eval in y
 model that runs on the device** — conversion, quantization, and a fixed memory/thermal budget change its
 behavior — and that the only honest ship gate is **parity validation on the target hardware against the
 task that matters.**
+
+## Scope and triggers
+
+Deploying ML models on edge / mobile / embedded devices — the runtimes, hardware, and conversion
+craft for running models off the datacenter. Use when targeting phones, laptops, wearables, cameras,
+vehicles, or microcontrollers; when you see ExecuTorch, TensorFlow Lite / LiteRT, ONNX Runtime
+Mobile/Web, Core ML / coremltools, MediaPipe, llama.cpp / ggml / GGUF, MLC-LLM, MNN, NCNN, TFLite
+Micro; when targeting Apple Neural Engine, Qualcomm Hexagon, Google Tensor, Edge TPU / Coral, or
+GPU/NPU delegates; or when the task is exporting/converting a model (torch.export, .pte, .tflite,
+.mlpackage, .onnx), picking and tuning a delegate, debugging unsupported ops or numerical parity vs
+the source model, INT8/INT4 on-device quantization and the quality cliff, on-device LLM
+KV-cache/memory budgeting, OTA model updates and rollback, or on-device profiling. The general
+compression theory lives in `[[inference-optimization]]`; THIS skill is the edge *deployment target*
+— runtimes, hardware, conversion pipeline, and on-device validation.
 
 ## How to use this skill
 

@@ -1,17 +1,6 @@
 ---
 name: inference-optimization
-description: Model-level LLM inference optimization and efficiency — making models smaller, faster, and
-  cheaper to serve at the level of an engineer who squeezes frontier models onto fewer accelerators.
-  Use when quantizing (PTQ vs QAT, INT8/INT4, FP8, GPTQ, AWQ, SmoothQuant, GGUF, NF4, KV-cache quant),
-  pruning/sparsifying (structured, 2:4 semi-structured, layer/width pruning), distilling
-  (teacher→student, sequence-level/on-policy), or speeding up decode with speculative decoding (draft
-  models, Medusa, EAGLE, lookahead, n-gram, self-speculative). Also covers low-rank/structural
-  efficiency (LoRA, MoE, GQA/MQA/MLA, FlashAttention) and compilation/kernels (torch.compile/Inductor,
-  TensorRT-LLM engine build, ONNX Runtime, XLA, Triton/CUTLASS, CUDA graphs). Reach for it to reason
-  about the memory-bandwidth vs compute bound, arithmetic intensity, accuracy recovery, acceptance-rate
-  economics, and which technique buys latency vs throughput vs memory vs $/token vs quality. The serving
-  *engine* that runs the result is `[[serving-frameworks]]`; this is the compression/decode-acceleration
-  layer underneath it.
+description: Making models cheaper to serve — quantization (AWQ, GPTQ, FP8, INT4, KV cache), pruning, distillation, speculative decoding (EAGLE, Medusa), TensorRT-LLM builds. Use for latency, memory, or $/token work below the serving engine.
 ---
 
 # Inference Optimization (Model Compression & Decode Acceleration)
@@ -20,6 +9,21 @@ Apply the judgment of an engineer who has shipped frontier models onto a fractio
 they were trained on: who knows that **decode is memory-bandwidth-bound and prefill is compute-bound**,
 that every optimization is a trade against quality, and that the only honest way to ship one is to
 **eval before and after on the workload that matters**.
+
+## Scope and triggers
+
+Model-level LLM inference optimization and efficiency — making models smaller, faster, and cheaper
+to serve at the level of an engineer who squeezes frontier models onto fewer accelerators. Use when
+quantizing (PTQ vs QAT, INT8/INT4, FP8, GPTQ, AWQ, SmoothQuant, GGUF, NF4, KV-cache quant),
+pruning/sparsifying (structured, 2:4 semi-structured, layer/width pruning), distilling
+(teacher→student, sequence-level/on-policy), or speeding up decode with speculative decoding (draft
+models, Medusa, EAGLE, lookahead, n-gram, self-speculative). Also covers low-rank/structural
+efficiency (LoRA, MoE, GQA/MQA/MLA, FlashAttention) and compilation/kernels (torch.compile/Inductor,
+TensorRT-LLM engine build, ONNX Runtime, XLA, Triton/CUTLASS, CUDA graphs). Reach for it to reason
+about the memory-bandwidth vs compute bound, arithmetic intensity, accuracy recovery,
+acceptance-rate economics, and which technique buys latency vs throughput vs memory vs $/token vs
+quality. The serving *engine* that runs the result is `[[serving-frameworks]]`; this is the
+compression/decode-acceleration layer underneath it.
 
 ## How to use this skill
 

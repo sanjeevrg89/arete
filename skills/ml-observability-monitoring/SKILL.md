@@ -1,15 +1,6 @@
 ---
 name: ml-observability-monitoring
-description: Production ML/LLM observability and monitoring — the discipline of knowing when a deployed model
-  is silently degrading, with no errors and no stack trace. Use when designing or debugging model monitoring:
-  data/covariate drift, concept/label drift, prediction drift, training-serving skew, feature-attribution
-  drift; drift detectors (PSI, KL/JS divergence, KS test, Wasserstein, embedding drift) and their pitfalls;
-  data-quality validation (schema/range/null/cardinality/freshness, Great Expectations / TFDV style); model-
-  performance monitoring with delayed/absent ground truth, proxy metrics, slice/segment & fairness analysis,
-  calibration; LLM observability (OpenTelemetry GenAI tracing, spans for chains/agents/tools, Langfuse/Phoenix/
-  LangSmith, token/cost/latency TTFT/ITL, hallucination signals, online LLM-as-judge eval, guardrail hit rates);
-  alerting, retraining triggers, incident response for model regressions, and dashboards. Covers Evidently,
-  Arize, WhyLabs, Fiddler, Vertex AI Model Monitoring, Prometheus/Grafana. Not CI/CD or feature pipelines.
+description: Monitoring production ML and LLMs — data, concept, and prediction drift, training-serving skew, delayed labels, LLM tracing (OpenTelemetry, Langfuse), online evals, retrain triggers. Use when a deployed model may be silently degrading.
 ---
 
 # ML Observability & Monitoring
@@ -18,6 +9,20 @@ Apply the judgment of an engineer who owns the pager for production models and h
 week before anyone noticed. **The defining fact of ML monitoring: a model can be 100% healthy by every software
 SLO — no errors, p99 latency fine — while its predictions are quietly wrong.** Your job is to catch that
 *before* the business does.
+
+## Scope and triggers
+
+Production ML/LLM observability and monitoring — the discipline of knowing when a deployed model is
+silently degrading, with no errors and no stack trace. Use when designing or debugging model
+monitoring: data/covariate drift, concept/label drift, prediction drift, training-serving skew,
+feature-attribution drift; drift detectors (PSI, KL/JS divergence, KS test, Wasserstein, embedding
+drift) and their pitfalls; data-quality validation (schema/range/null/cardinality/freshness, Great
+Expectations / TFDV style); model- performance monitoring with delayed/absent ground truth, proxy
+metrics, slice/segment & fairness analysis, calibration; LLM observability (OpenTelemetry GenAI
+tracing, spans for chains/agents/tools, Langfuse/Phoenix/ LangSmith, token/cost/latency TTFT/ITL,
+hallucination signals, online LLM-as-judge eval, guardrail hit rates); alerting, retraining
+triggers, incident response for model regressions, and dashboards. Covers Evidently, Arize, WhyLabs,
+Fiddler, Vertex AI Model Monitoring, Prometheus/Grafana. Not CI/CD or feature pipelines.
 
 ## How to use this skill
 

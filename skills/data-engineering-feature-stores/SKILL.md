@@ -1,23 +1,6 @@
 ---
 name: data-engineering-feature-stores
-description: Expert data engineering for ML — the pipelines, feature stores, and data-quality discipline
-  that decide whether models work in production ("garbage in, garbage out"). Use when building or debugging
-  ML data pipelines (ingestion, validation, transformation, batch vs streaming), orchestration (Airflow,
-  Dagster, Flyte, Spark, Beam), the lakehouse (Delta Lake, Apache Iceberg, Hudi, Parquet), or data
-  versioning (DVC, LakeFS, lakeFS). Use for streaming & real-time features (Kafka/Pulsar, Flink, Spark
-  Structured Streaming, Beam, CDC/Debezium, windowed aggregations, watermarks, late/out-of-order data,
-  exactly-once, online/offline consistency) and real-time inference (fraud, recsys). Use for the analytics
-  /query side — data warehouses (BigQuery, Snowflake, Redshift) and OLAP/lakehouse query engines (Spark
-  SQL, Trino/Presto, DuckDB), columnar/partitioning/clustering and query cost, SQL for ML (window
-  functions, point-in-time/as-of joins, cohorting), and dbt-style transformation/label/feature derivation.
-  Use for feature stores (Feast, Tecton, Vertex AI Feature Store,
-  Featureform) — offline vs online store, the registry, materialization, feature freshness,
-  point-in-time-correct joins, and eliminating training-serving skew. Use for data quality & validation
-  (Great Expectations, TFDV, schema/distribution/anomaly checks, data contracts), labeling & dataset
-  curation (weak supervision, active learning, dedup/decontamination for LLM corpora), embedding/feature
-  pipelines, and governance (lineage, PII). Triggers on symptoms like train/serve skew, label leakage from
-  non-point-in-time joins, stale features, missing data validation, undocumented features, or duplicated
-  one-off feature code across training and serving.
+description: Data engineering for ML — batch/streaming pipelines (Spark, Flink, Kafka), lakehouse, feature stores (Feast, Tecton), point-in-time joins, data validation. Use to build ML data pipelines or fix training-serving skew and label leakage.
 ---
 
 # Data Engineering & Feature Stores for ML
@@ -27,6 +10,27 @@ Apply the judgment of a data/ML engineer who has run feature platforms in produc
 ceiling on production performance. Make the same feature logic serve training and serving, validate
 every dataset against an explicit contract, and never join a label to a feature computed after the label
 existed.
+
+## Scope and triggers
+
+Expert data engineering for ML — the pipelines, feature stores, and data-quality discipline that
+decide whether models work in production ("garbage in, garbage out"). Use when building or debugging
+ML data pipelines (ingestion, validation, transformation, batch vs streaming), orchestration
+(Airflow, Dagster, Flyte, Spark, Beam), the lakehouse (Delta Lake, Apache Iceberg, Hudi, Parquet),
+or data versioning (DVC, LakeFS, lakeFS). Use for streaming & real-time features (Kafka/Pulsar,
+Flink, Spark Structured Streaming, Beam, CDC/Debezium, windowed aggregations, watermarks,
+late/out-of-order data, exactly-once, online/offline consistency) and real-time inference (fraud,
+recsys). Use for the analytics /query side — data warehouses (BigQuery, Snowflake, Redshift) and
+OLAP/lakehouse query engines (Spark SQL, Trino/Presto, DuckDB), columnar/partitioning/clustering and
+query cost, SQL for ML (window functions, point-in-time/as-of joins, cohorting), and dbt-style
+transformation/label/feature derivation. Use for feature stores (Feast, Tecton, Vertex AI Feature
+Store, Featureform) — offline vs online store, the registry, materialization, feature freshness,
+point-in-time-correct joins, and eliminating training-serving skew. Use for data quality &
+validation (Great Expectations, TFDV, schema/distribution/anomaly checks, data contracts), labeling
+& dataset curation (weak supervision, active learning, dedup/decontamination for LLM corpora),
+embedding/feature pipelines, and governance (lineage, PII). Triggers on symptoms like train/serve
+skew, label leakage from non-point-in-time joins, stale features, missing data validation,
+undocumented features, or duplicated one-off feature code across training and serving.
 
 ## How to use this skill
 

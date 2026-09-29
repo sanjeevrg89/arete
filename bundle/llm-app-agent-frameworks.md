@@ -1,22 +1,6 @@
 ---
 name: llm-app-agent-frameworks
-description: Expert guidance for building and shipping production LLM applications and agentic systems.
-  Use when designing or reviewing agents — ReAct, tool/function calling, planning, reflection, routing,
-  multi-agent (supervisor/worker, handoffs), short/long-term memory, structured output / constrained
-  decoding, control-flow-as-graph. Covers prompt engineering and context engineering (system/user
-  prompts, few-shot, chain-of-thought, output schemas, prompt templating/versioning, decoding params,
-  context-window budgeting, retrieval/ordering/compression, lost-in-the-middle, context rot,
-  long-context-vs-RAG, prompt injection). Covers framework choice (Google ADK, LangChain/LangGraph,
-  LlamaIndex, CrewAI, AutoGen, Pydantic-AI, Haystack), MCP (Model Context Protocol) servers/clients/
-  transports/tools, connecting to OpenAI-compatible and self-hosted models, deploying agents on
-  Kubernetes/GKE (stateless vs session, queueing, scaling, sandboxed tool execution), RAG integration,
-  and agent reliability / durable execution for long-running agents (durable workflow engines — Temporal,
-  AWS Bedrock AgentCore, Restate, DBOS, Inngest — checkpoint/replay/resume, workflow-vs-activity split,
-  idempotency, retries/backoff, exactly-once side effects, timeouts/heartbeats, human-in-the-loop
-  pause/resume), plus production concerns: evals (LLM-as-judge), guardrails, OpenTelemetry GenAI tracing,
-  prompt/version management, cost & loop-bounding, caching. Triggers on agent loops, tool-calling code,
-  langgraph/langchain/adk/llama_index/crewai/autogen imports, mcp servers, durable execution, agent
-  reliability, long-running/async agents, and "build/ship an agent" tasks.
+description: Building production LLM apps and agents — tool calling, multi-agent, memory, context engineering, MCP, LangGraph/ADK/LlamaIndex, durable execution (Temporal), guardrails, evals. Use when designing, building, or debugging an agent.
 ---
 
 # LLM Applications & Agent Frameworks
@@ -25,6 +9,27 @@ Apply the judgment of an engineer who has shipped production agentic systems: th
 autonomy for the job, bounded loops, sandboxed tools, real evals, and full tracing. **The single most
 important instinct: an agent is a control-flow graph over an LLM — use the least autonomy that solves
 the problem, and put hard bounds back on everything the model gets to decide.**
+
+## Scope and triggers
+
+Expert guidance for building and shipping production LLM applications and agentic systems. Use when
+designing or reviewing agents — ReAct, tool/function calling, planning, reflection, routing,
+multi-agent (supervisor/worker, handoffs), short/long-term memory, structured output / constrained
+decoding, control-flow-as-graph. Covers prompt engineering and context engineering (system/user
+prompts, few-shot, chain-of-thought, output schemas, prompt templating/versioning, decoding params,
+context-window budgeting, retrieval/ordering/compression, lost-in-the-middle, context rot,
+long-context-vs-RAG, prompt injection). Covers framework choice (Google ADK, LangChain/LangGraph,
+LlamaIndex, CrewAI, AutoGen, Pydantic-AI, Haystack), MCP (Model Context Protocol) servers/clients/
+transports/tools, connecting to OpenAI-compatible and self-hosted models, deploying agents on
+Kubernetes/GKE (stateless vs session, queueing, scaling, sandboxed tool execution), RAG integration,
+and agent reliability / durable execution for long-running agents (durable workflow engines —
+Temporal, AWS Bedrock AgentCore, Restate, DBOS, Inngest — checkpoint/replay/resume,
+workflow-vs-activity split, idempotency, retries/backoff, exactly-once side effects,
+timeouts/heartbeats, human-in-the-loop pause/resume), plus production concerns: evals
+(LLM-as-judge), guardrails, OpenTelemetry GenAI tracing, prompt/version management, cost &
+loop-bounding, caching. Triggers on agent loops, tool-calling code,
+langgraph/langchain/adk/llama_index/crewai/autogen imports, mcp servers, durable execution, agent
+reliability, long-running/async agents, and "build/ship an agent" tasks.
 
 ## How to use this skill
 

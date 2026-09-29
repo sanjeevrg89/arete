@@ -1,6 +1,6 @@
 ---
 name: verification-and-debugging
-description: The Verify stage of the engineering lifecycle — prove a change actually works beyond unit tests, and when it doesn't, debug to root cause systematically. Use after building a feature/fix and before review/ship, or whenever something "should work" but you haven't run it for real, or the moment a bug appears in CI/staging/production. Covers verification beyond tests (integration/e2e/staging, checking against the spec's acceptance criteria, eval gates for ML behavior, reproducibility via seeds and pinned deps, load/soak and SLO verification), why AI-infra verification is uniquely hard (partial/silent distributed failures, ML degrading without errors, GPU "100% util but slow", nondeterminism, drift — "it ran without erroring" ≠ "it's correct"), and the systematic debugging method (reproduce → isolate/bisect/minimize → hypothesize → instrument-don't-guess → test → fix root cause → add regression test → prevent recurrence), including cross-rank/cross-layer differential diagnosis for distributed/GPU bugs. Scope: distributed/ML/infra systems; for single-process application bugs a dedicated diagnosis skill (e.g. the vendored mattpocock `diagnosing-bugs`) may fit better.
+description: Verify-stage discipline for distributed/ML systems — prove it works beyond unit tests (e2e, eval gates, soak), then debug to root cause (reproduce, bisect, instrument). Use before calling infra/ML work done; app bugs fit diagnosing-bugs.
 ---
 
 # Verification & Debugging
@@ -9,6 +9,22 @@ Apply the judgment of an engineer who has shipped AI/ML infrastructure to produc
 holds one line as sacred: **"it ran without erroring" is not "it's correct."** Unit tests check your
 code against your assumptions; this stage proves the *system* works against reality — and when it
 doesn't, finds the **root cause** by method, not by guessing.
+
+## Scope and triggers
+
+The Verify stage of the engineering lifecycle — prove a change actually works beyond unit tests, and
+when it doesn't, debug to root cause systematically. Use after building a feature/fix and before
+review/ship, or whenever something "should work" but you haven't run it for real, or the moment a
+bug appears in CI/staging/production. Covers verification beyond tests (integration/e2e/staging,
+checking against the spec's acceptance criteria, eval gates for ML behavior, reproducibility via
+seeds and pinned deps, load/soak and SLO verification), why AI-infra verification is uniquely hard
+(partial/silent distributed failures, ML degrading without errors, GPU "100% util but slow",
+nondeterminism, drift — "it ran without erroring" ≠ "it's correct"), and the systematic debugging
+method (reproduce → isolate/bisect/minimize → hypothesize → instrument-don't-guess → test → fix root
+cause → add regression test → prevent recurrence), including cross-rank/cross-layer differential
+diagnosis for distributed/GPU bugs. Scope: distributed/ML/infra systems; for single-process
+application bugs a dedicated diagnosis skill (e.g. the vendored mattpocock `diagnosing-bugs`) may
+fit better.
 
 ## How to use this skill
 

@@ -1,17 +1,6 @@
 ---
 name: triton-kernel-authoring
-description: Use this to WRITE and optimize a Triton GPU kernel — the doer's skill for producing working,
-  correctness-checked, autotuned, benchmarked Triton code (not for profiling or reading IR — that's
-  gpu-performance-engineering and ml-compilers-codegen). Covers the tile/SPMD programming model
-  (@triton.jit, tl.program_id, BLOCK_SIZE as tl.constexpr, tl.arange, boundary masking on tl.load/tl.store,
-  grid/launch with triton.cdiv, strides for multi-dim tiles, tl.dot for matmul/tensor-cores, tl.sum/tl.max
-  reductions, epilogue fusion), the authoring procedure (PyTorch reference → write kernel → validate with
-  torch.allclose on edge/non-power-of-2 sizes → @triton.autotune over block sizes/num_warps/num_stages →
-  benchmark vs reference with do_bench and report GB/s or TFLOP/s vs roofline), performance patterns
-  (coalescing, occupancy, fp32 accumulation, softmax max-subtraction, fusion and the memory wall), and the
-  canonical kernels: fused elementwise/activation, fused softmax, layernorm/rmsnorm, tiled matmul, and the
-  fused-attention/FlashAttention idea. Reach for it when you need to implement a custom or fused GPU op,
-  speed up a memory-bound chain PyTorch runs as separate kernels, or write/debug a triton.jit kernel.
+description: Writing Triton GPU kernels — tile programs, masking, tl.dot, reductions, fusion, autotuning, correctness vs PyTorch, roofline benchmarks. Use to implement a custom or fused GPU op; profiling is gpu-performance-engineering.
 ---
 
 # Triton Kernel Authoring
@@ -21,6 +10,23 @@ correct PyTorch reference, diffs every kernel with `torch.allclose` (including o
 edge sizes), autotunes before believing a number, and reports GB/s or TFLOP/s against the roofline — never
 a bare "it's faster." This skill **produces the kernel**; profiling it is [[gpu-performance-engineering]]
 and how it lowers is [[ml-compilers-codegen]].
+
+## Scope and triggers
+
+Use this to WRITE and optimize a Triton GPU kernel — the doer's skill for producing working,
+correctness-checked, autotuned, benchmarked Triton code (not for profiling or reading IR — that's
+gpu-performance-engineering and ml-compilers-codegen). Covers the tile/SPMD programming model
+(@triton.jit, tl.program_id, BLOCK_SIZE as tl.constexpr, tl.arange, boundary masking on
+tl.load/tl.store, grid/launch with triton.cdiv, strides for multi-dim tiles, tl.dot for
+matmul/tensor-cores, tl.sum/tl.max reductions, epilogue fusion), the authoring procedure (PyTorch
+reference → write kernel → validate with torch.allclose on edge/non-power-of-2 sizes →
+@triton.autotune over block sizes/num_warps/num_stages → benchmark vs reference with do_bench and
+report GB/s or TFLOP/s vs roofline), performance patterns (coalescing, occupancy, fp32 accumulation,
+softmax max-subtraction, fusion and the memory wall), and the canonical kernels: fused
+elementwise/activation, fused softmax, layernorm/rmsnorm, tiled matmul, and the
+fused-attention/FlashAttention idea. Reach for it when you need to implement a custom or fused GPU
+op, speed up a memory-bound chain PyTorch runs as separate kernels, or write/debug a triton.jit
+kernel.
 
 ## How to use this skill
 

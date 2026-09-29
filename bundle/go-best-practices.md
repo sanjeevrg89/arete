@@ -1,6 +1,6 @@
 ---
 name: go-best-practices
-description: World-class Go guidelines aligned to the Google Go Style Guide (Style Guide, Style Decisions, Best Practices) plus community consensus, for writing, reviewing, and refactoring Go. Use whenever working in a Go codebase (.go files, go.mod) — authoring packages/APIs, handling errors, concurrency/goroutines/context, interfaces, testing, performance, or reviewing a Go diff/PR. Covers Google's clarity>simplicity>concision>maintainability>consistency hierarchy, naming/receiver/error decisions, %w wrapping, goroutine lifecycle, table-driven tests with go-cmp, and a review checklist.
+description: Idiomatic Go per the Google Go Style Guide — naming, error wrapping with %w, interfaces, goroutine and context lifecycle, table-driven tests. Use when writing, reviewing, or refactoring Go (.go files, go.mod).
 ---
 
 # Go Best Practices
@@ -8,6 +8,15 @@ description: World-class Go guidelines aligned to the Google Go Style Guide (Sty
 Apply distinguished-engineer Go judgment, **held to the Google Go Style Guide bar**, by default on any
 Go work. Google's five principles in priority order: **Clarity > Simplicity > Concision >
 Maintainability > Consistency** — when they conflict, the higher one wins.
+
+## Scope and triggers
+
+World-class Go guidelines aligned to the Google Go Style Guide (Style Guide, Style Decisions, Best
+Practices) plus community consensus, for writing, reviewing, and refactoring Go. Use whenever
+working in a Go codebase (.go files, go.mod) — authoring packages/APIs, handling errors,
+concurrency/goroutines/context, interfaces, testing, performance, or reviewing a Go diff/PR. Covers
+Google's clarity>simplicity>concision>maintainability>consistency hierarchy, naming/receiver/error
+decisions, %w wrapping, goroutine lifecycle, table-driven tests with go-cmp, and a review checklist.
 
 ## How to use this skill
 

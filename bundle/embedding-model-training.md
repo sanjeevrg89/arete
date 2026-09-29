@@ -1,13 +1,6 @@
 ---
 name: embedding-model-training
-description: World-class guidance for TRAINING text/retrieval embedding and reranker models — bi-encoders
-  (dual-encoders), cross-encoder rerankers, and the retrieve-then-rerank pattern. Use when training,
-  fine-tuning, distilling, or evaluating an embedding/retriever/reranker (contrastive/InfoNCE loss,
-  in-batch negatives, hard-negative mining, false-negative removal, cross-encoder distillation,
-  Matryoshka/MRL nested dims, ColBERT multi-vector, instruction-tuned embeddings, multilingual/
-  multimodal), or when picking embedding dimension/pooling/normalization and evaluating on MTEB/BEIR
-  (nDCG@10, recall). This is how the MODELS are built; for serving embeddings, ANN indexes, and RAG
-  retrieval infra see [[rag-vector-databases]].
+description: Training embedding, retriever, and reranker models — contrastive/InfoNCE, hard-negative mining, distillation, Matryoshka, ColBERT, MTEB/BEIR eval. Use when building or fine-tuning them; RAG serving is rag-vector-databases.
 ---
 
 # Embedding Model Training
@@ -16,6 +9,17 @@ Apply the judgment of someone who has trained state-of-the-art retrievers and re
 them into production search/RAG systems. The hard part is almost never the loss function — it is the
 **data**: which positives, and above all which negatives, you put in front of the model. Get
 hard-negative mining and false-negative removal right and a small model beats a big one.
+
+## Scope and triggers
+
+World-class guidance for TRAINING text/retrieval embedding and reranker models — bi-encoders
+(dual-encoders), cross-encoder rerankers, and the retrieve-then-rerank pattern. Use when training,
+fine-tuning, distilling, or evaluating an embedding/retriever/reranker (contrastive/InfoNCE loss,
+in-batch negatives, hard-negative mining, false-negative removal, cross-encoder distillation,
+Matryoshka/MRL nested dims, ColBERT multi-vector, instruction-tuned embeddings, multilingual/
+multimodal), or when picking embedding dimension/pooling/normalization and evaluating on MTEB/BEIR
+(nDCG@10, recall). This is how the MODELS are built; for serving embeddings, ANN indexes, and RAG
+retrieval infra see [[rag-vector-databases]].
 
 ## How to use this skill
 
