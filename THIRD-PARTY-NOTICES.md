@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-Arete vendors third-party skills verbatim under `skills/vendored/<upstream>/`. Each keeps its
+Kaushal vendors third-party skills verbatim under `skills/vendored/<upstream>/`. Each keeps its
 upstream license; this file records provenance so updates can be synced deliberately.
 
 ## mattpocock/skills
@@ -11,7 +11,7 @@ upstream license; this file records provenance so updates can be synced delibera
 - **License:** MIT (reproduced below)
 
 These skills cover the *process* layer of engineering with an agent — grilling/spec flows,
-TDD loop, code review, bug diagnosis — and complement arete's first-party *domain-depth*
+TDD loop, code review, bug diagnosis — and complement Kaushal's first-party *domain-depth*
 skills (Kubernetes, GKE, ML infrastructure). Where a first-party skill covers similar
 ground for AI-infra work specifically (e.g. `test-driven-development`, `code-review-discipline`,
 `verification-and-debugging`), both descriptions are scoped so a model routes to the right one.

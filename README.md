@@ -1,12 +1,13 @@
-# Arete
+# Kaushal
 
-*är-ə-tā* (Greek, ἀρετή) — excellence; the habit of meeting your full standard.
+*kow-shul* (Sanskrit, कौशल) — skill; excellence in action. From the Gita: *yogaḥ karmasu kauśalam*,
+"yoga is skill in action" (2.50).
 
-[![validate-skills](https://github.com/sanjeevrg89/arete/actions/workflows/ci.yml/badge.svg)](https://github.com/sanjeevrg89/arete/actions/workflows/ci.yml)
+[![validate-skills](https://github.com/sanjeevrg89/kaushal/actions/workflows/ci.yml/badge.svg)](https://github.com/sanjeevrg89/kaushal/actions/workflows/ci.yml)
 
 **Your agent has read all the docs. It has never been paged at 3 a.m.**
 
-Arete closes that gap: 59 skills of production knowledge for Kubernetes, GKE, and the ML-infrastructure
+Kaushal closes that gap: 59 skills of production knowledge for Kubernetes, GKE, and the ML-infrastructure
 stack — failure signatures, review rules, debugging methods, war stories — plus 25 curated process
 skills from [mattpocock/skills](https://github.com/mattpocock/skills). Any agent loads what it needs,
 when it needs it.
@@ -16,20 +17,20 @@ when it needs it.
 **Claude Code**
 
 ```
-/plugin marketplace add sanjeevrg89/arete
-/plugin install arete@arete
+/plugin marketplace add sanjeevrg89/kaushal
+/plugin install kaushal@kaushal
 ```
 
 **Codex, Cursor, Gemini CLI, OpenCode, Qwen Code, and 70+ other agents**
 
 ```bash
-npx skills add sanjeevrg89/arete
+npx skills add sanjeevrg89/kaushal
 ```
 
 **Clone it and own it**
 
 ```bash
-git clone https://github.com/sanjeevrg89/arete.git && cd arete
+git clone https://github.com/sanjeevrg89/kaushal.git && cd kaushal
 ./install.sh all        # every agent on this machine, as symlinks — git pull updates them
 ```
 
@@ -57,7 +58,7 @@ CLI 0.62.0, OpenCode 1.18.30, Cursor agent 2026.08.11, and Qwen Code 0.12.6; old
 
 ### It writes infra that passes CI and fails production
 
-Plausible ≠ survivable. Every arete skill carries **non-negotiables** and a **reject-in-review** list
+Plausible ≠ survivable. Every Kaushal skill carries **non-negotiables** and a **reject-in-review** list
 distilled from incidents:
 
 > - **No naked Pods** — always a Deployment/StatefulSet/DaemonSet/Job.
@@ -90,7 +91,7 @@ And at GPU scale, the truth that isn't in any quickstart:
 
 ### Expertise dies when you switch tools
 
-Skills locked into one assistant vanish when you switch. Arete keeps **one source of truth per skill**
+Skills locked into one assistant vanish when you switch. Kaushal keeps **one source of truth per skill**
 and ships it everywhere agents look: `SKILL.md` (the open standard — Claude Code, Codex, Gemini CLI,
 Cursor), `AGENTS.md` (always-on rules for any agent), `GEMINI.md` (Gemini CLI imports), and a flat
 bundle for anything else.
@@ -98,9 +99,9 @@ bundle for anything else.
 ### Big skill libraries go invisible
 
 An agent picks a skill from one line of description, and every installed skill shares one listing
-budget. Past it, Claude Code lists skills by name only and Codex truncates descriptions. Arete's
+budget. Past it, Claude Code lists skills by name only and Codex truncates descriptions. Kaushal's
 routers are one line, ≤ 250 characters, strict YAML, and CI-checked, so the whole library stays visible
-next to your other skills. Measured on Claude Code's real skill listing (30,000-character budget, Arete
+next to your other skills. Measured on Claude Code's real skill listing (30,000-character budget, Kaushal
 installed alone), with [one discriminating prompt per skill](tests/skill-routing-checklist.md):
 
 | | v1.0 | v1.1 |
@@ -114,10 +115,11 @@ on Haiku; the new ones score 100% in a fifth of the space. Re-run it: `python sc
 
 ### Skill libraries rot
 
-Most collections are frozen PDFs of prompts. Arete runs a loop: failures feed
-[`feedback/log.jsonl`](feedback/README.md) → ranked candidates → a reviser opens PRs behind CI and human
-review → lessons become regression checks. Green CI ≠ validated either — see the
-[5-layer validation harness](tests/VALIDATION.md).
+Most collections are frozen PDFs of prompts. Kaushal ships the parts of an improvement loop: a feedback
+log ([`feedback/log.jsonl`](feedback/README.md)) for what a skill got wrong, a ranker that turns it
+into improvement candidates, and CI that gates every change. Nothing edits a skill by itself — using a
+skill does not change it, and the reviser that turns feedback into pull requests is off until you
+enable it. Green CI ≠ validated either — see the [5-layer validation harness](tests/VALIDATION.md).
 
 ## Browse the library
 

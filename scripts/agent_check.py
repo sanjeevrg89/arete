@@ -89,7 +89,7 @@ def check_claude(names: set[str], auto: set[str]) -> tuple[set[str], set[str], s
     try:  # forks rename the plugin; read its name from the manifest
         plugin = json.loads((ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))["name"]
     except (OSError, ValueError, KeyError):
-        plugin = "arete"
+        plugin = "kaushal"
     if not found and f"{plugin}@" in run(["claude", "plugin", "list"], timeout=60)[1]:
         return names, names, f"installed as the {plugin} plugin (run /skills in a session)", ""
     return found, names, f"checked {tilde(d)} (run /skills in a session)", "./install.sh claude"

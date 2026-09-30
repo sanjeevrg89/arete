@@ -1,8 +1,8 @@
 # Agent rules — always on
 
-<!-- Starter rules from arete. `./install.sh rules rules/AGENTS.md` links this one file into
+<!-- Starter rules from kaushal. `./install.sh rules rules/AGENTS.md` links this one file into
      ~/.claude/CLAUDE.md, ~/.codex/AGENTS.md and ~/.gemini/GEMINI.md, so every agent on the machine
-     follows the same rules. Fork arete and replace these with yours; edit once, every agent updates. -->
+     follows the same rules. Fork kaushal and replace these with yours; edit once, every agent updates. -->
 
 ## Before starting
 - Restate the goal and what "done" means in one line. If the ask is vague, ask the one question that
