@@ -3,7 +3,8 @@
 #
 # Usage:
 #   ./update.sh                 git pull + refresh every symlink install found (Claude Code's
-#                               ~/.claude/skills; ~/.agents/skills if arete is linked there)
+#                               ~/.claude/skills; ~/.agents/skills and ~/.qwen/skills if arete is
+#                               linked there)
 #   ./update.sh <flat-dest>     ...also refresh the flat-bundle copy at <flat-dest>
 #   SKILLS_DEST=<dir> ./update.sh   same as passing <flat-dest>
 #
@@ -26,10 +27,20 @@ if [ -d "$claude_skills" ]; then
   did_something=1
 fi
 
-# Only touch ~/.agents/skills if arete was linked there before (./install.sh agents|all).
-if [ -n "$(find "$HOME/.agents/skills" -maxdepth 1 -type l -lname "$REPO/*" 2>/dev/null | head -1)" ]; then
-  echo "==> refreshing cross-agent install (~/.agents/skills: Codex CLI, Gemini CLI)"
+# Only touch the other agents' directories if arete was linked there before (./install.sh all|agents|qwen).
+linked_here() {
+  [ -n "$(find "$1" -maxdepth 1 -type l -lname "$REPO/*" 2>/dev/null | head -1)" ]
+}
+
+if linked_here "$HOME/.agents/skills"; then
+  echo "==> refreshing cross-agent install (~/.agents/skills: Codex CLI, Gemini CLI, OpenCode, Cursor)"
   "$REPO/install.sh" agents
+  did_something=1
+fi
+
+if linked_here "$HOME/.qwen/skills"; then
+  echo "==> refreshing Qwen Code install (~/.qwen/skills)"
+  "$REPO/install.sh" qwen
   did_something=1
 fi
 
@@ -42,7 +53,7 @@ fi
 
 if [ "$did_something" -eq 0 ]; then
   echo "Pulled latest, but found no install to refresh."
-  echo "Run ./install.sh all  (Claude Code + Codex/Gemini CLI)  or  ./install.sh flat <dest>  (flat loader)."
+  echo "Run ./install.sh all  (every agent on this machine)  or  ./install.sh flat <dest>  (flat loader)."
 fi
 
 echo "==> done: $(git log --oneline -1)"

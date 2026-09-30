@@ -20,7 +20,7 @@ when it needs it.
 /plugin install arete@arete
 ```
 
-**Codex, Cursor, Gemini CLI, and 40+ other agents**
+**Codex, Cursor, Gemini CLI, OpenCode, Qwen Code, and 70+ other agents**
 
 ```bash
 npx skills add sanjeevrg89/arete
@@ -30,8 +30,28 @@ npx skills add sanjeevrg89/arete
 
 ```bash
 git clone https://github.com/sanjeevrg89/arete.git && cd arete
-./install.sh all        # Claude Code + Codex CLI + Gemini CLI, as symlinks — git pull updates them
+./install.sh all        # every agent on this machine, as symlinks — git pull updates them
 ```
+
+### Tested agents
+
+"Works everywhere" is checked, not assumed — each agent looks in different folders and parses
+frontmatter its own way.
+
+| Agent | Where it finds the skills | How that was checked |
+|---|---|---|
+| Claude Code | plugin, or `~/.claude/skills` | a real session's skill listing: 70 / 70 auto-loadable skills show their description |
+| Codex CLI | `~/.agents/skills` | `codex debug prompt-input`: 70 / 70 auto-loadable skills in the prompt |
+| Gemini CLI | `~/.agents/skills` | `gemini skills list`: 84 / 84 |
+| OpenCode | `~/.agents/skills`, `~/.claude/skills` | `opencode debug skill`: 84 / 84 |
+| Cursor agent | `~/.agents/skills` | its loader reads that folder and follows links (source check) |
+| Qwen Code | `~/.qwen/skills` — its only folder | its loader follows links (source check); its frontmatter parser, run on all 84 files |
+| 70+ others | `npx skills add` puts them in each agent's folder | the installer finds and installs 84 / 84 |
+
+`./install.sh all` sets up every row but the last. Re-run the checks on your own machine with
+`python scripts/agent_check.py`. Tested 2026-09-30 with Claude Code 2.1.283, Codex CLI 0.159.2, Gemini
+CLI 0.62.0, OpenCode 1.18.30, Cursor agent 2026.08.11, and Qwen Code 0.12.6; old Gemini CLI releases
+(0.17, for one) have no skills support at all.
 
 ## What docs-knowledge gets wrong
 
@@ -123,8 +143,8 @@ Fork it. Delete the skills you don't need, add your own under `skills/<name>/`, 
 [`rules/AGENTS.md`](rules/AGENTS.md) with the rules you want every agent to follow. Then:
 
 ```bash
-./install.sh all                     # every skill → Claude Code, Codex CLI, Gemini CLI
-./install.sh rules rules/AGENTS.md   # one rules file → ~/.claude/CLAUDE.md, ~/.codex/AGENTS.md, ~/.gemini/GEMINI.md
+./install.sh all                     # every skill → Claude Code, Codex, Gemini CLI, OpenCode, Cursor, Qwen Code
+./install.sh rules rules/AGENTS.md   # one rules file → each agent's global instructions (CLAUDE.md, AGENTS.md, GEMINI.md, QWEN.md)
 ```
 
 Change a skill or a rule once and every agent picks it up; `./update.sh` pulls and re-links, and
@@ -139,6 +159,7 @@ pattern comes from [steipete/agent-scripts](https://github.com/steipete/agent-sc
 - [CONTRIBUTING.md](CONTRIBUTING.md) — PR flow, CI gates
 - `python scripts/validate.py` — strict frontmatter + router-limit validator, run on every push
 - `python scripts/routing_eval.py` — routing eval: does the agent pick the right skill from descriptions alone?
+- `python scripts/agent_check.py` — which agents on this machine can actually see the skills
 
 ## Design notes
 

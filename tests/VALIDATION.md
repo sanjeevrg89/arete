@@ -45,6 +45,12 @@ AGENT_CMD='claude -p --model haiku --disable-slash-commands --tools "" --no-sess
 - Manual spot-check in Claude Code: `/skills` lists every skill; paste a checklist prompt prefixed with
   *"Pick the right skill(s), name them and why, then answer:"*.
 
+Routing only matters if the agent can see the skill at all. `python scripts/agent_check.py` asks every
+agent CLI on the machine what it sees — `codex debug prompt-input`, `gemini skills list`,
+`opencode debug skill` — and checks the folder for agents with no listing command (Claude Code, Qwen
+Code, Cursor). Run it after installing and after any frontmatter change: agents parse YAML
+differently (Qwen Code's parser keeps only the first line of a multi-line value).
+
 ## Layer 4 — Functional behavior (agent-in-the-loop)
 Does the output satisfy concrete assertions?
 ```bash

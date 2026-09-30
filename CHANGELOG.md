@@ -4,6 +4,26 @@ All notable changes to arete are documented here. Format: [Keep a Changelog](htt
 
 ## [Unreleased]
 
+## [1.1.1] — 2026-09-30
+
+`./install.sh all` now reaches every agent that was tested, and the README says how each was checked.
+
+### Added
+- **`./install.sh qwen`** — Qwen Code reads only `~/.qwen/skills`, so `all` missed it; `all` now links
+  it whenever Qwen Code is installed. **`./install.sh link <dir>`** links every skill into any other
+  agent's skills directory, and `uninstall [dir...]` cleans those too.
+- **`scripts/agent_check.py`** — asks each installed agent what it sees (`codex debug prompt-input`,
+  `gemini skills list`, `opencode debug skill`) and checks the folder for agents with no listing
+  command; exits 1 and names the fix when an installed agent is missing skills.
+- **README "Tested agents"** — Claude Code, Codex CLI, Gemini CLI, OpenCode, Cursor agent, and Qwen
+  Code, with where each finds the skills and how that was verified.
+
+### Changed
+- `./install.sh rules` also links `~/.qwen/QWEN.md`; `update.sh` refreshes `~/.qwen/skills` when arete
+  is linked there.
+- `~/.agents/skills` is documented as what it is: the folder Codex CLI, Gemini CLI, OpenCode, and
+  Cursor all read.
+
 ## [1.1.0] — 2026-09-29
 
 Every skill is now visible to, and routable by, every agent. Measured on Claude Code's real skill
@@ -72,6 +92,7 @@ The "world-class packaging" release: same distinguished-bar content, now install
 - `kubernetes-expert-guide.md`: `kubectl apply` claimed to use server-side apply by default — it is client-side unless `--server-side`; now explained correctly with when to opt in.
 - `kubernetes-expert-guide.md`: deduplicated ~35 lines of repeated rules (Red flags merged into Anti-patterns; Checklist merged into the Verification gate with its command block).
 
-[Unreleased]: https://github.com/sanjeevrg89/arete/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/sanjeevrg89/arete/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/sanjeevrg89/arete/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/sanjeevrg89/arete/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/sanjeevrg89/arete/releases/tag/v1.0.0

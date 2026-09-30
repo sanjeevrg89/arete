@@ -19,12 +19,14 @@ judgment is available whichever tool you're in.
 
 | Agent | One-time install | How it loads |
 |-------|------------------|--------------|
-| **Everything below at once** | `./install.sh all` | symlinks every skill into `~/.claude/skills` and `~/.agents/skills` |
+| **Every agent on this machine** | `./install.sh all` | symlinks every skill into `~/.claude/skills`, `~/.agents/skills`, and `~/.qwen/skills` (if Qwen Code is installed) |
 | **Claude Code** | `/plugin marketplace add sanjeevrg89/arete` → `/plugin install arete@arete`, or `./install.sh claude` | on demand by `description`; `/skills` lists them |
-| **Codex CLI · Gemini CLI** | `./install.sh agents` (links into `~/.agents/skills`, which both read) | on demand by `description`, same `SKILL.md` |
-| **Cursor & 40+ other agents** | `npx skills add sanjeevrg89/arete` | installs into each agent's skills dir |
+| **Codex CLI · Gemini CLI · OpenCode · Cursor** | `./install.sh agents` (links into `~/.agents/skills`, which all four read) | on demand by `description`, same `SKILL.md` |
+| **Qwen Code** | `./install.sh qwen` (links into `~/.qwen/skills`, the only folder it reads) | on demand by `description` |
+| **70+ other agents** | `npx skills add sanjeevrg89/arete`, or `./install.sh link <that agent's skills dir>` | installs into each agent's skills dir |
+| **Did it work?** | `python scripts/agent_check.py` | asks each installed agent what it sees |
 | **Anything else** | `./install.sh flat <dir>` | one self-contained `bundle/<name>.md` per skill |
-| **Same rules in every agent** | `./install.sh rules rules/AGENTS.md` | one rules file linked into `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md` |
+| **Same rules in every agent** | `./install.sh rules rules/AGENTS.md` | one rules file linked into `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`, `~/.qwen/QWEN.md` |
 | **Keep current** | `./update.sh` (+ a path for flat copies) | pull, re-link, prune removed skills / re-copy flat |
 
 Do this once for **each** agent you actually use. The payoff of a vendor-neutral library is that you
@@ -57,7 +59,7 @@ gets better while you sleep — across every agent at once.
 
 ## 3. Your first week
 
-1. **Install into all three agents** (`./install.sh all` — Claude Code, Codex, Gemini CLI) — prove "works anywhere" once.
+1. **Install into every agent you use** (`./install.sh all`, then `python scripts/agent_check.py`) — prove "works anywhere" once.
 2. **Take one real task** and drive it with the run-to-done wrapper instead of imperatives. Feel the
    difference between an intern and a staff engineer.
 3. **The first mediocre answer** a skill gives you → add one `feedback/log.jsonl` line. That's the loop
