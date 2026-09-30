@@ -24,7 +24,7 @@ SKILLS = ROOT / "skills"
 VENDORED = SKILLS / "vendored"
 
 # Vendored third-party skills (skills/vendored/<upstream>/<name>/) follow their upstream's layout;
-# they are validated loosely (valid frontmatter, spec-legal name + description), not against arete's
+# they are validated loosely (valid frontmatter, spec-legal name + description), not against kaushal's
 # house spec.
 
 # Files every skill directory must contain (a guide is checked separately).

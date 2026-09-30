@@ -1,8 +1,22 @@
 # Changelog
 
-All notable changes to arete are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: semver.
+All notable changes to Kaushal (named Arete until 2.0.0) are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: semver.
 
 ## [Unreleased]
+
+## [2.0.0] — 2026-09-30
+
+**Arete is now Kaushal** (कौशल, Sanskrit for "skill" — *yogaḥ karmasu kauśalam*, "yoga is skill in
+action", Bhagavad Gita 2.50). The skills themselves are unchanged; the major version is for the names.
+
+### Changed
+- **Repository:** `sanjeevrg89/arete` → `sanjeevrg89/kaushal`. GitHub redirects the old URL, so existing
+  clones and `npx skills add sanjeevrg89/arete` keep working; `git remote set-url origin
+  git@github.com:sanjeevrg89/kaushal.git` makes it explicit.
+- **Claude Code plugin:** `arete@arete` → `kaushal@kaushal`. Reinstall: `/plugin marketplace add
+  sanjeevrg89/kaushal` → `/plugin install kaushal@kaushal`, then uninstall `arete@arete`.
+- **Codex** lists plugin-linked skills under the plugin name, so `arete:<skill>` becomes
+  `kaushal:<skill>`. Skill names are otherwise the same everywhere.
 
 ## [1.1.1] — 2026-09-30
 
@@ -92,7 +106,8 @@ The "world-class packaging" release: same distinguished-bar content, now install
 - `kubernetes-expert-guide.md`: `kubectl apply` claimed to use server-side apply by default — it is client-side unless `--server-side`; now explained correctly with when to opt in.
 - `kubernetes-expert-guide.md`: deduplicated ~35 lines of repeated rules (Red flags merged into Anti-patterns; Checklist merged into the Verification gate with its command block).
 
-[Unreleased]: https://github.com/sanjeevrg89/arete/compare/v1.1.1...HEAD
-[1.1.1]: https://github.com/sanjeevrg89/arete/compare/v1.1.0...v1.1.1
-[1.1.0]: https://github.com/sanjeevrg89/arete/compare/v1.0.0...v1.1.0
-[1.0.0]: https://github.com/sanjeevrg89/arete/releases/tag/v1.0.0
+[Unreleased]: https://github.com/sanjeevrg89/kaushal/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/sanjeevrg89/kaushal/compare/v1.1.1...v2.0.0
+[1.1.1]: https://github.com/sanjeevrg89/kaushal/compare/v1.1.0...v1.1.1
+[1.1.0]: https://github.com/sanjeevrg89/kaushal/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/sanjeevrg89/kaushal/releases/tag/v1.0.0

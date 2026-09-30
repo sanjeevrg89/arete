@@ -20,10 +20,10 @@ judgment is available whichever tool you're in.
 | Agent | One-time install | How it loads |
 |-------|------------------|--------------|
 | **Every agent on this machine** | `./install.sh all` | symlinks every skill into `~/.claude/skills`, `~/.agents/skills`, and `~/.qwen/skills` (if Qwen Code is installed) |
-| **Claude Code** | `/plugin marketplace add sanjeevrg89/arete` → `/plugin install arete@arete`, or `./install.sh claude` | on demand by `description`; `/skills` lists them |
+| **Claude Code** | `/plugin marketplace add sanjeevrg89/kaushal` → `/plugin install kaushal@kaushal`, or `./install.sh claude` | on demand by `description`; `/skills` lists them |
 | **Codex CLI · Gemini CLI · OpenCode · Cursor** | `./install.sh agents` (links into `~/.agents/skills`, which all four read) | on demand by `description`, same `SKILL.md` |
 | **Qwen Code** | `./install.sh qwen` (links into `~/.qwen/skills`, the only folder it reads) | on demand by `description` |
-| **70+ other agents** | `npx skills add sanjeevrg89/arete`, or `./install.sh link <that agent's skills dir>` | installs into each agent's skills dir |
+| **70+ other agents** | `npx skills add sanjeevrg89/kaushal`, or `./install.sh link <that agent's skills dir>` | installs into each agent's skills dir |
 | **Did it work?** | `python scripts/agent_check.py` | asks each installed agent what it sees |
 | **Anything else** | `./install.sh flat <dir>` | one self-contained `bundle/<name>.md` per skill |
 | **Same rules in every agent** | `./install.sh rules rules/AGENTS.md` | one rules file linked into `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`, `~/.qwen/QWEN.md` |

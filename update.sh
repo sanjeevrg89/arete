@@ -3,7 +3,7 @@
 #
 # Usage:
 #   ./update.sh                 git pull + refresh every symlink install found (Claude Code's
-#                               ~/.claude/skills; ~/.agents/skills and ~/.qwen/skills if arete is
+#                               ~/.claude/skills; ~/.agents/skills and ~/.qwen/skills if kaushal is
 #                               linked there)
 #   ./update.sh <flat-dest>     ...also refresh the flat-bundle copy at <flat-dest>
 #   SKILLS_DEST=<dir> ./update.sh   same as passing <flat-dest>
@@ -27,7 +27,7 @@ if [ -d "$claude_skills" ]; then
   did_something=1
 fi
 
-# Only touch the other agents' directories if arete was linked there before (./install.sh all|agents|qwen).
+# Only touch the other agents' directories if kaushal was linked there before (./install.sh all|agents|qwen).
 linked_here() {
   [ -n "$(find "$1" -maxdepth 1 -type l -lname "$REPO/*" 2>/dev/null | head -1)" ]
 }

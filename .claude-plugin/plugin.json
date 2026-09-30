@@ -1,13 +1,13 @@
 {
-  "name": "arete",
-  "version": "1.1.1",
-  "description": "Arete \u2014 59 distinguished-engineer skills for Kubernetes, GKE, and the ML-infrastructure stack, plus 25 vendored process skills from mattpocock/skills. One source of truth, every agent.",
+  "name": "kaushal",
+  "version": "2.0.0",
+  "description": "Kaushal \u2014 59 distinguished-engineer skills for Kubernetes, GKE, and the ML-infrastructure stack, plus 25 vendored process skills from mattpocock/skills. One source of truth, every agent.",
   "author": {
     "name": "sanjeevrg89",
     "url": "https://github.com/sanjeevrg89"
   },
-  "homepage": "https://github.com/sanjeevrg89/arete",
-  "repository": "https://github.com/sanjeevrg89/arete",
+  "homepage": "https://github.com/sanjeevrg89/kaushal",
+  "repository": "https://github.com/sanjeevrg89/kaushal",
   "license": "Apache-2.0",
   "keywords": [
     "kubernetes",

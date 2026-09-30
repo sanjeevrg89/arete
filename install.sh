@@ -60,7 +60,7 @@ link_skills() {
     target="$dest/$name"
     if [ -e "$target" ] && [ ! -L "$target" ]; then
       # `ln -sfn` onto a real directory would nest the link inside it; leave the user's copy alone.
-      echo "  skip $name: $target is a real directory, not a link (remove it to let arete manage it)"
+      echo "  skip $name: $target is a real directory, not a link (remove it to let kaushal manage it)"
       skipped=$((skipped+1))
       continue
     fi
