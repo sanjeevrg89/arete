@@ -1,20 +1,6 @@
 ---
 name: ai-research-science
-description: The research-science layer of frontier LLM development — the WHY behind the methods, the
-  theory, and the open problems, across the whole model lifecycle. Use when you need to reason like a
-  research scientist rather than run a pipeline: forming and falsifying hypotheses, designing rigorous
-  ablations/controls, scaling laws (Kaplan vs Chinchilla, data-constrained, emergent-abilities debate),
-  architecture science (attention MHA/MQA/GQA/MLA, RoPE/ALiBi/YaRN, pre-LN/RMSNorm/QK-norm, SwiGLU,
-  MoE routing & load-balancing, Mamba/SSMs & hybrids, long-context), training science (Adam/AdamW/Lion/
-  Muon, gradient noise scale & batch size, loss spikes/z-loss/stability, bf16-vs-fp8 dynamics, the
-  pretraining objective), inference & test-time-compute science (sampling/calibration theory, CoT,
-  self-consistency, o1/R1-style long reasoning, process- vs outcome-reward search), fine-tuning science
-  (why LoRA works / intrinsic dimensionality, catastrophic forgetting, model merging — task arithmetic/
-  TIES/DARE/SLERP/soups, distillation theory), and DEEPEST on RL/RLHF post-training (reward modeling &
-  Bradley-Terry, reward hacking/Goodhart, PPO objective & KL-to-reference, the direct-alignment family
-  DPO/IPO/KTO/ORPO/SimPO, GRPO & RLVR, PRMs, RLAIF/Constitutional AI, on/off-policy, open problems).
-  Reach for it to read/reproduce a paper, critique an experiment, or choose a research direction. Defer
-  the how-to-run engineering to the sibling skills.
+description: Research-scientist reasoning for LLMs — scaling laws, architecture and optimizer science, test-time compute, RLHF/DPO/GRPO theory. Use to explain why a method works, read or reproduce a paper, design ablations, or critique an experiment.
 ---
 
 # AI Research Science
@@ -29,6 +15,25 @@ open problems.
 The bar: **accuracy over completeness, mechanism over recipe, falsifiable claims over vibes.** The field
 moves weekly; treat every quantitative claim and citation as provisional and verify against current
 papers/docs.
+
+## Scope and triggers
+
+The research-science layer of frontier LLM development — the WHY behind the methods, the theory, and
+the open problems, across the whole model lifecycle. Use when you need to reason like a research
+scientist rather than run a pipeline: forming and falsifying hypotheses, designing rigorous
+ablations/controls, scaling laws (Kaplan vs Chinchilla, data-constrained, emergent-abilities
+debate), architecture science (attention MHA/MQA/GQA/MLA, RoPE/ALiBi/YaRN, pre-LN/RMSNorm/QK-norm,
+SwiGLU, MoE routing & load-balancing, Mamba/SSMs & hybrids, long-context), training science
+(Adam/AdamW/Lion/ Muon, gradient noise scale & batch size, loss spikes/z-loss/stability, bf16-vs-fp8
+dynamics, the pretraining objective), inference & test-time-compute science (sampling/calibration
+theory, CoT, self-consistency, o1/R1-style long reasoning, process- vs outcome-reward search),
+fine-tuning science (why LoRA works / intrinsic dimensionality, catastrophic forgetting, model
+merging — task arithmetic/ TIES/DARE/SLERP/soups, distillation theory), and DEEPEST on RL/RLHF
+post-training (reward modeling & Bradley-Terry, reward hacking/Goodhart, PPO objective &
+KL-to-reference, the direct-alignment family DPO/IPO/KTO/ORPO/SimPO, GRPO & RLVR, PRMs,
+RLAIF/Constitutional AI, on/off-policy, open problems). Reach for it to read/reproduce a paper,
+critique an experiment, or choose a research direction. Defer the how-to-run engineering to the
+sibling skills.
 
 ## How to use this skill
 

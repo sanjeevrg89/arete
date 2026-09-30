@@ -1,13 +1,6 @@
 ---
 name: maxtext-jax-llm
-description: Expert guidance for MaxText and the JAX LLM stack — training and serving frontier-scale LLMs
-  (Llama, Gemma, Mistral, DeepSeek, Qwen, Mixtral/MoE) on TPU pods and GPU. Use when working with MaxText
-  configs (base.yml/model YAML, ici_*_parallelism / dcn_*_parallelism, per_device_batch_size, remat_policy,
-  attention=flash, weight_dtype/quantization=int8), JAX sharding (Mesh, PartitionSpec, NamedSharding,
-  logical_axis_rules, GSPMD), Flax (linen/NNX), Optax, Grain, Orbax, Pathways, or JetStream inference;
-  scaling to multi-host / multislice TPU (ICI vs DCN); chasing MFU, OOM, or recompilation; or launching on
-  GKE with XPK/JobSet. Covers the FSDP/TP/sequence/expert sharding mental model and the TPU-JAX-vs-GPU-PyTorch
-  decision.
+description: MaxText and its JAX LLM stack on TPU/GPU — MaxText configs (ici/dcn parallelism, remat), Flax, Optax, Grain, Orbax, Pathways, multislice, JetStream, XPK on GKE. Use when training or serving LLMs with MaxText or chasing its MFU, OOM, or recompiles.
 ---
 
 # MaxText & the JAX LLM Stack
@@ -17,6 +10,17 @@ served them in production — someone who reads HLO to chase a 3% MFU regression
 `reshape` triggered a recompile. The bar: high MFU, no surprise OOM, correct sharding by construction, and
 checkpoints you can actually restore. The ecosystem moves fast (it is 2026) — **verify fast-moving flags,
 config keys, and version-specific behavior against current MaxText/JAX docs** before relying on them.
+
+## Scope and triggers
+
+Expert guidance for MaxText and the JAX LLM stack — training and serving frontier-scale LLMs (Llama,
+Gemma, Mistral, DeepSeek, Qwen, Mixtral/MoE) on TPU pods and GPU. Use when working with MaxText
+configs (base.yml/model YAML, ici_*_parallelism / dcn_*_parallelism, per_device_batch_size,
+remat_policy, attention=flash, weight_dtype/quantization=int8), JAX sharding (Mesh, PartitionSpec,
+NamedSharding, logical_axis_rules, GSPMD), Flax (linen/NNX), Optax, Grain, Orbax, Pathways, or
+JetStream inference; scaling to multi-host / multislice TPU (ICI vs DCN); chasing MFU, OOM, or
+recompilation; or launching on GKE with XPK/JobSet. Covers the FSDP/TP/sequence/expert sharding
+mental model and the TPU-JAX-vs-GPU-PyTorch decision.
 
 ## How to use this skill
 

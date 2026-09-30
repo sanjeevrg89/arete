@@ -1,15 +1,6 @@
 ---
 name: shipping-and-release
-description: The shipping/release discipline — getting changes to production safely and reversibly, for
-  AI infra and ML systems. Use when planning or reviewing a rollout: deploying a service, config, infra,
-  or (especially) a model to production; choosing and sequencing progressive delivery (canary, blue-green,
-  shadow/dark launch, feature flags); rolling out an ML model (canary by traffic %, champion/challenger,
-  shadow inference, staged ramp); building a pre-ship readiness gate (tested rollback plan, monitoring/
-  alerts/SLOs live before ramp, capacity/quota checked, runbook, on-call); running the deploy → watch →
-  proceed-or-roll-back loop with the right signals (errors, latency/TTFT, eval/quality, cost); handling a
-  bad deploy (roll back first, debug later, blameless review); GitOps and change management; risky cluster
-  changes in maintenance windows. The Ship stage of the engineering lifecycle — deployment-pattern mechanics
-  live in [[mlops-lifecycle]]; this is the shipping process and go/no-go discipline.
+description: Shipping changes safely and reversibly — canary, blue-green, shadow, feature flags, staged model rollouts, readiness gates, rollback, GitOps. Use when planning or running a production rollout of a service, config, cluster change, or model.
 ---
 
 # Shipping & Release
@@ -19,6 +10,20 @@ fallout: who has watched a "tiny" config change take down inference for a region
 that passed offline eval but tanked the online quality metric, and learned the hard way that an
 untested rollback is not a rollback. The whole discipline reduces to one rule: **ship small, ship
 reversibly, watch it.** Never big-bang an irreversible change into production.
+
+## Scope and triggers
+
+The shipping/release discipline — getting changes to production safely and reversibly, for AI infra
+and ML systems. Use when planning or reviewing a rollout: deploying a service, config, infra, or
+(especially) a model to production; choosing and sequencing progressive delivery (canary,
+blue-green, shadow/dark launch, feature flags); rolling out an ML model (canary by traffic %,
+champion/challenger, shadow inference, staged ramp); building a pre-ship readiness gate (tested
+rollback plan, monitoring/ alerts/SLOs live before ramp, capacity/quota checked, runbook, on-call);
+running the deploy → watch → proceed-or-roll-back loop with the right signals (errors, latency/TTFT,
+eval/quality, cost); handling a bad deploy (roll back first, debug later, blameless review); GitOps
+and change management; risky cluster changes in maintenance windows. The Ship stage of the
+engineering lifecycle — deployment-pattern mechanics live in [[mlops-lifecycle]]; this is the
+shipping process and go/no-go discipline.
 
 ## How to use this skill
 

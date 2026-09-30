@@ -1,14 +1,6 @@
 ---
 name: serving-frameworks
-description: Expert knowledge of modern LLM/ML inference serving — vLLM (PagedAttention, continuous
-  batching), SGLang (RadixAttention), NVIDIA Dynamo (disaggregated prefill/decode, KV-aware routing),
-  Triton Inference Server, TensorRT-LLM, Ray Serve, KServe, JetStream (JAX/XLA on TPU), NVIDIA NIM
-  (prepackaged inference microservices), and TGI. Use when deploying, tuning, or
-  choosing an inference engine; reasoning about prefill vs decode, KV cache / PagedAttention / prefix
-  caching, continuous/in-flight batching, TTFT/ITL/TPOT/goodput, tensor/pipeline/expert parallelism,
-  multi-host serving, disaggregated serving, speculative/chunked-prefill decoding, fp8/AWQ/GPTQ
-  quantization, structured/guided output, or serving autoscaling and KV-cache-aware routing on
-  Kubernetes/GKE. Covers engine differentiators, a decision matrix, and K8s deployment shapes.
+description: LLM inference engines — vLLM, SGLang, TensorRT-LLM, Triton, Dynamo, KServe, JetStream; PagedAttention, continuous batching, prefix caching, disaggregated prefill/decode. Use when choosing, deploying, or tuning an inference server.
 ---
 
 # Serving Frameworks (LLM/ML Inference)
@@ -16,6 +8,18 @@ description: Expert knowledge of modern LLM/ML inference serving — vLLM (Paged
 Apply the judgment of an engineer who has run large-scale LLM inference in production for years:
 who knows that **throughput, latency, and cost are set far more by KV-cache and batching behavior
 than by the model**, and who picks the engine to fit the workload rather than the other way round.
+
+## Scope and triggers
+
+Expert knowledge of modern LLM/ML inference serving — vLLM (PagedAttention, continuous batching),
+SGLang (RadixAttention), NVIDIA Dynamo (disaggregated prefill/decode, KV-aware routing), Triton
+Inference Server, TensorRT-LLM, Ray Serve, KServe, JetStream (JAX/XLA on TPU), NVIDIA NIM
+(prepackaged inference microservices), and TGI. Use when deploying, tuning, or choosing an inference
+engine; reasoning about prefill vs decode, KV cache / PagedAttention / prefix caching,
+continuous/in-flight batching, TTFT/ITL/TPOT/goodput, tensor/pipeline/expert parallelism, multi-host
+serving, disaggregated serving, speculative/chunked-prefill decoding, fp8/AWQ/GPTQ quantization,
+structured/guided output, or serving autoscaling and KV-cache-aware routing on Kubernetes/GKE.
+Covers engine differentiators, a decision matrix, and K8s deployment shapes.
 
 ## How to use this skill
 

@@ -1,15 +1,6 @@
 ---
 name: rag-vector-databases
-description: Expert Retrieval-Augmented Generation (RAG) and vector-database engineering for production
-  systems over large corpora. Use when building or debugging a RAG pipeline (ingestion, chunking,
-  embeddings, indexing, retrieval, reranking, context assembly, generation), choosing or tuning a vector
-  DB (Milvus, Qdrant, Weaviate, pgvector/AlloyDB AI, Pinecone, Vespa, Elasticsearch/OpenSearch), picking
-  ANN indexes (HNSW, IVF, IVF-PQ/OPQ, ScaNN, DiskANN) and quantization (PQ/SQ/binary), implementing
-  hybrid search (BM25/SPLADE + dense, RRF fusion), cross-encoder reranking, query rewriting/HyDE/multi-query/
-  multi-hop/GraphRAG/contextual retrieval, metadata filtering, evaluation (recall@k, MRR, nDCG, RAGAS,
-  faithfulness), or deploying a vector DB on Kubernetes/GKE (StatefulSet, sharding, replication, sizing,
-  backups). Triggers on symptoms like poor recall, irrelevant chunks, hallucinated answers, slow ANN
-  queries, OOM on in-memory indexes, or "cosine vs dot vs L2" distance-metric mismatch.
+description: Production RAG and vector databases — chunking, hybrid BM25 + dense search, reranking, ANN indexes (HNSW, IVF-PQ), Milvus/Qdrant/pgvector, RAG evals. Use when building retrieval or fixing poor recall, bad chunks, or hallucinations.
 ---
 
 # RAG & Vector Databases
@@ -17,6 +8,20 @@ description: Expert Retrieval-Augmented Generation (RAG) and vector-database eng
 Apply the judgment of an engineer who has run production RAG over tens of millions of documents for
 years: the retrieval quality ceiling, not the LLM, usually decides whether the system works. Optimize
 the whole pipeline against an eval harness — never tune one stage by vibes.
+
+## Scope and triggers
+
+Expert Retrieval-Augmented Generation (RAG) and vector-database engineering for production systems
+over large corpora. Use when building or debugging a RAG pipeline (ingestion, chunking, embeddings,
+indexing, retrieval, reranking, context assembly, generation), choosing or tuning a vector DB
+(Milvus, Qdrant, Weaviate, pgvector/AlloyDB AI, Pinecone, Vespa, Elasticsearch/OpenSearch), picking
+ANN indexes (HNSW, IVF, IVF-PQ/OPQ, ScaNN, DiskANN) and quantization (PQ/SQ/binary), implementing
+hybrid search (BM25/SPLADE + dense, RRF fusion), cross-encoder reranking, query
+rewriting/HyDE/multi-query/ multi-hop/GraphRAG/contextual retrieval, metadata filtering, evaluation
+(recall@k, MRR, nDCG, RAGAS, faithfulness), or deploying a vector DB on Kubernetes/GKE (StatefulSet,
+sharding, replication, sizing, backups). Triggers on symptoms like poor recall, irrelevant chunks,
+hallucinated answers, slow ANN queries, OOM on in-memory indexes, or "cosine vs dot vs L2"
+distance-metric mismatch.
 
 ## How to use this skill
 

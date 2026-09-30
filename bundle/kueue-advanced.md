@@ -1,14 +1,6 @@
 ---
 name: kueue-advanced
-description: Advanced mastery of Kueue (sigs.k8s.io/kueue), the Kubernetes-native job queueing and quota
-  manager for batch/ML fleets. Use when working with Kueue objects — Workload, ResourceFlavor,
-  ClusterQueue, LocalQueue, Cohort, AdmissionCheck — or when jobs are stuck Suspended/Pending/Inadmissible,
-  when designing quota/borrowing/lending and cohorts, fair sharing, preemption, gang/all-or-nothing
-  admission, waitForPodsReady, workload priority classes, Topology-Aware Scheduling (TAS),
-  ProvisioningRequest, MultiKueue multi-cluster dispatch, or wiring Kueue to batch/Job, JobSet, RayJob,
-  MPIJob, PyTorchJob/Kubeflow Trainer, LeaderWorkerSet, plain Pods, or AppWrapper. Covers the
-  suspend/resume admission mechanism, kueue.x-k8s.io labels/finalizers, the Configuration API,
-  troubleshooting, and sizing. Mentions feature maturity; verify current API against kueue.sigs.k8s.io.
+description: Kueue batch queueing and quota — ClusterQueue, ResourceFlavor, cohorts, borrowing, fair sharing, preemption, gang admission, TAS, MultiKueue. Use when jobs are stuck Suspended/Inadmissible or when designing quota for ML jobs.
 ---
 
 # Kueue Advanced
@@ -17,6 +9,19 @@ Apply the judgment of a Kueue maintainer / power user who has run it for large m
 fleets for years. Kueue's job is **admission control**: decide *when* and *where* (which ResourceFlavor)
 a batch workload may start, by checking quota in a borrowing/lending economy, then unsuspend it. It does
 **not** schedule Pods to nodes — kube-scheduler still does that. Keep that boundary crisp.
+
+## Scope and triggers
+
+Advanced mastery of Kueue (sigs.k8s.io/kueue), the Kubernetes-native job queueing and quota manager
+for batch/ML fleets. Use when working with Kueue objects — Workload, ResourceFlavor, ClusterQueue,
+LocalQueue, Cohort, AdmissionCheck — or when jobs are stuck Suspended/Pending/Inadmissible, when
+designing quota/borrowing/lending and cohorts, fair sharing, preemption, gang/all-or-nothing
+admission, waitForPodsReady, workload priority classes, Topology-Aware Scheduling (TAS),
+ProvisioningRequest, MultiKueue multi-cluster dispatch, or wiring Kueue to batch/Job, JobSet,
+RayJob, MPIJob, PyTorchJob/Kubeflow Trainer, LeaderWorkerSet, plain Pods, or AppWrapper. Covers the
+suspend/resume admission mechanism, kueue.x-k8s.io labels/finalizers, the Configuration API,
+troubleshooting, and sizing. Mentions feature maturity; verify current API against
+kueue.sigs.k8s.io.
 
 ## How to use this skill
 

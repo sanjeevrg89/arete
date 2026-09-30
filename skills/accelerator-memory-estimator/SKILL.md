@@ -1,16 +1,6 @@
 ---
 name: accelerator-memory-estimator
-description: >
-  Use this to ESTIMATE GPU/TPU memory for an ML workload and DECIDE what fits and what parallelism is
-  needed. Trigger whenever someone asks "will this model fit", "do I have enough VRAM/HBM", "OOM /
-  CUDA out of memory", "how many H100s / how much TPU HBM do I need", "what batch size fits", "can I
-  fine-tune a 7B/70B on one GPU", "how big is the KV cache". Performs the actual arithmetic: training
-  memory (weights + gradients + optimizer states + activations + overhead), sharding math
-  (FSDP/ZeRO-1/2/3, tensor parallel, pipeline parallel), and inference KV-cache memory
-  (with GQA/MQA). Given a model + config, it computes per-device memory, compares to capacity
-  (H100 80GB, A100 40/80GB, TPU v5e/v5p HBM), and RECOMMENDS a fitting strategy (fits / FSDP / TP=k /
-  activation checkpointing / quantization / QLoRA). All outputs are ESTIMATES (±) — verify against a
-  real run.
+description: Estimates GPU/TPU memory for training and inference (weights, optimizer states, activations, KV cache, FSDP/ZeRO/TP sharding) and says what fits. Use for "will it fit", CUDA OOM, how many H100s, or max batch size.
 ---
 
 # Accelerator Memory Estimator
@@ -22,6 +12,18 @@ judgment of an engineer who has sized hundreds of training and serving jobs on G
 **Every number you produce is an estimate (±).** Real memory depends on framework, kernels,
 fragmentation, and version. Always tell the reader to confirm with `nvidia-smi` / a profiler / an OOM
 test on a small slice before committing hardware.
+
+## Scope and triggers
+
+Use this to ESTIMATE GPU/TPU memory for an ML workload and DECIDE what fits and what parallelism is
+needed. Trigger whenever someone asks "will this model fit", "do I have enough VRAM/HBM", "OOM /
+CUDA out of memory", "how many H100s / how much TPU HBM do I need", "what batch size fits", "can I
+fine-tune a 7B/70B on one GPU", "how big is the KV cache". Performs the actual arithmetic: training
+memory (weights + gradients + optimizer states + activations + overhead), sharding math
+(FSDP/ZeRO-1/2/3, tensor parallel, pipeline parallel), and inference KV-cache memory (with GQA/MQA).
+Given a model + config, it computes per-device memory, compares to capacity (H100 80GB, A100
+40/80GB, TPU v5e/v5p HBM), and RECOMMENDS a fitting strategy (fits / FSDP / TP=k / activation
+checkpointing / quantization / QLoRA). All outputs are ESTIMATES (±) — verify against a real run.
 
 ## How to use this skill
 

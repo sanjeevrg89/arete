@@ -1,6 +1,6 @@
 ---
 name: engineering-lifecycle
-description: The end-to-end engineering lifecycle orchestrator for AI infrastructure and ML platform work — how to take ANY task from idea to production safely through six stages: Define → Plan → Build → Verify → Review → Ship. Use at the START of any non-trivial change (a cluster config edit, a new training pipeline, a model rollout, an autoscaler tweak, a serving-stack upgrade) to decide what process the work needs, run each stage's gate, and route to the right stage skill. Covers why disciplined lifecycle matters MORE for AI infra (GPU-hours are expensive, cluster changes can take down workloads, bad model rollouts degrade production silently), right-sizing process to task size, AI/ML-specific gates (eval criteria, cost estimates, reproducibility, canary rollback), the iterative loop, rationalizations, red flags, and the verification gate per stage. The meta-skill that delegates to spec-driven-development, task-planning-decomposition, test-driven-development, verification-and-debugging, code-review-discipline, and shipping-and-release.
+description: Runs AI-infra/ML work through Define, Plan, Build, Verify, Review, Ship, sizing process to risk. Use at the start of a non-trivial change (cluster edit, training pipeline, model rollout) to pick the gates and stage skills.
 ---
 
 # Engineering Lifecycle (AI Infra / ML Platform)
@@ -10,6 +10,20 @@ and serve live traffic — where a skipped stage means a multi-day outage or ten
 GPU-hours. This is the orchestrator: it decides **how much process** a task needs and **routes each
 stage to the skill that owns it.** It does not replace those skills; it sequences them and enforces the
 gates between them.
+
+## Scope and triggers
+
+The end-to-end engineering lifecycle orchestrator for AI infrastructure and ML platform work — how
+to take ANY task from idea to production safely through six stages: Define → Plan → Build → Verify →
+Review → Ship. Use at the START of any non-trivial change (a cluster config edit, a new training
+pipeline, a model rollout, an autoscaler tweak, a serving-stack upgrade) to decide what process the
+work needs, run each stage's gate, and route to the right stage skill. Covers why disciplined
+lifecycle matters MORE for AI infra (GPU-hours are expensive, cluster changes can take down
+workloads, bad model rollouts degrade production silently), right-sizing process to task size,
+AI/ML-specific gates (eval criteria, cost estimates, reproducibility, canary rollback), the
+iterative loop, rationalizations, red flags, and the verification gate per stage. The meta-skill
+that delegates to spec-driven-development, task-planning-decomposition, test-driven-development,
+verification-and-debugging, code-review-discipline, and shipping-and-release.
 
 ## How to use this skill
 

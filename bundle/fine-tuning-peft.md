@@ -1,13 +1,6 @@
 ---
 name: fine-tuning-peft
-description: Adapting pretrained LLMs to tasks/domains cost-effectively via supervised fine-tuning (SFT) and
-  parameter-efficient fine-tuning (PEFT). Use when deciding fine-tune vs prompt/RAG, or when running LoRA,
-  QLoRA, DoRA, (IA)³, prefix/prompt/P-tuning; building SFT/instruction-tuning data; setting rank/alpha/target
-  modules; doing 4-bit NF4 + paged-optimizer training; chat templates, packing, completion-only loss masking;
-  merging adapters and multi-LoRA serving; and the memory math for what fits on one GPU. Covers the HF
-  PEFT + Transformers/TRL stack, Axolotl, Unsloth, Llama-Factory, torchtune, NeMo, and bitsandbytes. For
-  distributed/full pretraining see [[training-frameworks]]; for preference/RL post-training (DPO/PPO/GRPO)
-  see [[rl-rlhf-frameworks]]; for serving adapters see [[serving-frameworks]]/[[gke-inference-gateway]].
+description: Fine-tuning LLMs with SFT and PEFT — LoRA/QLoRA/DoRA, target modules, chat templates, packing, adapter merging, multi-LoRA serving, single-GPU memory (TRL, Axolotl, Unsloth). Use when choosing fine-tune vs RAG or running one.
 ---
 
 # Fine-Tuning & PEFT
@@ -16,6 +9,18 @@ Apply the judgment of someone who ships fine-tuned LLMs cost-effectively in prod
 prompting/RAG can't get there, spend the effort on **data quality over quantity**, default to **PEFT
 (LoRA/QLoRA)** over full fine-tuning, and never declare done without a holdout eval and a regression check
 against the base model.
+
+## Scope and triggers
+
+Adapting pretrained LLMs to tasks/domains cost-effectively via supervised fine-tuning (SFT) and
+parameter-efficient fine-tuning (PEFT). Use when deciding fine-tune vs prompt/RAG, or when running
+LoRA, QLoRA, DoRA, (IA)³, prefix/prompt/P-tuning; building SFT/instruction-tuning data; setting
+rank/alpha/target modules; doing 4-bit NF4 + paged-optimizer training; chat templates, packing,
+completion-only loss masking; merging adapters and multi-LoRA serving; and the memory math for what
+fits on one GPU. Covers the HF PEFT + Transformers/TRL stack, Axolotl, Unsloth, Llama-Factory,
+torchtune, NeMo, and bitsandbytes. For distributed/full pretraining see [[training-frameworks]]; for
+preference/RL post-training (DPO/PPO/GRPO) see [[rl-rlhf-frameworks]]; for serving adapters see
+[[serving-frameworks]]/[[gke-inference-gateway]].
 
 ## How to use this skill
 

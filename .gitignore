@@ -4,3 +4,7 @@
 # validation evidence captures
 tests/evidence/*
 !tests/evidence/.gitkeep
+
+# Finder/iCloud conflict copies ("SKILL 2.md", "validate 2.py") — never commit these.
+* [0-9].*
+* [0-9]

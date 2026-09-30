@@ -1,15 +1,6 @@
 ---
 name: kubernetes-controller-expert
-description: World-class guidance for writing correct, production-grade Kubernetes controllers with
-  controller-runtime (kubebuilder) and client-go. Use when authoring or reviewing a Reconciler,
-  reconcile loop, informer/lister/workqueue code, finalizers, owner references, status conditions,
-  server-side apply, leader election, or envtest/Ginkgo controller tests — anytime there are `.go`
-  files importing `sigs.k8s.io/controller-runtime`, `k8s.io/client-go`, or `k8s.io/apimachinery`, a
-  `Reconcile(ctx, req)` method, a `SetupWithManager`, a `main.go` wiring a `manager.Manager`, or
-  symptoms like hot-loop reconciles, stuck finalizers, cache staleness races, requeue storms, or
-  controllers fighting each other. Covers level-triggered reconciliation, the
-  reflector→DeltaFIFO→indexer→workqueue flow, idempotent reconcile, `RequeueAfter`, GC via
-  ownerReferences, `metav1.Condition` + observedGeneration, and scaling caches with selectors/indexes.
+description: Writing Kubernetes controllers with controller-runtime and client-go — Reconcile, informers, workqueues, finalizers, owner refs, status conditions, envtest. Use for controller code, hot-loop reconciles, stuck finalizers, or stale caches.
 ---
 
 # Kubernetes Controller Expert
@@ -17,6 +8,19 @@ description: World-class guidance for writing correct, production-grade Kubernet
 Write controllers the way a maintainer of a widely-used controller (Deployment/Job-class) would: a
 **level-triggered, idempotent, eventually-consistent** reconcile that compares desired vs observed
 state and converges, never trusts event ordering, and never leaks external resources or hot-loops.
+
+## Scope and triggers
+
+World-class guidance for writing correct, production-grade Kubernetes controllers with
+controller-runtime (kubebuilder) and client-go. Use when authoring or reviewing a Reconciler,
+reconcile loop, informer/lister/workqueue code, finalizers, owner references, status conditions,
+server-side apply, leader election, or envtest/Ginkgo controller tests — anytime there are `.go`
+files importing `sigs.k8s.io/controller-runtime`, `k8s.io/client-go`, or `k8s.io/apimachinery`, a
+`Reconcile(ctx, req)` method, a `SetupWithManager`, a `main.go` wiring a `manager.Manager`, or
+symptoms like hot-loop reconciles, stuck finalizers, cache staleness races, requeue storms, or
+controllers fighting each other. Covers level-triggered reconciliation, the
+reflector→DeltaFIFO→indexer→workqueue flow, idempotent reconcile, `RequeueAfter`, GC via
+ownerReferences, `metav1.Condition` + observedGeneration, and scaling caches with selectors/indexes.
 
 ## How to use this skill
 

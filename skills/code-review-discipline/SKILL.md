@@ -1,15 +1,6 @@
 ---
 name: code-review-discipline
-description: How to review code and get code reviewed effectively — the Review stage of the engineering
-  lifecycle, tailored to AI infra / ML platforms where the blast radius is large. Use when reviewing a
-  PR/MR/diff/changelist, requesting review, responding to review comments, or deciding whether a change
-  is safe to approve and merge — especially for Kubernetes manifests, Helm charts, Terraform/IaC, RBAC,
-  network policy, resource limits/quotas, and training/serving/rollout configs where a bad change can
-  take down a cluster or waste large amounts of compute. Covers the reviewer's lens (correctness, blast
-  radius/safety, security, tests, simplicity, observability/rollback), the author's pre-review
-  self-check, giving and receiving feedback well, blocking-vs-nit, and the approval + CI-green gate
-  before merge. Scope: AI-infra/ML platform changes; for general application diffs a generic
-  code-review skill (e.g. the vendored mattpocock `code-review`) may fit better.
+description: Code review for AI-infra/ML platform changes (K8s manifests, Helm, Terraform, RBAC, training/serving configs) with a blast-radius lens and a merge gate. Use for risky infra PRs; general app diffs fit code-review.
 ---
 
 # Code Review Discipline
@@ -18,6 +9,19 @@ Apply the judgment of an engineer who has reviewed and shipped infrastructure wh
 could take down a cluster or burn a six-figure compute bill. **Review is a quality gate, not a
 formality.** Its job is to catch what tests cannot — design, blast radius, security, simplicity — and
 to spread knowledge so no change has exactly one person who understands it.
+
+## Scope and triggers
+
+How to review code and get code reviewed effectively — the Review stage of the engineering
+lifecycle, tailored to AI infra / ML platforms where the blast radius is large. Use when reviewing a
+PR/MR/diff/changelist, requesting review, responding to review comments, or deciding whether a
+change is safe to approve and merge — especially for Kubernetes manifests, Helm charts,
+Terraform/IaC, RBAC, network policy, resource limits/quotas, and training/serving/rollout configs
+where a bad change can take down a cluster or waste large amounts of compute. Covers the reviewer's
+lens (correctness, blast radius/safety, security, tests, simplicity, observability/rollback), the
+author's pre-review self-check, giving and receiving feedback well, blocking-vs-nit, and the
+approval + CI-green gate before merge. Scope: AI-infra/ML platform changes; for general application
+diffs a generic code-review skill (e.g. the vendored mattpocock `code-review`) may fit better.
 
 ## How to use this skill
 

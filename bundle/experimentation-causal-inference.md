@@ -1,19 +1,6 @@
 ---
 name: experimentation-causal-inference
-description: World-class online controlled experiments (A/B testing) and causal inference — the
-  gold-standard methodology for data-driven product and ML decisions, run at 20,000+ experiments/year by
-  the largest tech companies. Use whenever you need to establish that a change CAUSED an outcome:
-  designing an A/B test (OEC/overall evaluation criterion, guardrail metrics, hypothesis, MDE & power
-  analysis, sample size, randomization unit — user vs session vs request), doing the statistics right
-  (p-values & confidence intervals and their misinterpretation, multiple comparisons/FDR, sequential
-  testing / always-valid inference / mSPRT, peeking, variance reduction with CUPED), avoiding the
-  pitfalls (Sample Ratio Mismatch/SRM as the #1 trust check, Simpson's paradox, network/interference
-  effects with cluster/switchback/budget-split designs, primacy/novelty & carryover, dilution,
-  segment heterogeneity, Twyman's law), running experimentation at scale (platforms, overlapping/layered
-  experiments, ramp-up, A/A tests, near-real-time monitoring & auto-shutoff), and causal inference when
-  you can't randomize (diff-in-differences, regression discontinuity, instrumental variables,
-  propensity-score matching, synthetic control, uplift/CATE modeling with causal forests & meta-learners).
-  Distinct from model evaluation — see [[ml-evaluation-evals]].
+description: A/B testing and causal inference — OEC, power, SRM checks, CUPED, sequential tests, interference; diff-in-differences, synthetic control, IV when you can't randomize. Use to prove a change caused an outcome.
 ---
 
 # Experimentation & Causal Inference
@@ -24,6 +11,23 @@ direction; the only reliable way to know whether a change helped is a trustworth
 experiment — and when you cannot randomize, you must explicitly argue identification, not wave at a
 chart.** An experiment that is run wrong is worse than no experiment, because it launders a guess into
 a "result." Trust comes first; cleverness second.
+
+## Scope and triggers
+
+World-class online controlled experiments (A/B testing) and causal inference — the gold-standard
+methodology for data-driven product and ML decisions, run at 20,000+ experiments/year by the largest
+tech companies. Use whenever you need to establish that a change CAUSED an outcome: designing an A/B
+test (OEC/overall evaluation criterion, guardrail metrics, hypothesis, MDE & power analysis, sample
+size, randomization unit — user vs session vs request), doing the statistics right (p-values &
+confidence intervals and their misinterpretation, multiple comparisons/FDR, sequential testing /
+always-valid inference / mSPRT, peeking, variance reduction with CUPED), avoiding the pitfalls
+(Sample Ratio Mismatch/SRM as the #1 trust check, Simpson's paradox, network/interference effects
+with cluster/switchback/budget-split designs, primacy/novelty & carryover, dilution, segment
+heterogeneity, Twyman's law), running experimentation at scale (platforms, overlapping/layered
+experiments, ramp-up, A/A tests, near-real-time monitoring & auto-shutoff), and causal inference
+when you can't randomize (diff-in-differences, regression discontinuity, instrumental variables,
+propensity-score matching, synthetic control, uplift/CATE modeling with causal forests &
+meta-learners). Distinct from model evaluation — see [[ml-evaluation-evals]].
 
 ## How to use this skill
 

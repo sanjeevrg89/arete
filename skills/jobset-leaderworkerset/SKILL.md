@@ -1,14 +1,6 @@
 ---
 name: jobset-leaderworkerset
-description: Production mastery of JobSet (jobset.sigs.k8s.io/v1alpha2) and LeaderWorkerSet / LWS
-  (leaderworkerset.x-k8s.io/v1) — the SIG-driven Kubernetes workload APIs for multi-host ML. Use when
-  authoring or debugging multi-host distributed training or multi-host LLM inference manifests:
-  replicatedJobs / replicas / startupPolicy / successPolicy / failurePolicy / coordinator / exclusive
-  placement for JobSet; leaderWorkerTemplate / size / replicas / subGroupPolicy / rolloutStrategy /
-  restartPolicy for LWS. Triggers on JobSet or LeaderWorkerSet CRDs, gang restart of a Job group,
-  multi-node vLLM/SGLang serving (leader+workers, headless Service, predictable hostnames), TPU/GPU
-  multi-host pods, "stuck group", "startup ordering", "pods can't resolve each other", and choosing
-  JobSet vs LWS vs raw StatefulSet/indexed Job. Pairs with Kueue, GKE node pools, vLLM/SGLang.
+description: JobSet and LeaderWorkerSet for multi-host ML on Kubernetes — gang restarts, startup and failure policies, exclusive placement, leader+worker groups for multi-node vLLM. Use when authoring or debugging them, or pods can't find each other.
 ---
 
 # JobSet & LeaderWorkerSet (multi-host ML on Kubernetes)
@@ -17,6 +9,18 @@ Apply the judgment of an engineer who has run multi-host training and multi-host
 production on GPU/TPU clusters for years. JobSet and LWS exist because raw Jobs/StatefulSets do not
 model a **gang** — a set of pods that must start together, share a stable network identity, and
 restart as a unit. Pick the right API, get the gang semantics right, and the rest is plumbing.
+
+## Scope and triggers
+
+Production mastery of JobSet (jobset.sigs.k8s.io/v1alpha2) and LeaderWorkerSet / LWS
+(leaderworkerset.x-k8s.io/v1) — the SIG-driven Kubernetes workload APIs for multi-host ML. Use when
+authoring or debugging multi-host distributed training or multi-host LLM inference manifests:
+replicatedJobs / replicas / startupPolicy / successPolicy / failurePolicy / coordinator / exclusive
+placement for JobSet; leaderWorkerTemplate / size / replicas / subGroupPolicy / rolloutStrategy /
+restartPolicy for LWS. Triggers on JobSet or LeaderWorkerSet CRDs, gang restart of a Job group,
+multi-node vLLM/SGLang serving (leader+workers, headless Service, predictable hostnames), TPU/GPU
+multi-host pods, "stuck group", "startup ordering", "pods can't resolve each other", and choosing
+JobSet vs LWS vs raw StatefulSet/indexed Job. Pairs with Kueue, GKE node pools, vLLM/SGLang.
 
 ## How to use this skill
 

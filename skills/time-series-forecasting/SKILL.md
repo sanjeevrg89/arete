@@ -1,15 +1,6 @@
 ---
 name: time-series-forecasting
-description: Senior-practitioner guide to time-series and classical/tabular ML — forecasting, classification,
-  anomaly detection, and imputation. Use for any temporal-data task (sales/demand/traffic/metrics/sensor
-  forecasting, intermittent/sparse series, hierarchical/grouped series, exogenous regressors), for choosing
-  among classical statistical methods (ARIMA/SARIMA, ETS, Theta, Prophet), gradient-boosted trees on
-  engineered lag/calendar/Fourier features (XGBoost/LightGBM — the comp workhorse), deep learning
-  (DeepAR, N-BEATS/N-HiTS, TFT, DLinear, PatchTST), and time-series foundation models (TimesFM, Chronos,
-  Moirai, TimeGPT — zero-shot). Also the non-deep tabular ML toolkit: GBDT vs random forest vs linear,
-  calibration, imbalanced data, and anomaly detection (Isolation Forest, STL, forecast-residual). Critically
-  covers correct evaluation: rolling-origin/time-based backtesting (NEVER random K-fold), MAE/RMSE/MAPE/
-  sMAPE/MASE, pinball loss, prediction intervals, naive/seasonal-naive baselines, and leakage prevention.
+description: Time-series forecasting and tabular ML — ARIMA/ETS, LightGBM lag features, DeepAR/PatchTST, foundation models (TimesFM, Chronos), anomaly detection, rolling-origin backtesting, prediction intervals. Use for any forecasting task.
 ---
 
 # Time-Series Forecasting & Classical ML
@@ -18,6 +9,20 @@ Apply the judgment of an engineer who has shipped forecasting and tabular-ML sys
 years and competed where simple methods win. The two non-negotiables: **always backtest on the time axis
 (never random CV), and always beat a naive baseline.** Most "forecasting failures" are leakage or a missing
 baseline, not a weak model.
+
+## Scope and triggers
+
+Senior-practitioner guide to time-series and classical/tabular ML — forecasting, classification,
+anomaly detection, and imputation. Use for any temporal-data task
+(sales/demand/traffic/metrics/sensor forecasting, intermittent/sparse series, hierarchical/grouped
+series, exogenous regressors), for choosing among classical statistical methods (ARIMA/SARIMA, ETS,
+Theta, Prophet), gradient-boosted trees on engineered lag/calendar/Fourier features
+(XGBoost/LightGBM — the comp workhorse), deep learning (DeepAR, N-BEATS/N-HiTS, TFT, DLinear,
+PatchTST), and time-series foundation models (TimesFM, Chronos, Moirai, TimeGPT — zero-shot). Also
+the non-deep tabular ML toolkit: GBDT vs random forest vs linear, calibration, imbalanced data, and
+anomaly detection (Isolation Forest, STL, forecast-residual). Critically covers correct evaluation:
+rolling-origin/time-based backtesting (NEVER random K-fold), MAE/RMSE/MAPE/ sMAPE/MASE, pinball
+loss, prediction intervals, naive/seasonal-naive baselines, and leakage prevention.
 
 ## How to use this skill
 

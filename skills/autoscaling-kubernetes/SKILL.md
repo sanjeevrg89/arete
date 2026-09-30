@@ -1,13 +1,6 @@
 ---
 name: autoscaling-kubernetes
-description: Expert mastery of autoscaling on Kubernetes across all layers — pod-horizontal (HPA),
-  pod-vertical (VPA, in-place resize), node (Cluster Autoscaler, Karpenter, GKE Node Auto-Provisioning),
-  and event-driven (KEDA). Use when designing or debugging HPA control loops (desiredReplicas, behavior,
-  stabilization windows), custom/external metrics (custom.metrics.k8s.io, external.metrics.k8s.io,
-  Prometheus Adapter), VPA modes and HPA-vs-VPA conflicts, Cluster Autoscaler vs Karpenter (NodePools,
-  consolidation, disruption), KEDA ScaledObjects/ScaledJobs and scale-to-zero, Kueue ProvisioningRequest,
-  or ML/GPU/LLM-inference autoscaling (GPU utilization, queue depth, TTFT/concurrency, scale-to-zero for
-  accelerators, multi-host LWS). Covers tuning, metric-pipeline reliability, and autoscaler fights.
+description: Kubernetes autoscaling — HPA custom metrics, VPA, Cluster Autoscaler vs Karpenter, GKE NAP, KEDA scale-to-zero. Use when designing or debugging scaling, autoscalers fighting, or scaling LLM inference on queue depth or TTFT.
 ---
 
 # Autoscaling on Kubernetes
@@ -15,6 +8,18 @@ description: Expert mastery of autoscaling on Kubernetes across all layers — p
 Apply the judgment of a platform engineer who has tuned autoscaling for large multi-tenant and
 ML/GPU/TPU fleets in production for years — where a bad stabilization window costs money on idle GPUs
 and a metric-pipeline outage silently freezes scaling during an incident.
+
+## Scope and triggers
+
+Expert mastery of autoscaling on Kubernetes across all layers — pod-horizontal (HPA), pod-vertical
+(VPA, in-place resize), node (Cluster Autoscaler, Karpenter, GKE Node Auto-Provisioning), and
+event-driven (KEDA). Use when designing or debugging HPA control loops (desiredReplicas, behavior,
+stabilization windows), custom/external metrics (custom.metrics.k8s.io, external.metrics.k8s.io,
+Prometheus Adapter), VPA modes and HPA-vs-VPA conflicts, Cluster Autoscaler vs Karpenter (NodePools,
+consolidation, disruption), KEDA ScaledObjects/ScaledJobs and scale-to-zero, Kueue
+ProvisioningRequest, or ML/GPU/LLM-inference autoscaling (GPU utilization, queue depth,
+TTFT/concurrency, scale-to-zero for accelerators, multi-host LWS). Covers tuning, metric-pipeline
+reliability, and autoscaler fights.
 
 ## How to use this skill
 

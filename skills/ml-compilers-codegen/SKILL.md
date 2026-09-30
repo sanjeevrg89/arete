@@ -1,16 +1,6 @@
 ---
 name: ml-compilers-codegen
-description: Deep expertise in ML compilers and code generation — how models are lowered to fast hardware
-  kernels. Covers the compilation stack (graph capture → high-level IR → optimization passes → lowering →
-  target codegen → runtime), MLIR (dialects, progressive lowering, reusable infrastructure) and
-  StableHLO/HLO as the portable ML IR, XLA/OpenXLA (HLO pipeline, algebraic simplification, layout
-  assignment, operator fusion, buffer assignment, XLA:GPU native-PTX-via-LLVM and Triton emitters, PJRT,
-  AOT vs JIT, shape specialization/recompilation), Triton (tile model, TTIR→TTGIR→LLVM/PTX dialects),
-  fusion in depth (vertical/horizontal/epilogue, FlashAttention, the memory wall), and torch.compile
-  (Dynamo→AOTAutograd→Inductor→Triton), TensorRT, ONNX Runtime, IREE, TVM. Use when reading/debugging IR
-  dumps (HLO, TTIR/TTGIR, FX/Inductor output), chasing recompilation or fusion failures, autotuning,
-  writing a custom kernel/pass, or deciding when the compiler helps vs hurts. This is the compiler/IR/
-  codegen deep dive beneath ml-frameworks and inference-optimization.
+description: ML compilers from graph to kernel — XLA/HLO/StableHLO, MLIR, Triton IR, torch.compile (Dynamo, Inductor), TensorRT, TVM, fusion, recompilation. Use when reading IR dumps, chasing recompiles or missed fusions, or writing a pass.
 ---
 
 # ML Compilers & Code Generation
@@ -21,6 +11,20 @@ failed to fuse) a chain, and can tell whether a compiler will help or hurt from 
 bar: **never fabricate a flag, an IR-op name, a pass name, or a benchmark.** When unsure whether
 something is current, describe the concept and tell the reader to verify against current docs — flags,
 dialects, and op names move every release (it is 2026).
+
+## Scope and triggers
+
+Deep expertise in ML compilers and code generation — how models are lowered to fast hardware
+kernels. Covers the compilation stack (graph capture → high-level IR → optimization passes →
+lowering → target codegen → runtime), MLIR (dialects, progressive lowering, reusable infrastructure)
+and StableHLO/HLO as the portable ML IR, XLA/OpenXLA (HLO pipeline, algebraic simplification, layout
+assignment, operator fusion, buffer assignment, XLA:GPU native-PTX-via-LLVM and Triton emitters,
+PJRT, AOT vs JIT, shape specialization/recompilation), Triton (tile model, TTIR→TTGIR→LLVM/PTX
+dialects), fusion in depth (vertical/horizontal/epilogue, FlashAttention, the memory wall), and
+torch.compile (Dynamo→AOTAutograd→Inductor→Triton), TensorRT, ONNX Runtime, IREE, TVM. Use when
+reading/debugging IR dumps (HLO, TTIR/TTGIR, FX/Inductor output), chasing recompilation or fusion
+failures, autotuning, writing a custom kernel/pass, or deciding when the compiler helps vs hurts.
+This is the compiler/IR/ codegen deep dive beneath ml-frameworks and inference-optimization.
 
 ## How to use this skill
 

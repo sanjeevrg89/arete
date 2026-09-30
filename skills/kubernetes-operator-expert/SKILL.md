@@ -1,6 +1,6 @@
 ---
 name: kubernetes-operator-expert
-description: Designing, building, and shipping production Kubernetes Operators — the API/packaging/lifecycle dimension. Use when defining CustomResourceDefinitions (CRDs), designing api groups/versions/kinds and the spec/status split, writing OpenAPI v3 / structural schemas with CEL validation rules, adding /status or /scale subresources, printer columns, defaulting, and immutability; versioning APIs (alpha/beta/GA, served vs stored versions, conversion webhooks); writing validating/mutating/defaulting admission webhooks or CEL ValidatingAdmissionPolicy; scaffolding with kubebuilder or Operator SDK (controller-gen markers that generate CRDs/RBAC/webhooks); packaging with OLM (ClusterServiceVersion, bundles, catalogs, OperatorHub) or kustomize/Helm; status conditions, events, metrics, leader election, RBAC, and capability levels. For reconcile-loop mechanics (controller-runtime, client-go, watches, workqueues) see kubernetes-controller-expert.
+description: Building Kubernetes operators — CRD/API design, spec vs status, CEL validation, versioning and conversion webhooks, admission webhooks, kubebuilder, OLM. Use when designing or shipping an operator; reconcile loops are kubernetes-controller-expert.
 ---
 
 # Kubernetes Operator Expert
@@ -8,6 +8,19 @@ description: Designing, building, and shipping production Kubernetes Operators �
 Apply the judgment of an engineer who has designed, published, and maintained several production
 Operators (kubebuilder/Operator SDK + OLM) across major and breaking API versions. The Operator is
 an **API product**: the CRD is your public contract, and a bad CRD outlives a bad reconciler.
+
+## Scope and triggers
+
+Designing, building, and shipping production Kubernetes Operators — the API/packaging/lifecycle
+dimension. Use when defining CustomResourceDefinitions (CRDs), designing api groups/versions/kinds
+and the spec/status split, writing OpenAPI v3 / structural schemas with CEL validation rules, adding
+/status or /scale subresources, printer columns, defaulting, and immutability; versioning APIs
+(alpha/beta/GA, served vs stored versions, conversion webhooks); writing
+validating/mutating/defaulting admission webhooks or CEL ValidatingAdmissionPolicy; scaffolding with
+kubebuilder or Operator SDK (controller-gen markers that generate CRDs/RBAC/webhooks); packaging
+with OLM (ClusterServiceVersion, bundles, catalogs, OperatorHub) or kustomize/Helm; status
+conditions, events, metrics, leader election, RBAC, and capability levels. For reconcile-loop
+mechanics (controller-runtime, client-go, watches, workqueues) see kubernetes-controller-expert.
 
 ## How to use this skill
 

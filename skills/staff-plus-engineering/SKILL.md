@@ -1,6 +1,6 @@
 ---
 name: staff-plus-engineering
-description: The non-technical and technical-leadership competencies that distinguish Staff, Senior Staff, Principal, and Distinguished engineers from Senior — the things that actually earn promotion past the senior "terminal" level. Use when working on technical leadership, technical strategy/vision, architecture direction, a design doc / RFC / one-pager / Amazon-style narrative, influence without authority, alignment/sponsorship/consensus, leading large ambiguous multi-team efforts, mentorship & sponsorship, the Staff archetypes (Tech Lead, Architect, Solver, Right Hand), glue work, a "staff project" or promotion case, make-vs-buy and tech-debt-as-portfolio, or org-level AI-platform strategy across training/serving/data/infra/cost/safety. Grounded in StaffEng archetypes, Will Larson's "Staff Engineer", and Tanya Reilly's "The Staff Engineer's Path". Ladders/titles vary by company.
+description: Staff, Principal, and Distinguished engineering — archetypes, scope and leverage, influence without authority, design docs and RFCs, technical strategy, promotion cases. Use for technical leadership or growing past senior.
 ---
 
 # Staff+ Engineering
@@ -9,6 +9,19 @@ Apply the judgment of a Staff/Principal/Distinguished engineer who has reached o
 through scope, leverage, and influence — not by coding more. The rest of this library is the
 *technical* mastery; this skill is how that mastery becomes **world-class impact through others.**
 Exact ladders, titles, and level boundaries vary by company — the role's *shape* is universal.
+
+## Scope and triggers
+
+The non-technical and technical-leadership competencies that distinguish Staff, Senior Staff,
+Principal, and Distinguished engineers from Senior — the things that actually earn promotion past
+the senior "terminal" level. Use when working on technical leadership, technical strategy/vision,
+architecture direction, a design doc / RFC / one-pager / Amazon-style narrative, influence without
+authority, alignment/sponsorship/consensus, leading large ambiguous multi-team efforts, mentorship &
+sponsorship, the Staff archetypes (Tech Lead, Architect, Solver, Right Hand), glue work, a "staff
+project" or promotion case, make-vs-buy and tech-debt-as-portfolio, or org-level AI-platform
+strategy across training/serving/data/infra/cost/safety. Grounded in StaffEng archetypes, Will
+Larson's "Staff Engineer", and Tanya Reilly's "The Staff Engineer's Path". Ladders/titles vary by
+company.
 
 ## How to use this skill
 

@@ -1,18 +1,6 @@
 ---
 name: distributed-systems-fundamentals
-description: The timeless distributed-systems fundamentals every architect must reason from — the
-  impossibility/tradeoff results (CAP, PACELC, FLP, the fallacies of distributed computing), consensus
-  (Paxos, Raft leader election & log replication, ZAB/Viewstamped Replication, quorums), replication &
-  consistency models (single/multi/leaderless, linearizability → causal → eventual, read-your-writes,
-  R+W>N quorums, LWW/vector clocks/CRDTs), partitioning/consistent hashing, caching & stampede, queues &
-  the log (at-least/exactly-once, idempotency, outbox), time & logical/vector/hybrid clocks, cross-node
-  transactions (2PC, sagas, isolation levels, the dual-write problem), and failure/reliability (failure
-  detectors, retries/backoff/jitter, fencing tokens, backpressure). Use when designing or reviewing any
-  replicated, sharded, multi-region, or fault-tolerant system; choosing a consistency model; doing
-  leader election or distributed locking; debugging split-brain, stale reads, lost updates, clock-skew
-  bugs, duplicate processing, or retry storms; or whenever someone is tempted to roll their own
-  consensus, order events by wall clock, or assume "exactly-once". Foundations under Kubernetes/etcd,
-  Kafka, Spanner, and ML feature/checkpoint pipelines.
+description: Distributed-systems fundamentals — CAP/PACELC, Raft consensus, consistency models, quorums, clocks, exactly-once, sagas, fencing tokens. Use when designing replicated systems or debugging split-brain, stale reads, or lost updates.
 ---
 
 # Distributed Systems Fundamentals
@@ -21,6 +9,23 @@ Apply the judgment of an architect who has run replicated, partition-prone state
 years: a distributed system is **nodes that fail independently, talk over an unreliable network, with
 no shared clock** — and almost every hard result follows from those three facts. These fundamentals
 are technology-agnostic; specific systems (etcd, Kafka, Spanner) *implement* them.
+
+## Scope and triggers
+
+The timeless distributed-systems fundamentals every architect must reason from — the
+impossibility/tradeoff results (CAP, PACELC, FLP, the fallacies of distributed computing), consensus
+(Paxos, Raft leader election & log replication, ZAB/Viewstamped Replication, quorums), replication &
+consistency models (single/multi/leaderless, linearizability → causal → eventual, read-your-writes,
+R+W>N quorums, LWW/vector clocks/CRDTs), partitioning/consistent hashing, caching & stampede, queues
+& the log (at-least/exactly-once, idempotency, outbox), time & logical/vector/hybrid clocks,
+cross-node transactions (2PC, sagas, isolation levels, the dual-write problem), and
+failure/reliability (failure detectors, retries/backoff/jitter, fencing tokens, backpressure). Use
+when designing or reviewing any replicated, sharded, multi-region, or fault-tolerant system;
+choosing a consistency model; doing leader election or distributed locking; debugging split-brain,
+stale reads, lost updates, clock-skew bugs, duplicate processing, or retry storms; or whenever
+someone is tempted to roll their own consensus, order events by wall clock, or assume
+"exactly-once". Foundations under Kubernetes/etcd, Kafka, Spanner, and ML feature/checkpoint
+pipelines.
 
 ## How to use this skill
 

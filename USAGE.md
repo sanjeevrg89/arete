@@ -19,11 +19,13 @@ judgment is available whichever tool you're in.
 
 | Agent | One-time install | How it loads |
 |-------|------------------|--------------|
-| **Claude Code** | `./install.sh claude` | symlinks every skill into `~/.claude/skills`; loads on demand by `description`. `/skills` lists them. |
-| **Gemini CLI** | `./install.sh flat <gemini-skills-path>` — or copy a skill dir so its `GEMINI.md` `@./`-imports the guide | flat bundle `skills/*.md` is the universal fallback for any markdown-context loader |
-| **Codex / Cursor / IDEs** | drop a skill's `AGENTS.md` + guide into the repo root, or reference it from your existing `AGENTS.md` | always-on project rules; or point at the flat `skills/<name>.md` |
-| **Anything else** | point a markdown loader at the `skills/` directory | one self-contained file per skill |
-| **Keep current** | `./update.sh` (+ a path for flat copies) | re-link (Claude) / re-copy (flat) |
+| **Everything below at once** | `./install.sh all` | symlinks every skill into `~/.claude/skills` and `~/.agents/skills` |
+| **Claude Code** | `/plugin marketplace add sanjeevrg89/arete` → `/plugin install arete@arete`, or `./install.sh claude` | on demand by `description`; `/skills` lists them |
+| **Codex CLI · Gemini CLI** | `./install.sh agents` (links into `~/.agents/skills`, which both read) | on demand by `description`, same `SKILL.md` |
+| **Cursor & 40+ other agents** | `npx skills add sanjeevrg89/arete` | installs into each agent's skills dir |
+| **Anything else** | `./install.sh flat <dir>` | one self-contained `bundle/<name>.md` per skill |
+| **Same rules in every agent** | `./install.sh rules rules/AGENTS.md` | one rules file linked into `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md` |
+| **Keep current** | `./update.sh` (+ a path for flat copies) | pull, re-link, prune removed skills / re-copy flat |
 
 Do this once for **each** agent you actually use. The payoff of a vendor-neutral library is that you
 stop re-learning per tool — switch models or tools, keep the expertise.
@@ -55,7 +57,7 @@ gets better while you sleep — across every agent at once.
 
 ## 3. Your first week
 
-1. **Install into all three agents** (Claude, Gemini CLI, Codex) — prove "works anywhere" once.
+1. **Install into all three agents** (`./install.sh all` — Claude Code, Codex, Gemini CLI) — prove "works anywhere" once.
 2. **Take one real task** and drive it with the run-to-done wrapper instead of imperatives. Feel the
    difference between an intern and a staff engineer.
 3. **The first mediocre answer** a skill gives you → add one `feedback/log.jsonl` line. That's the loop

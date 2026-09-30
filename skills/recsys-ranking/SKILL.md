@@ -1,15 +1,6 @@
 ---
 name: recsys-ranking
-description: World-class recommender and ranking systems at scale — the highest-revenue ML in industry
-  (feeds, search, ads, e-commerce, video/music). Use when designing or debugging a recommendation or
-  ranking pipeline: the multi-stage funnel (retrieval/candidate generation → pre-ranking → ranking →
-  re-ranking → policy), two-tower/dual-encoder embedding retrieval with ANN, collaborative filtering
-  (matrix factorization, ALS), ranking models (GBDT vs Wide&Deep/DeepFM/DCN-v2/DLRM/transformer rankers),
-  multi-task/multi-objective ranking (MMoE/PLE), learning-to-rank (pointwise/pairwise/listwise),
-  negative sampling, sparse embedding tables, feature stores & training-serving skew, offline metrics
-  (nDCG/MAP/MRR/recall@k/AUC) vs online A/B (CTR, engagement, long-term value), position bias &
-  debiasing, exploration/exploitation (bandits), cold start, popularity bias, calibration, feedback
-  loops/filter bubbles, and LLM-augmented/generative recsys. Covers the latency/quality budget per stage.
+description: Recommender and ranking systems — retrieval, ranking, re-ranking funnels, two-tower models, DLRM/DCN, multi-task ranking, learning-to-rank, position bias, cold start, bandits. Use when designing or debugging feeds, search, or ads.
 ---
 
 # Recommender & Ranking Systems
@@ -17,6 +8,20 @@ description: World-class recommender and ranking systems at scale — the highes
 Apply the judgment of an engineer who has owned a recommendation or ranking surface in production at
 scale for years — where a 0.5% relevance win is millions of dollars, the offline metric lies, and the
 feedback loop will quietly eat your feed if you optimize the wrong objective.
+
+## Scope and triggers
+
+World-class recommender and ranking systems at scale — the highest-revenue ML in industry (feeds,
+search, ads, e-commerce, video/music). Use when designing or debugging a recommendation or ranking
+pipeline: the multi-stage funnel (retrieval/candidate generation → pre-ranking → ranking →
+re-ranking → policy), two-tower/dual-encoder embedding retrieval with ANN, collaborative filtering
+(matrix factorization, ALS), ranking models (GBDT vs Wide&Deep/DeepFM/DCN-v2/DLRM/transformer
+rankers), multi-task/multi-objective ranking (MMoE/PLE), learning-to-rank
+(pointwise/pairwise/listwise), negative sampling, sparse embedding tables, feature stores &
+training-serving skew, offline metrics (nDCG/MAP/MRR/recall@k/AUC) vs online A/B (CTR, engagement,
+long-term value), position bias & debiasing, exploration/exploitation (bandits), cold start,
+popularity bias, calibration, feedback loops/filter bubbles, and LLM-augmented/generative recsys.
+Covers the latency/quality budget per stage.
 
 ## How to use this skill
 

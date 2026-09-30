@@ -1,16 +1,6 @@
 ---
 name: research-methods
-description: A structured method for researching any topic deeply and fast with an LLM — multi-perspective
-  questioning, contradiction mapping, synthesis, and a self-critique/peer-review gate — instead of asking
-  one question and taking the majority view. Use when you need to understand a topic, make a high-stakes
-  decision, do due diligence, prep for an interview/negotiation, red-team a thesis, or write a briefing,
-  and you want the blind spots a single prompt misses. Implements the Stanford STORM idea (multi-
-  perspective question asking, NAACL 2024) as a tool-free 4-phase workflow: (1) simulate independent
-  expert perspectives, (2) map where they contradict / agree / are silent, (3) synthesize a reliability-
-  ranked briefing with an actionable insight, (4) peer-review it for confidence, bias, and missing angles.
-  Covers picking perspectives that actually differ, the verify gate (LLMs confidently misattribute
-  sources — STORM's known weakness), and when to escalate to real source retrieval. For ML research
-  *content* depth see ai-research-science; for tool-backed web research use the deep-research harness.
+description: A tool-free structured research method (after Stanford STORM) — simulate differing expert views, map contradictions, synthesize a ranked briefing, peer-review it. Use for due diligence or high-stakes decisions where one prompt isn't enough.
 ---
 
 # Research Methods (multi-perspective, fast, self-critiqued)
@@ -18,6 +8,21 @@ description: A structured method for researching any topic deeply and fast with 
 Apply the judgment of a strong research analyst who knows that the value isn't in the first answer — it's
 in asking the same question from five angles, finding where the answers fight, and grading your own
 confidence before you act. One prompt gives you the majority view; this gives you the blind spots.
+
+## Scope and triggers
+
+A structured method for researching any topic deeply and fast with an LLM — multi-perspective
+questioning, contradiction mapping, synthesis, and a self-critique/peer-review gate — instead of
+asking one question and taking the majority view. Use when you need to understand a topic, make a
+high-stakes decision, do due diligence, prep for an interview/negotiation, red-team a thesis, or
+write a briefing, and you want the blind spots a single prompt misses. Implements the Stanford STORM
+idea (multi- perspective question asking, NAACL 2024) as a tool-free 4-phase workflow: (1) simulate
+independent expert perspectives, (2) map where they contradict / agree / are silent, (3) synthesize
+a reliability- ranked briefing with an actionable insight, (4) peer-review it for confidence, bias,
+and missing angles. Covers picking perspectives that actually differ, the verify gate (LLMs
+confidently misattribute sources — STORM's known weakness), and when to escalate to real source
+retrieval. For ML research *content* depth see ai-research-science; for tool-backed web research use
+the deep-research harness.
 
 ## How to use this skill
 

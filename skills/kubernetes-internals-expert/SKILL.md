@@ -1,6 +1,6 @@
 ---
 name: kubernetes-internals-expert
-description: Source-level Kubernetes internals for debugging control-plane and node problems others can't. Use when investigating WHY the cluster behaves as it does, not just how to use it — apiserver request lifecycle (auth/authz/admission/CEL/etcd), API machinery (scheme, GVK/GVR, codecs, conversion, defaulting), the watch cache, resourceVersion/watch/bookmarks/pagination, APF/FlowSchema priority & fairness, the aggregation layer/APIServices, admission webhook plumbing; etcd (Raft, MVCC/revisions, keyspace, compaction/defrag, quota/NOSPACE, quorum); the scheduler framework (PreFilter→Bind, preemption, nominatedNodeName, scheduling queues); controller-manager (shared informers, garbage collector + owner refs/finalizers, node lifecycle/Leases, lease-based leader election); kubelet (syncLoop, PLEG, CRI/containerd/CRI-O, cgroups v2, QoS & eviction manager, device plugins, DRA, CSI, static pods); networking dataplane (kube-proxy iptables/IPVS/nftables, Service VIPs, EndpointSlices, CNI, conntrack); and cross-cutting mechanics (level-triggered reconciliation, finalizers, field/label selectors & indexes, server-side apply/managedFields). Reach for it on symptoms like Pods stuck Pending/Terminating/ContainerCreating, NotReady nodes, slow apiserver, etcd NOSPACE, 410 Gone, 429/APF throttling, stuck namespaces, OOMKill-vs-eviction, PLEG unhealthy, and when reading apiserver/etcd/scheduler/kubelet logs & metrics or using `kubectl get --raw`/`etcdctl`/`crictl`.
+description: Kubernetes internals — apiserver request path, watch cache and resourceVersion, APF, etcd, scheduler framework, kubelet/PLEG/CRI, kube-proxy. Use when the cluster itself misbehaves (stuck Terminating, NotReady nodes, 410 Gone, 429s).
 ---
 
 # Kubernetes Internals Expert
@@ -8,6 +8,24 @@ description: Source-level Kubernetes internals for debugging control-plane and n
 Apply the judgment of a SIG contributor who reads the source: someone who debugs apiserver, etcd,
 scheduler, controller-manager, kubelet, and dataplane problems by reasoning about how each component
 *actually works*, then confirms against source/KEPs/metrics rather than guessing.
+
+## Scope and triggers
+
+Source-level Kubernetes internals for debugging control-plane and node problems others can't. Use
+when investigating WHY the cluster behaves as it does, not just how to use it — apiserver request
+lifecycle (auth/authz/admission/CEL/etcd), API machinery (scheme, GVK/GVR, codecs, conversion,
+defaulting), the watch cache, resourceVersion/watch/bookmarks/pagination, APF/FlowSchema priority &
+fairness, the aggregation layer/APIServices, admission webhook plumbing; etcd (Raft, MVCC/revisions,
+keyspace, compaction/defrag, quota/NOSPACE, quorum); the scheduler framework (PreFilter→Bind,
+preemption, nominatedNodeName, scheduling queues); controller-manager (shared informers, garbage
+collector + owner refs/finalizers, node lifecycle/Leases, lease-based leader election); kubelet
+(syncLoop, PLEG, CRI/containerd/CRI-O, cgroups v2, QoS & eviction manager, device plugins, DRA, CSI,
+static pods); networking dataplane (kube-proxy iptables/IPVS/nftables, Service VIPs, EndpointSlices,
+CNI, conntrack); and cross-cutting mechanics (level-triggered reconciliation, finalizers,
+field/label selectors & indexes, server-side apply/managedFields). Reach for it on symptoms like
+Pods stuck Pending/Terminating/ContainerCreating, NotReady nodes, slow apiserver, etcd NOSPACE, 410
+Gone, 429/APF throttling, stuck namespaces, OOMKill-vs-eviction, PLEG unhealthy, and when reading
+apiserver/etcd/scheduler/kubelet logs & metrics or using `kubectl get --raw`/`etcdctl`/`crictl`.
 
 ## How to use this skill
 

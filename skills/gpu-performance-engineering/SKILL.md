@@ -1,18 +1,6 @@
 ---
 name: gpu-performance-engineering
-description: GPU kernel performance engineering and cross-layer systems profiling — the discipline of
-  actually finding and fixing where the FLOPs and bandwidth go, at frontier scale (distinct from
-  framework-level "make torch.compile faster"). Use when profiling or optimizing GPU kernels, reading a
-  roofline (arithmetic intensity, compute-bound vs memory-bound, ridge point), using NVIDIA Nsight
-  Compute (ncu — Speed-of-Light/SOL, memory & compute workload analysis, occupancy, warp-stall reasons,
-  tensor/MMA pipe utilization, coalescing, bank conflicts) or Nsight Systems (nsys timeline/overlap,
-  NVTX, CUPTI), diagnosing host-bound vs kernel-bound vs memory-bound vs comms-bound vs straggler
-  problems, hunting stragglers across ranks (the "nvidia-smi 100% but a GPU thermal-throttled" pattern),
-  doing cross-layer continuous profiling (perf/eBPF + GPU kernel tracing + NCCL/collective
-  instrumentation), IR-embedded profiling (KPerfIR/Proton MLIR/LLVM dialects in Triton), or rigorous
-  benchmarking with MLPerf (LoadGen, reproducibility/source rules, availability tiers) and valid perf
-  methodology (warmup, synchronize, percentiles not means, variance). Reach for it whenever the question
-  is "why is this GPU/kernel/job slow and what do I optimize?"
+description: Finding where GPU time goes — roofline, Nsight Compute/Systems, occupancy and warp stalls, host/memory/comms-bound triage, straggler ranks (nvidia-smi 100% but slow), sound benchmarking. Use when a kernel or job is slow.
 ---
 
 # GPU Performance Engineering
@@ -21,6 +9,23 @@ Apply the judgment of an engineer who profiles and optimizes GPU workloads at fr
 optimizes without a roofline, never trusts `nvidia-smi` "100%", and never reports a mean when the p99
 and the straggler are what matter. The job is to **find where the FLOPs and bytes actually go**, classify
 the bottleneck, and fix the one that counts — from a single kernel up to a multi-thousand-GPU run.
+
+## Scope and triggers
+
+GPU kernel performance engineering and cross-layer systems profiling — the discipline of actually
+finding and fixing where the FLOPs and bandwidth go, at frontier scale (distinct from
+framework-level "make torch.compile faster"). Use when profiling or optimizing GPU kernels,
+reading a roofline (arithmetic intensity, compute-bound vs memory-bound, ridge point), using
+NVIDIA Nsight Compute (ncu — Speed-of-Light/SOL, memory & compute workload analysis, occupancy,
+warp-stall reasons, tensor/MMA pipe utilization, coalescing, bank conflicts) or Nsight Systems
+(nsys timeline/overlap, NVTX, CUPTI), diagnosing host-bound vs kernel-bound vs memory-bound vs
+comms-bound vs straggler problems, hunting stragglers across ranks (the "nvidia-smi 100% but a GPU
+thermal-throttled" pattern), doing cross-layer continuous profiling (perf/eBPF + GPU kernel
+tracing + NCCL/collective instrumentation), IR-embedded profiling (KPerfIR/Proton MLIR/LLVM
+dialects in Triton), or rigorous benchmarking with MLPerf (LoadGen, reproducibility/source rules,
+availability tiers) and valid perf methodology (warmup, synchronize, percentiles not means,
+variance). Reach for it whenever the question is "why is this GPU/kernel/job slow and what do I
+optimize?"
 
 ## How to use this skill
 

@@ -1,16 +1,6 @@
 ---
 name: spec-driven-development
-description: The Define stage of the engineering lifecycle — clarify and specify before building. Use
-  whenever you receive a vague or underspecified ask (a feature, a training run, a serving deployment,
-  a cluster change, a migration) and are tempted to start coding or kick off a job. Covers the
-  requirements interview (what/why/for-whom/constraints/success metric), writing a lightweight AI-infra
-  /ML spec or design doc (problem & goal, eval/acceptance criteria as testable conditions, scope &
-  non-goals, SLOs/SLAs, capacity & cost estimate in GPU/TPU-hours and $, data & dependencies, failure
-  modes & blast radius, security/quota/multi-tenancy, rollback/exit plan, open questions), the review
-  checkpoint before Plan/Build, and the verification gate. Spec-first beats code-first because building
-  the wrong thing is the most expensive failure — doubly so when "building" is a multi-thousand-GPU-hour
-  run or a production cluster change. Scope: AI-infra/ML systems; for lightweight app feature specs,
-  prefer a general spec/grilling skill (e.g. the vendored mattpocock `to-spec`) when installed.
+description: Spec-first for AI-infra/ML work — interview the ask, then write a spec with acceptance criteria, SLOs, GPU-hour cost, blast radius, and rollback. Use on vague asks before a training run or cluster change; app features fit to-spec.
 ---
 
 # Spec-Driven Development (the Define stage)
@@ -24,6 +14,21 @@ This skill owns one stage: **Define**. It does not plan the work ([[task-plannin
 the system ([[ml-system-design]]), teach doc-writing craft and stakeholder alignment
 ([[staff-plus-engineering]]), or design the metrics ([[ml-evaluation-evals]]) — it sequences and gates
 those. See [[engineering-lifecycle]] for where Define sits.
+
+## Scope and triggers
+
+The Define stage of the engineering lifecycle — clarify and specify before building. Use whenever
+you receive a vague or underspecified ask (a feature, a training run, a serving deployment, a
+cluster change, a migration) and are tempted to start coding or kick off a job. Covers the
+requirements interview (what/why/for-whom/constraints/success metric), writing a lightweight
+AI-infra /ML spec or design doc (problem & goal, eval/acceptance criteria as testable conditions,
+scope & non-goals, SLOs/SLAs, capacity & cost estimate in GPU/TPU-hours and $, data & dependencies,
+failure modes & blast radius, security/quota/multi-tenancy, rollback/exit plan, open questions), the
+review checkpoint before Plan/Build, and the verification gate. Spec-first beats code-first because
+building the wrong thing is the most expensive failure — doubly so when "building" is a
+multi-thousand-GPU-hour run or a production cluster change. Scope: AI-infra/ML systems; for
+lightweight app feature specs, prefer a general spec/grilling skill (e.g. the vendored mattpocock
+`to-spec`) when installed.
 
 ## How to use this skill
 

@@ -1,14 +1,6 @@
 ---
 name: ai-security-on-gke
-description: Defensive, defense-in-depth security for AI/LLM workloads on Kubernetes and GKE — at the bar of a
-  security engineer for an AI platform. Use when threat-modeling or hardening LLM inference, RAG, or agentic
-  apps; designing prompt-injection / jailbreak / PII / toxicity filtering (Model Armor, Llama Guard, NeMo
-  Guardrails, Guardrails-AI); sandboxing untrusted tool/code execution (gVisor/GKE Sandbox, Kata/microVMs,
-  seccomp, AppArmor); runtime threat detection (GKE Security Posture, Container Threat Detection, Falco);
-  admission control & policy (Pod Security Admission, Gatekeeper, Kyverno); image & model supply-chain
-  (Binary Authorization, Sigstore/SLSA, safetensors vs pickle, dataset integrity); identity, secrets, and
-  egress control (Workload Identity Federation, Secret Manager, NetworkPolicy, private clusters, Confidential
-  GKE). Maps the OWASP LLM Top 10 to concrete controls.
+description: Hardening LLM, RAG, and agent workloads on Kubernetes/GKE — prompt-injection and PII guardrails (Model Armor, Llama Guard), gVisor tool sandboxing, supply chain, Workload Identity, egress control, OWASP LLM Top 10.
 ---
 
 # AI Security on GKE
@@ -16,6 +8,19 @@ description: Defensive, defense-in-depth security for AI/LLM workloads on Kubern
 Apply the judgment of a security engineer responsible for an AI platform serving untrusted prompts at scale.
 This is a **defensive** skill: protect AI/LLM workloads with defense-in-depth — assume the model output, the
 retrieved documents, and any tool the agent calls are **all untrusted**, and put a control at every layer.
+
+## Scope and triggers
+
+Defensive, defense-in-depth security for AI/LLM workloads on Kubernetes and GKE — at the bar of a
+security engineer for an AI platform. Use when threat-modeling or hardening LLM inference, RAG, or
+agentic apps; designing prompt-injection / jailbreak / PII / toxicity filtering (Model Armor, Llama
+Guard, NeMo Guardrails, Guardrails-AI); sandboxing untrusted tool/code execution (gVisor/GKE
+Sandbox, Kata/microVMs, seccomp, AppArmor); runtime threat detection (GKE Security Posture,
+Container Threat Detection, Falco); admission control & policy (Pod Security Admission, Gatekeeper,
+Kyverno); image & model supply-chain (Binary Authorization, Sigstore/SLSA, safetensors vs pickle,
+dataset integrity); identity, secrets, and egress control (Workload Identity Federation, Secret
+Manager, NetworkPolicy, private clusters, Confidential GKE). Maps the OWASP LLM Top 10 to concrete
+controls.
 
 ## How to use this skill
 

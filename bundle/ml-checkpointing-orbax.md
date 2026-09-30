@@ -1,16 +1,6 @@
 ---
 name: ml-checkpointing-orbax
-description: Expert ML checkpointing at scale for resilient large-model training, centered on Orbax (the
-  JAX checkpointing library) with the full landscape. Use when saving/restoring model state in JAX/Flax
-  or PyTorch training, when training stalls or wastes work on failures, or when designing checkpoint
-  resilience for thousand-accelerator jobs. Covers Orbax CheckpointManager (async, sharded jax.Array,
-  composite/PyTree, retention policies, transformations on restore, emergency/in-memory peer-replica
-  checkpointing), PyTorch torch.distributed.checkpoint (DCP) with FSDP full/sharded state dicts and async
-  staging, Multi-Tier Checkpointing (MTC) to node-local SSD + Cloud Storage on GKE, the GCS/Hyperdisk
-  ML/Parallelstore IO story, goodput/MFU and save-stall math, deterministic data-iterator resume,
-  resharding on a different topology at restore, and elastic/restartable training. Triggers on orbax,
-  CheckpointManager, AsyncCheckpointer, DCP, FSDP state_dict, MTC, checkpoint frequency, save stall,
-  resharding, goodput.
+description: Checkpointing large training runs — Orbax (async, sharded, emergency), PyTorch DCP with FSDP, multi-tier checkpointing to local SSD and GCS, resharding on restore. Use when saves stall, failures waste work, or restarts are slow.
 ---
 
 # ML Checkpointing at Scale (Orbax-centered)
@@ -19,6 +9,20 @@ Apply the judgment of an engineer who keeps thousand-accelerator training jobs r
 is not "save a file" — it is the dominant lever on **goodput** (useful compute / wall-clock) for long
 runs. The bar: saves overlap compute and never stall the step, restores are correct across topology
 changes, and a node loss costs minutes, not hours.
+
+## Scope and triggers
+
+Expert ML checkpointing at scale for resilient large-model training, centered on Orbax (the JAX
+checkpointing library) with the full landscape. Use when saving/restoring model state in JAX/Flax or
+PyTorch training, when training stalls or wastes work on failures, or when designing checkpoint
+resilience for thousand-accelerator jobs. Covers Orbax CheckpointManager (async, sharded jax.Array,
+composite/PyTree, retention policies, transformations on restore, emergency/in-memory peer-replica
+checkpointing), PyTorch torch.distributed.checkpoint (DCP) with FSDP full/sharded state dicts and
+async staging, Multi-Tier Checkpointing (MTC) to node-local SSD + Cloud Storage on GKE, the
+GCS/Hyperdisk ML/Parallelstore IO story, goodput/MFU and save-stall math, deterministic
+data-iterator resume, resharding on a different topology at restore, and elastic/restartable
+training. Triggers on orbax, CheckpointManager, AsyncCheckpointer, DCP, FSDP state_dict, MTC,
+checkpoint frequency, save stall, resharding, goodput.
 
 ## How to use this skill
 

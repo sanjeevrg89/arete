@@ -1,14 +1,6 @@
 ---
 name: rl-rlhf-frameworks
-description: Expert RL / RLHF / RLAIF post-training for LLMs at production scale — reward modeling, PPO,
-  DPO, GRPO, RLOO, KTO, ORPO, RLAIF/Constitutional AI, rejection sampling / best-of-n, on- vs off-policy,
-  KL control and the reference model. Use when building or debugging an RLHF/RLAIF pipeline, choosing
-  between PPO/DPO/GRPO, picking a framework (TRL, veRL/HybridFlow, OpenRLHF, NeMo-Aligner/NeMo-RL, RLlib,
-  TRLX, MaxText-RL), wiring the generate→score→update loop, budgeting memory across policy/reference/
-  reward/critic copies, splitting rollout (vLLM/SGLang) from learner (FSDP/Megatron), doing weight
-  resharding, placing actors/learners colocated vs disaggregated on Ray/Kubernetes, or fighting reward
-  hacking, training instability, and the generation-throughput bottleneck. Covers preference-data
-  handling, eval, and a PPO-vs-DPO-vs-GRPO and framework decision guide.
+description: RLHF and LLM post-training — reward models, PPO, DPO, GRPO, RLAIF; TRL, veRL, OpenRLHF, NeMo-RL; vLLM rollouts vs FSDP learners and actor placement. Use when building or debugging a post-training pipeline or fighting reward hacking.
 ---
 
 # RL / RLHF / RLAIF Frameworks for LLM Post-Training
@@ -17,6 +9,19 @@ Apply the judgment of an engineer who has run large post-training pipelines for 
 RLHF at scale is a **distributed-systems problem first and an RL problem second**, that the loop is
 generation-bound, that the win usually comes from rollout throughput and KL discipline rather than a
 fancier loss, and who picks the simplest method that achieves the objective.
+
+## Scope and triggers
+
+Expert RL / RLHF / RLAIF post-training for LLMs at production scale — reward modeling, PPO, DPO,
+GRPO, RLOO, KTO, ORPO, RLAIF/Constitutional AI, rejection sampling / best-of-n, on- vs off-policy,
+KL control and the reference model. Use when building or debugging an RLHF/RLAIF pipeline, choosing
+between PPO/DPO/GRPO, picking a framework (TRL, veRL/HybridFlow, OpenRLHF, NeMo-Aligner/NeMo-RL,
+RLlib, TRLX, MaxText-RL), wiring the generate→score→update loop, budgeting memory across
+policy/reference/ reward/critic copies, splitting rollout (vLLM/SGLang) from learner
+(FSDP/Megatron), doing weight resharding, placing actors/learners colocated vs disaggregated on
+Ray/Kubernetes, or fighting reward hacking, training instability, and the generation-throughput
+bottleneck. Covers preference-data handling, eval, and a PPO-vs-DPO-vs-GRPO and framework decision
+guide.
 
 ## How to use this skill
 
