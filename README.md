@@ -115,10 +115,11 @@ on Haiku; the new ones score 100% in a fifth of the space. Re-run it: `python sc
 
 ### Skill libraries rot
 
-Most collections are frozen PDFs of prompts. Kaushal runs a loop: failures feed
-[`feedback/log.jsonl`](feedback/README.md) → ranked candidates → a reviser opens PRs behind CI and human
-review → lessons become regression checks. Green CI ≠ validated either — see the
-[5-layer validation harness](tests/VALIDATION.md).
+Most collections are frozen PDFs of prompts. Kaushal ships the parts of an improvement loop: a feedback
+log ([`feedback/log.jsonl`](feedback/README.md)) for what a skill got wrong, a ranker that turns it
+into improvement candidates, and CI that gates every change. Nothing edits a skill by itself — using a
+skill does not change it, and the reviser that turns feedback into pull requests is off until you
+enable it. Green CI ≠ validated either — see the [5-layer validation harness](tests/VALIDATION.md).
 
 ## Browse the library
 

@@ -17,6 +17,9 @@ action", Bhagavad Gita 2.50). The skills themselves are unchanged; the major ver
   sanjeevrg89/kaushal` → `/plugin install kaushal@kaushal`, then uninstall `arete@arete`.
 - **Codex** lists plugin-linked skills under the plugin name, so `arete:<skill>` becomes
   `kaushal:<skill>`. Skill names are otherwise the same everywhere.
+- **Docs say what the feedback loop does today.** The README and USAGE described skills improving
+  automatically. They do not: using a skill records nothing, the weekly workflow is a dry run, and the
+  reviser that would turn feedback into pull requests is off until enabled.
 
 ## [1.1.1] — 2026-09-30
 

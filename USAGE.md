@@ -4,7 +4,7 @@ Installing the skills is 10% of the value. The leverage comes from *how* you ope
 installed — and it's the same playbook in **Claude Code, Gemini CLI, Codex,** and any agentic IDE.
 
 > **The idea in one line:** encoded staff/distinguished judgment (the skills) that **ports across every agent** and
-> **gets sharper from your usage**. That combination — not any single model — is the multiplier.
+> **gets sharper when you log what it got wrong**. That combination — not any single model — is the multiplier.
 
 This is the honest version. There is no magic prompt. There is a system: install it everywhere, drive
 every agent at a staff/distinguished bar, and run a loop that improves the skills from real feedback. Do those three and
@@ -51,9 +51,10 @@ the gate between each. "Production-grade" becomes *enforced*, not asserted.
 
 ### Habit 3 — Make it compound → [`skill-self-improvement`](skills/skill-self-improvement/)
 When a skill underperforms, don't just fix the output — append a line to
-[`feedback/log.jsonl`](feedback/README.md) (what was wrong, the correct answer). The reviser loop turns
-accumulated feedback into PRs that improve the skill, gated by CI + review. Your judgment, encoded once,
-gets better while you sleep — across every agent at once.
+[`feedback/log.jsonl`](feedback/README.md) (what was wrong, the correct answer). The reviser loop (off
+by default — enable it in `.github/workflows/skill-self-improvement.yml`) turns accumulated feedback
+into PRs that improve the skill, gated by CI + review. Your judgment, encoded once, improves in every
+agent at once.
 
 ---
 
@@ -77,7 +78,8 @@ It's not the model. It's three things multiplying:
   from memory.
 - **Portability** — the same judgment in Claude, Gemini CLI, and Codex; you're never re-learning per
   tool. (This is "token capital" you own, independent of any one model.)
-- **A self-improving loop** — it compounds from your real usage rather than staying static.
+- **A feedback loop** — what you log from real usage becomes fixes, rather than the library staying
+  static. It is not automatic: nothing is recorded when a skill is used unless you log it.
 
 And the honest caveats, because a tool oversold is a tool distrusted:
 
