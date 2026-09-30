@@ -33,6 +33,8 @@ jobs:
         run: python scripts/routing_eval.py --lint
       - name: Lint functional checks
         run: python scripts/functional_test.py --lint
+      - name: Lint agent check (library scan only; no agent CLIs on the runner)
+        run: python scripts/agent_check.py --lint
       - name: Flat bundle is up to date
         run: |
           python scripts/build_bundle.py

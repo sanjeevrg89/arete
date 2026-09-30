@@ -1,6 +1,6 @@
 {
   "name": "arete",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Arete \u2014 59 distinguished-engineer skills for Kubernetes, GKE, and the ML-infrastructure stack, plus 25 vendored process skills from mattpocock/skills. One source of truth, every agent.",
   "author": {
     "name": "sanjeevrg89",
