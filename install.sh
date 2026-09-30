@@ -2,20 +2,26 @@
 # Install the skill library into your coding agents. Symlinks, so `git pull` updates every agent.
 #
 # Usage:
-#   ./install.sh all             Link every skill into Claude Code AND ~/.agents/skills (Codex CLI,
-#                                Gemini CLI, and other agents that read the shared user skills dir).
+#   ./install.sh all             Link every skill into every agent on this machine: Claude Code,
+#                                ~/.agents/skills (Codex CLI, Gemini CLI, OpenCode, Cursor), and
+#                                Qwen Code if it is installed.
 #   ./install.sh claude [dest]   Link every skill into a Claude Code skills dir
 #                                (default: ~/.claude/skills, or $CLAUDE_CONFIG_DIR/skills).
 #   ./install.sh agents [dest]   Link every skill into the cross-agent user skills dir
-#                                (default: ~/.agents/skills — Codex CLI; Gemini CLI via its alias).
+#                                (default: ~/.agents/skills — read by Codex CLI, Gemini CLI, OpenCode,
+#                                and Cursor).
+#   ./install.sh qwen [dest]     Link every skill into Qwen Code's skills dir (default:
+#                                ~/.qwen/skills) — Qwen Code reads only its own directory.
+#   ./install.sh link <dir>      Link every skill into any other agent's skills directory.
 #   ./install.sh rules <file>    Link ONE rules file into each installed agent's global instructions
-#                                (~/.claude/CLAUDE.md, ~/.codex/AGENTS.md, ~/.gemini/GEMINI.md), so
-#                                every agent follows the same rules. Never overwrites a real file.
-#                                Starter: rules/AGENTS.md — replace it with your own.
+#                                (~/.claude/CLAUDE.md, ~/.codex/AGENTS.md, ~/.gemini/GEMINI.md,
+#                                ~/.qwen/QWEN.md), so every agent follows the same rules. Never
+#                                overwrites a real file. Starter: rules/AGENTS.md — replace it with
+#                                your own. (OpenCode reads ~/.claude/CLAUDE.md too.)
 #   ./install.sh flat <dest>     Copy the flat self-contained bundle/*.md into <dest>, for loaders that
 #                                read plain markdown files (no SKILL.md discovery).
-#   ./install.sh uninstall       Remove the links this repo created (skills and rules). Leaves
-#                                everything else alone.
+#   ./install.sh uninstall [dir...]  Remove the links this repo created (skills and rules), plus any
+#                                in the extra <dir>s you linked. Leaves everything else alone.
 #   ./install.sh list            List available skills.
 #   ./install.sh help            Show this help.
 #
@@ -28,7 +34,9 @@ set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")" && pwd)"
 CLAUDE_HOME="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-RULE_TARGETS=("$CLAUDE_HOME/CLAUDE.md" "${CODEX_HOME:-$HOME/.codex}/AGENTS.md" "$HOME/.gemini/GEMINI.md")
+QWEN_HOME="$HOME/.qwen"
+RULE_TARGETS=("$CLAUDE_HOME/CLAUDE.md" "${CODEX_HOME:-$HOME/.codex}/AGENTS.md" "$HOME/.gemini/GEMINI.md"
+              "$QWEN_HOME/QWEN.md")
 
 skill_dirs() {
   # First-party: skills/<name>/SKILL.md (depth 2) · Vendored: skills/vendored/<upstream>/<name>/SKILL.md (depth 4)
@@ -80,7 +88,24 @@ cmd_claude() {
 
 cmd_agents() {
   link_skills "${1:-$HOME/.agents/skills}"
-  echo "Codex CLI and Gemini CLI read this directory; restart them to pick up new skills."
+  echo "Codex CLI, Gemini CLI, OpenCode, and Cursor read this directory; restart them to pick up new skills."
+}
+
+cmd_qwen() {
+  link_skills "${1:-$QWEN_HOME/skills}"
+  echo "Qwen Code reads only this directory; restart it to pick up new skills."
+}
+
+cmd_link() {
+  if [ -z "${1:-}" ]; then echo "usage: ./install.sh link <skills-dir>"; exit 1; fi
+  link_skills "$1"
+}
+
+cmd_all() {
+  cmd_claude
+  cmd_agents
+  if [ -d "$QWEN_HOME" ]; then cmd_qwen; fi
+  echo "Check what each installed agent sees: python3 scripts/agent_check.py"
 }
 
 cmd_rules() {
@@ -106,7 +131,7 @@ cmd_rules() {
 
 cmd_uninstall() {
   local d l removed=0
-  for d in "$CLAUDE_HOME/skills" "$HOME/.agents/skills"; do
+  for d in "$CLAUDE_HOME/skills" "$HOME/.agents/skills" "$QWEN_HOME/skills" "$@"; do
     [ -d "$d" ] || continue
     while IFS= read -r l; do rm -f "$l"; removed=$((removed+1)); done < <(our_links "$d")
   done
@@ -131,11 +156,13 @@ cmd_flat() {
 }
 
 case "${1:-help}" in
-  all)       cmd_claude; cmd_agents;;
+  all)       cmd_all;;
   claude)    shift; cmd_claude "$@";;
   agents)    shift; cmd_agents "$@";;
+  qwen)      shift; cmd_qwen "$@";;
+  link)      shift; cmd_link "$@";;
   rules)     shift; cmd_rules "$@";;
-  uninstall) cmd_uninstall;;
+  uninstall) shift; cmd_uninstall "$@";;
   flat)      shift; cmd_flat "$@";;
   list)      cmd_list;;
   help|--help|-h) awk 'NR == 1 { next } /^#/ { sub(/^# ?/, ""); print; next } { exit }' "$0";;
